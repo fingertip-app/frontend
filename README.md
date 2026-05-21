@@ -2,6 +2,13 @@
 
 Expo + React Native 기반 앱 골격입니다. 메인 화면은 AI 검색, 추천 장인 체험, 내 주변 장인 지도, 인기 체험, 한물결 카드뉴스를 중심으로 구성합니다.
 
+## Version
+
+- App version: `0.1.0`
+- Expo SDK: `51`
+- React Native: `0.74.5`
+- App status: 초기 스캐폴드
+
 ## Stack
 
 - Expo, React Native, TypeScript
