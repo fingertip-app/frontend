@@ -19,4 +19,55 @@ npm install
 npm run start
 ```
 
+## Docker 사용 여부
+
+프론트엔드는 초기 개발 단계에서 Docker를 사용하지 않습니다.
+
+이유:
+
+- Expo 개발 서버는 로컬 기기, Expo Go, iOS/Android 시뮬레이터와 네트워크 연결이 필요합니다.
+- EAS Build, 푸시 알림, AuthSession, 딥링크 테스트는 로컬 Expo 환경이 더 단순합니다.
+- 프론트엔드가 필요한 서버 의존성은 백엔드의 Docker Compose가 제공합니다.
+
+## 프로젝트 초기 설정
+
+### 1. 패키지 설치
+
+```bash
+npm install
+```
+
+### 2. API 주소 설정
+
+로컬 백엔드 기본 주소는 `http://localhost:8000`입니다.
+
+필요하면 `.env.local`을 만들고 아래 값을 지정합니다.
+
+```bash
+EXPO_PUBLIC_API_BASE_URL=http://localhost:8000
+```
+
+실기기 Expo Go에서 백엔드에 접속할 때는 `localhost` 대신 Mac의 로컬 네트워크 IP를 사용해야 합니다.
+
+예:
+
+```bash
+EXPO_PUBLIC_API_BASE_URL=http://192.168.0.10:8000
+```
+
+### 3. Expo 실행
+
+```bash
+npm run start
+```
+
+이후 Expo Go, iOS Simulator, Android Emulator 중 하나로 실행합니다.
+
+### 4. 개발 흐름
+
+1. 홈/카드뉴스/체험 상세/예약 화면을 mock 데이터로 먼저 구현합니다.
+2. 백엔드 API 응답 형태가 확정되면 `src/services/api.ts`를 통해 연결합니다.
+3. 다국어 문구는 화면에 하드코딩하지 않고 i18n 구조로 분리합니다.
+4. 예약, 결제, 푸시 알림은 백엔드 상태값과 함께 맞춰 구현합니다.
+
 세부 구현 항목은 [TODO.md](./TODO.md)를 기준으로 진행합니다.
