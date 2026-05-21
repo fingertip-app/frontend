@@ -1,0 +1,19 @@
+{
+  "expo": {
+    "name": "장인과 하루",
+    "slug": "fingertip-app",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "app.fingertip.mobile"
+    },
+    "android": {
+      "package": "app.fingertip.mobile"
+    },
+    "extra": {
+      "apiBaseUrl": "http://localhost:8000"
+    }
+  }
+}
