@@ -2,16 +2,17 @@ import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
+import { NavigatorScreenParams } from "@react-navigation/native";
 
-import { LoginScreen } from "../features/auth/LoginScreen";
-import { GeneralSignUpScreen } from "../features/auth/GeneralSignup/GeneralSignUpScreen";
-import { MasterSignUpScreen } from "../features/auth/MasterSignup/MasterSignUpScreen";
-import { SignUpCompleteScreen } from "../features/auth/SignUpCompleteScreen";
-import { HomeScreen } from "../features/home/HomeScreen";
-import { SearchScreen } from "../features/Search/SearchScreen";
-import { AIrecommendationScreen } from "../features/AI/AIrecommendationScreen";
-import { BookingsScreen } from "../features/bookings/BookingsScreen";
-import { MyPageScreen } from "../features/mypage/MyPageScreen";
+import { LoginScreen } from "@/features/auth/LoginScreen";
+import { GeneralSignUpScreen } from "@/features/auth/GeneralSignup/GeneralSignUpScreen";
+import { MasterSignUpScreen } from "@/features/auth/MasterSignup/MasterSignUpScreen";
+import { SignUpCompleteScreen } from "@/features/auth/SignUpCompleteScreen";
+import { HomeScreen } from "@/features/home/HomeScreen";
+import { SearchScreen } from "@/features/Search/SearchScreen";
+import { AIrecommendationScreen } from "@/features/AI/AIrecommendationScreen";
+import { BookingsScreen } from "@/features/bookings/BookingsScreen";
+import { MyPageScreen } from "@/features/mypage/MyPageScreen";
 
 export type MainTabParamList = {
   Home: undefined;
@@ -26,7 +27,7 @@ export type RootStackParamList = {
   GeneralSignUp: undefined;
   MasterSignUp: undefined;
   SignUpComplete: undefined;
-  MainTabs: undefined;
+  MainTabs: NavigatorScreenParams<MainTabParamList>;
 };
 
 const Tab = createBottomTabNavigator<MainTabParamList>();

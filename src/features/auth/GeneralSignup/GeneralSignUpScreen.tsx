@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { ScrollView, Text, TextInput, View, TouchableOpacity, StyleSheet, SafeAreaView, Platform, Alert } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { RootStackParamList } from "../../../navigation/RootNavigator";
+import { RootStackParamList } from "@/navigation/RootNavigator";
 
 export function GeneralSignUpScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
