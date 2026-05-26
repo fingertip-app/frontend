@@ -2,16 +2,17 @@ import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
+import { NavigatorScreenParams } from "@react-navigation/native";
 
-import { LoginScreen } from "../features/auth/LoginScreen";
-import { GeneralSignUpScreen } from "../features/auth/GeneralSignup/GeneralSignUpScreen";
-import { MasterSignUpScreen } from "../features/auth/MasterSignup/MasterSignUpScreen";
-import { StepCompleteScreen } from "../features/auth/MasterSignup/StepComplete";
-import { HomeScreen } from "../features/home/HomeScreen";
-import { ExploreScreen } from "./ExploreScreen";
-import { AIRecommendScreen } from "./AIRecommendScreen";
-import { BookingsScreen } from "../features/bookings/BookingsScreen";
-import { MyPageScreen } from "../features/mypage/MyPageScreen";
+import { LoginScreen } from "@/features/auth/LoginScreen";
+import { GeneralSignUpScreen } from "@/features/auth/GeneralSignup/GeneralSignUpScreen";
+import { MasterSignUpScreen } from "@/features/auth/MasterSignup/MasterSignUpScreen";
+import { SignUpCompleteScreen } from "@/features/auth/SignUpCompleteScreen";
+import { HomeScreen } from "@/features/home/HomeScreen";
+import { SearchScreen } from "@/features/Search/SearchScreen";
+import { AIrecommendationScreen } from "@/features/AI/AIrecommendationScreen";
+import { BookingsScreen } from "@/features/bookings/BookingsScreen";
+import { MyPageScreen } from "@/features/mypage/MyPageScreen";
 
 export type MainTabParamList = {
   Home: undefined;
@@ -26,7 +27,7 @@ export type RootStackParamList = {
   GeneralSignUp: undefined;
   MasterSignUp: undefined;
   SignUpComplete: undefined;
-  MainTabs: undefined;
+  MainTabs: NavigatorScreenParams<MainTabParamList>;
 };
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
@@ -64,8 +65,8 @@ function MainTabs() {
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} options={{ title: "홈" }} />
-      <Tab.Screen name="Explore" component={ExploreScreen} options={{ title: "탐색" }} />
-      <Tab.Screen name="AIRecommend" component={AIRecommendScreen} options={{ title: "AI 추천" }} />
+      <Tab.Screen name="Explore" component={SearchScreen} options={{ title: "탐색" }} />
+      <Tab.Screen name="AIRecommend" component={AIrecommendationScreen} options={{ title: "AI 추천" }} />
       <Tab.Screen name="Bookings" component={BookingsScreen} options={{ title: "예약" }} />
       <Tab.Screen name="MyPage" component={MyPageScreen} options={{ title: "마이페이지" }} />
     </Tab.Navigator>
@@ -78,7 +79,7 @@ export function RootNavigator() {
       <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="GeneralSignUp" component={GeneralSignUpScreen} />
       <Stack.Screen name="MasterSignUp" component={MasterSignUpScreen} />
-      <Stack.Screen name="SignUpComplete" component={StepCompleteScreen} />
+      <Stack.Screen name="SignUpComplete" component={SignUpCompleteScreen} />
       <Stack.Screen name="MainTabs" component={MainTabs} />
     </Stack.Navigator>
   );
