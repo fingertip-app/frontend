@@ -15,6 +15,14 @@ export function LoginScreen() {
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
         
+        {/* TODO: 테스트 완료 후 삭제 (홈 화면 바로가기) */}
+        <TouchableOpacity
+          style={{ alignSelf: 'flex-end', padding: 8, backgroundColor: '#EAE6E1', borderRadius: 8, marginBottom: 10 }}
+          onPress={() => navigation.reset({ index: 0, routes: [{ name: "MainTabs" }] })}
+        >
+          <Text style={{ fontSize: 12, color: '#3B2B26', fontWeight: 'bold' }}>🚀 홈 바로가기 (테스트)</Text>
+        </TouchableOpacity>
+
         {/* 헤더 및 로고 영역 */}
         <View style={styles.header}>
           <View style={styles.logoOuter}>
