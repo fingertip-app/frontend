@@ -13,6 +13,14 @@ import { SearchScreen } from "@/features/Search/SearchScreen";
 import { AIrecommendationScreen } from "@/features/AI/AIrecommendationScreen";
 import { BookingsScreen } from "@/features/bookings/BookingsScreen";
 import { MyPageScreen } from "@/features/mypage/MyPageScreen";
+import { BookingCreateScreen } from "@/features/bookings/BookingCreateScreen";
+import { Experience } from "@/features/Search/SearchScreen";
+import { BookingDetailScreen } from "@/features/bookings/BookingDetailScreen";
+import { Booking } from "@/features/bookings/BookingsScreen";
+import { WishlistScreen } from "@/features/mypage/WishlistScreen";
+import { ReviewScreen } from "@/features/review/ReviewScreen";
+import { MyReviewsScreen } from "@/features/mypage/MyReviewsScreen";
+import { SettingScreen } from "@/features/setting/SettingScreen";
 
 export type MainTabParamList = {
   Home: undefined;
@@ -28,6 +36,12 @@ export type RootStackParamList = {
   MasterSignUp: undefined;
   SignUpComplete: undefined;
   MainTabs: NavigatorScreenParams<MainTabParamList>;
+  BookingCreate: { exp: Experience };
+  BookingDetail: { booking: Booking };
+  Wishlist: undefined;
+  Review: { booking: Booking };
+  MyReviews: undefined;
+  Settings: undefined;
 };
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
@@ -81,6 +95,12 @@ export function RootNavigator() {
       <Stack.Screen name="MasterSignUp" component={MasterSignUpScreen} />
       <Stack.Screen name="SignUpComplete" component={SignUpCompleteScreen} />
       <Stack.Screen name="MainTabs" component={MainTabs} />
+      <Stack.Screen name="BookingCreate" component={BookingCreateScreen} />
+      <Stack.Screen name="BookingDetail" component={BookingDetailScreen} />
+      <Stack.Screen name="Wishlist" component={WishlistScreen} />
+      <Stack.Screen name="Review" component={ReviewScreen} />
+      <Stack.Screen name="MyReviews" component={MyReviewsScreen} />
+      <Stack.Screen name="Settings" component={SettingScreen} />
     </Stack.Navigator>
   );
 }

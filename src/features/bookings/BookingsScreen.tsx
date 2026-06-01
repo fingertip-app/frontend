@@ -9,13 +9,16 @@ import {
   FlatList,
   Platform,
 } from "react-native";
+import { useNavigation } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
+import { RootStackParamList } from "@/navigation/RootNavigator";
 
 // ─── 타입 및 더미 데이터 ─────────────────────────────────────────────────────────
 
 type TabType = "upcoming" | "pending" | "past" | "cancelled";
 
-interface Booking {
+export interface Booking {
   id: string;
   status: TabType;
   title: string;
@@ -24,6 +27,11 @@ interface Booking {
   time: string;
   guests: number;
   location: string;
+  imageUri?: string;
+  orderNo?: string;
+  paidAt?: string;
+  payMethod?: string;
+  totalPrice?: number;
 }
 
 const TABS: { id: TabType; label: string }[] = [
@@ -43,6 +51,7 @@ const MOCK_BOOKINGS: Booking[] = [
     time: "오후 2:00 - 4:00",
     guests: 2,
     location: "경기 이천시 신둔면 도자예술로 12",
+    imageUri: "https://picsum.photos/seed/pottery/300/200",
   },
   {
     id: "2",
@@ -53,6 +62,7 @@ const MOCK_BOOKINGS: Booking[] = [
     time: "오전 10:30 - 12:00",
     guests: 4,
     location: "전북 전주시 완산구 한지길 24",
+    imageUri: "https://picsum.photos/seed/hanji/300/200",
   },
   {
     id: "3",
@@ -63,6 +73,7 @@ const MOCK_BOOKINGS: Booking[] = [
     time: "오후 1:00 - 3:30",
     guests: 1,
     location: "서울 종로구 북촌로 5길",
+    imageUri: "https://picsum.photos/seed/craft/300/200",
   },
   {
     id: "4",
@@ -73,6 +84,7 @@ const MOCK_BOOKINGS: Booking[] = [
     time: "오후 3:00 - 5:00",
     guests: 2,
     location: "경기 가평군 청평면",
+    imageUri: "https://picsum.photos/seed/wood/300/200",
   },
   {
     id: "5",
@@ -83,6 +95,7 @@ const MOCK_BOOKINGS: Booking[] = [
     time: "오전 11:00 - 12:00",
     guests: 3,
     location: "서울 종로구 인사동",
+    imageUri: "https://picsum.photos/seed/knot/300/200",
   },
 ];
 
@@ -90,6 +103,7 @@ const MOCK_BOOKINGS: Booking[] = [
 
 export function BookingsScreen() {
   const [activeTab, setActiveTab] = useState<TabType>("upcoming");
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   // 현재 탭에 맞는 예약 내역 필터링
   const filteredBookings = MOCK_BOOKINGS.filter(
@@ -131,7 +145,11 @@ export function BookingsScreen() {
 
       {/* 하단 버튼 */}
       <View style={styles.cardFooter}>
-        <TouchableOpacity style={styles.detailButton} activeOpacity={0.8}>
+        <TouchableOpacity 
+          style={styles.detailButton} 
+          activeOpacity={0.8}
+          onPress={() => navigation.navigate("BookingDetail", { booking: item })}
+        >
           <Text style={styles.detailButtonText}>상세보기</Text>
         </TouchableOpacity>
       </View>
