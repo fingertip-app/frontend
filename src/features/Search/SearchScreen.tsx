@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons, Feather } from "@expo/vector-icons";
+import { DetailBottomSheet } from "./DetailBottomSheet";
 
 // ─── 타입 ────────────────────────────────────────────────────────────────────
 
@@ -30,7 +31,7 @@ type FilterChip = {
 
 type SortOption = "추천순" | "가격 낮은순" | "가격 높은순" | "별점순" | "리뷰 많은순";
 
-type Experience = {
+export type Experience = {
   id: string;
   title: string;
   category: string;
@@ -531,12 +532,13 @@ function TagBadge({ label }: { label: string }) {
 }
 
 /** 체험 카드 */
-function ExperienceCard({ item }: { item: Experience }) {
+function ExperienceCard({ item, onPress }: { item: Experience; onPress: () => void }) {
   const [liked, setLiked] = useState(false);
 
   return (
     <TouchableOpacity
       activeOpacity={0.92}
+      onPress={onPress}
       style={{
         flexDirection: "row",
         backgroundColor: "#FFFFFF",
@@ -653,6 +655,7 @@ export function SearchScreen() {
   const [activeCategory, setCategory]   = useState("all");
   const [activeFilter, setFilter]       = useState("popular");
   const [openDropdown, setDropdown]     = useState<DropdownKey>(null);
+  const [selectedExp, setSelectedExp]   = useState<Experience | null>(null);
 
   // 드롭다운 선택값
   const [region, setRegion] = useState("지역");
@@ -727,7 +730,7 @@ export function SearchScreen() {
       <FlatList
         data={results}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <ExperienceCard item={item} />}
+        renderItem={({ item }) => <ExperienceCard item={item} onPress={() => setSelectedExp(item)} />}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 24 }}
         ListEmptyComponent={<EmptyState query={query} />}
@@ -775,6 +778,14 @@ export function SearchScreen() {
           selected={currentDropdown.selected}
           onSelect={currentDropdown.onSelect}
           onClose={() => setDropdown(null)}
+        />
+      )}
+
+      {/* ── 상세 바텀 시트 ── */}
+      {selectedExp && (
+        <DetailBottomSheet
+          exp={selectedExp}
+          onClose={() => setSelectedExp(null)}
         />
       )}
     </SafeAreaView>

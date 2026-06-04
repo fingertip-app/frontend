@@ -9,6 +9,9 @@ import {
   Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useNavigation } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { RootStackParamList } from "@/navigation/RootNavigator";
 import { Ionicons, Feather } from "@expo/vector-icons";
 
 // ─── 팔레트 ────────────────────────────────────────────────────────────────────
@@ -47,23 +50,27 @@ function StatItem({
   label,
   value,
   isLast,
+  onPress,
 }: {
   label: string;
   value: string;
   isLast?: boolean;
+  onPress?: () => void;
 }) {
   return (
-    <TouchableOpacity style={[ss.item]} activeOpacity={0.7}>
-      <Text style={ss.label}>{label}</Text>
-      <Text style={ss.value}>{value}</Text>
-    </TouchableOpacity>
+    <View style={{ flex: 1 }}>
+      <TouchableOpacity style={ss.item} activeOpacity={0.7} onPress={onPress} disabled={!onPress}>
+        <Text style={ss.label} numberOfLines={1}>{label}</Text>
+        <Text style={ss.value} numberOfLines={1}>{value}</Text>
+      </TouchableOpacity>
+    </View>
   );
 }
 const ss = StyleSheet.create({
   item: {
-    flex: 1,
     alignItems: "center",
     paddingVertical: 4,
+    width: "100%",
   },
   label: { fontSize: 12, color: TEXT_S, marginBottom: 5, fontWeight: "400" },
   value: { fontSize: 20, fontWeight: "800", color: TEXT },
@@ -73,12 +80,14 @@ const ss = StyleSheet.create({
 function ActivityCard({
   icon,
   label,
+  onPress,
 }: {
   icon: keyof typeof Ionicons.glyphMap;
   label: string;
+  onPress?: () => void;
 }) {
   return (
-    <TouchableOpacity style={ac.card} activeOpacity={0.8}>
+    <TouchableOpacity style={ac.card} activeOpacity={0.8} onPress={onPress}>
       <View style={ac.iconWrap}>
         <Ionicons name={icon} size={26} color={BRAND} />
       </View>
@@ -117,6 +126,7 @@ const ac = StyleSheet.create({
 // ─── 메인 스크린 ──────────────────────────────────────────────────────────────
 export function MyPageScreen() {
   const interests = ["도예", "한지", "힐링체험", "전통음식"];
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   return (
     <SafeAreaView style={ms.safeArea} edges={["top"]}>
@@ -132,7 +142,7 @@ export function MyPageScreen() {
             <TouchableOpacity hitSlop={10} style={{ marginRight: 16 }}>
               <Ionicons name="notifications-outline" size={23} color={TEXT} />
             </TouchableOpacity>
-            <TouchableOpacity hitSlop={10}>
+            <TouchableOpacity hitSlop={10} onPress={() => navigation.navigate("Settings")}>
               <Ionicons name="settings-outline" size={23} color={TEXT} />
             </TouchableOpacity>
           </View>
@@ -168,9 +178,9 @@ export function MyPageScreen() {
 
         {/* ── 통계 4개 ── */}
         <View style={ms.statsRow}>
-          <StatItem label="찜한 체험"   value="12" />
+          <StatItem label="찜한 체험"   value="12" onPress={() => navigation.navigate("Wishlist")} />
           <View style={ms.statDivider} />
-          <StatItem label="작성한 후기" value="8" />
+          <StatItem label="작성한 후기" value="8" onPress={() => navigation.navigate("MyReviews")} />
           <View style={ms.statDivider} />
           <StatItem label="쿠폰함"      value="3" />
           <View style={ms.statDivider} />
@@ -180,12 +190,10 @@ export function MyPageScreen() {
         {/* ── 섹션 타이틀 ── */}
         <Text style={ms.sectionTitle}>나의 활동</Text>
 
-        {/* ── 활동 2×2 그리드 ── */}
+        {/* ── 활동 카드 ── */}
         <View style={ms.grid}>
-          <ActivityCard icon="heart-outline"        label="찜한 체험"   />
-          <ActivityCard icon="eye-outline"           label="최근 본 체험" />
-          <ActivityCard icon="create-outline"        label="후기 작성"   />
-          <ActivityCard icon="chatbubbles-outline"   label="1:1 문의"   />
+          <ActivityCard icon="heart-outline" label="찜한 체험" onPress={() => navigation.navigate("Wishlist")} />
+          <ActivityCard icon="create-outline"        label="후기 작성" onPress={() => navigation.navigate("MyReviews")} />
         </View>
 
         {/* ── 기타 메뉴 리스트 ── */}
