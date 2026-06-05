@@ -8,11 +8,11 @@ import {
   Image,
   Platform,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "@/navigation/RootNavigator";
 import { Ionicons, Feather } from "@expo/vector-icons";
-import { MainLayout } from "@/features/home/MainLayout";
 
 // ─── 팔레트 ────────────────────────────────────────────────────────────────────
 const BG       = "#F7F4EF";   // 크림 배경
@@ -129,11 +129,24 @@ export function MyPageScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   return (
-    <MainLayout>
+    <SafeAreaView style={ms.safeArea} edges={["top"]}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={ms.scroll}
       >
+
+        {/* ── 헤더 ── */}
+        <View style={ms.header}>
+          <Text style={ms.headerTitle}>마이페이지</Text>
+          <View style={ms.headerIcons}>
+            <TouchableOpacity hitSlop={10} style={{ marginRight: 16 }}>
+              <Ionicons name="notifications-outline" size={23} color={TEXT} />
+            </TouchableOpacity>
+            <TouchableOpacity hitSlop={10} onPress={() => navigation.navigate("Settings")}>
+              <Ionicons name="settings-outline" size={23} color={TEXT} />
+            </TouchableOpacity>
+          </View>
+        </View>
 
         {/* ── 프로필 카드 ── */}
         <View style={ms.profileCard}>
@@ -198,15 +211,38 @@ export function MyPageScreen() {
         </View>
 
       </ScrollView>
-    </MainLayout>
+    </SafeAreaView>
   );
 }
 
 // ─── 스타일 ───────────────────────────────────────────────────────────────────
 const ms = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: BG,
+  },
   scroll: {
-    paddingTop: 16,
     paddingBottom: 48,
+  },
+
+  // 헤더
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    paddingTop: Platform.OS === "ios" ? 6 : 16,
+    paddingBottom: 16,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: "800",
+    color: TEXT,
+    fontFamily: Platform.OS === "ios" ? "Georgia" : "serif",
+  },
+  headerIcons: {
+    flexDirection: "row",
+    alignItems: "center",
   },
 
   // 프로필 카드

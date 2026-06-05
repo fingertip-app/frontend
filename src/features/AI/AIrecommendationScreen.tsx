@@ -9,8 +9,8 @@ import {
   Image,
   FlatList,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons, Feather } from "@expo/vector-icons";
+import { MainLayout } from "@/features/home/MainLayout";
 
 // ─── 팔레트 ────────────────────────────────────────────────────────────────────
 const BG        = "#F5F0EA";   // 크림 배경
@@ -199,15 +199,14 @@ export function AIrecommendationScreen() {
   // ── 결과 화면 ──────────────────────────────────────────────────────────────
   if (isRecommended) {
     return (
-      <SafeAreaView style={s.safeArea}>
-        {/* 헤더 */}
-        <View style={s.header}>
-          <TouchableOpacity onPress={handleReset} hitSlop={8}>
-            <Ionicons name="arrow-back" size={22} color={TEXT_MAIN} />
-          </TouchableOpacity>
-          <Text style={s.headerTitle}>AI 추천 결과</Text>
-          <View style={{ width: 22 }} />
-        </View>
+      <MainLayout>
+        <View style={s.safeArea}>
+          {/* 헤더 */}
+          <View style={[s.header, { justifyContent: "flex-start" }]}>
+            <TouchableOpacity onPress={handleReset} hitSlop={8}>
+              <Ionicons name="arrow-back" size={22} color={TEXT_MAIN} />
+            </TouchableOpacity>
+          </View>
 
         <FlatList
           data={MOCK_RECOMMENDATIONS}
@@ -232,19 +231,17 @@ export function AIrecommendationScreen() {
             </TouchableOpacity>
           }
         />
-      </SafeAreaView>
+        </View>
+      </MainLayout>
     );
   }
 
   // ── 설문 화면 ──────────────────────────────────────────────────────────────
   return (
-    <SafeAreaView style={s.safeArea}>
+    <MainLayout>
+      <View style={s.safeArea}>
       {/* 헤더 */}
-      <View style={s.header}>
-        <TouchableOpacity hitSlop={8}>
-          <Ionicons name="arrow-back" size={22} color={TEXT_MAIN} />
-        </TouchableOpacity>
-        <Text style={s.headerTitle}>AI 추천</Text>
+        <View style={[s.header, { justifyContent: "flex-end" }]}>
         <Text style={s.headerStep}>1/5</Text>
       </View>
 
@@ -364,7 +361,8 @@ export function AIrecommendationScreen() {
           )}
         </TouchableOpacity>
       </View>
-    </SafeAreaView>
+      </View>
+    </MainLayout>
   );
 }
 

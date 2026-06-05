@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   TouchableOpacity,
   ScrollView,
   FlatList,
@@ -13,6 +12,7 @@ import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
 import { RootStackParamList } from "@/navigation/RootNavigator";
+import { MainLayout } from "@/features/home/MainLayout";
 
 // ─── 타입 및 더미 데이터 ─────────────────────────────────────────────────────────
 
@@ -157,12 +157,7 @@ export function BookingsScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      {/* 헤더 */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>예약 내역</Text>
-      </View>
-
+    <MainLayout>
       {/* 탭 네비게이션 (가로 스크롤) */}
       <View style={styles.tabContainer}>
         <ScrollView
@@ -202,19 +197,13 @@ export function BookingsScreen() {
           </View>
         }
       />
-    </SafeAreaView>
+    </MainLayout>
   );
 }
 
 // ─── 스타일 ────────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: "#F5F4F0" },
-  
-  // 헤더
-  header: { paddingHorizontal: 24, paddingTop: Platform.OS === "ios" ? 10 : 30, paddingBottom: 16 },
-  headerTitle: { fontSize: 24, fontWeight: "700", color: "#3B2B26" },
-  
   // 탭
   tabContainer: { borderBottomWidth: 1, borderBottomColor: "#EAE6E1", paddingBottom: 12 },
   tabScrollContent: { paddingHorizontal: 20, gap: 8 },
