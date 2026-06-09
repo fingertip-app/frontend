@@ -11,9 +11,9 @@ import {
   Platform,
   Animated,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons, Feather } from "@expo/vector-icons";
 import { DetailBottomSheet } from "./DetailBottomSheet";
-import { MainLayout } from "@/features/home/MainLayout";
 
 // ─── 타입 ────────────────────────────────────────────────────────────────────
 
@@ -709,16 +709,26 @@ export function SearchScreen() {
   const currentDropdown = openDropdown ? dropdownConfig[openDropdown] : null;
 
   return (
-    <MainLayout>
-      <View style={{ flex: 1, backgroundColor: "#F9FAFB" }}>
-        <StatusBar barStyle="dark-content" backgroundColor="#F9FAFB" />
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#F9FAFB" }}>
+      <StatusBar barStyle="dark-content" backgroundColor="#F9FAFB" />
 
-        {/* ── 검색창 ── */}
-        <SearchBar value={query} onChange={setQuery} onClear={() => setQuery("")} />
+      {/* ── 헤더 ── */}
+      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingTop: 8, paddingBottom: 4 }}>
+        <TouchableOpacity>
+          <Ionicons name="menu-outline" size={24} color="#374151" />
+        </TouchableOpacity>
+        <Text style={{ fontSize: 17, fontWeight: "800", color: "#1F2937", fontFamily: Platform.OS === "ios" ? "Georgia" : "serif" }}>
+          장인과 하루
+        </Text>
+        <Text style={{ fontSize: 13, fontWeight: "600", color: "#6B7280" }}>KR</Text>
+      </View>
 
-        {/* ── 스크롤 콘텐츠 ── */}
-        <FlatList
-          data={results}
+      {/* ── 검색창 ── */}
+      <SearchBar value={query} onChange={setQuery} onClear={() => setQuery("")} />
+
+      {/* ── 스크롤 콘텐츠 ── */}
+      <FlatList
+        data={results}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => <ExperienceCard item={item} onPress={() => setSelectedExp(item)} />}
         showsVerticalScrollIndicator={false}
@@ -778,7 +788,6 @@ export function SearchScreen() {
           onClose={() => setSelectedExp(null)}
         />
       )}
-      </View>
-    </MainLayout>
+    </SafeAreaView>
   );
 }

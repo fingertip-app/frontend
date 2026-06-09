@@ -1,9 +1,8 @@
 import React, { useState } from "react";
-import { ScrollView, Text, View, StyleSheet, TouchableOpacity, Platform } from "react-native";
+import { ScrollView, Text, View, StyleSheet, TouchableOpacity, SafeAreaView, Platform } from "react-native";
 
 import { CardNewsCarousel } from "../cardnews/CardNewsCarousel";
 import { ExperienceList } from "../experiences/ExperienceList";
-import { MainLayout } from "./MainLayout";
 
 // 다가오는 일정 더미 데이터
 const UPCOMING_SCHEDULE = {
@@ -55,7 +54,7 @@ function PopularExperienceCard({ item }: { item: any }) {
 
 export function HomeScreen() {
   return (
-    <MainLayout>
+    <SafeAreaView style={styles.safeArea}>
       <ScrollView 
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}
@@ -122,17 +121,21 @@ export function HomeScreen() {
           <CardNewsCarousel />
         </View>
       </ScrollView>
-    </MainLayout>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#F5F4F0',
+  },
   scrollContainer: {
     paddingBottom: 40,
   },
   header: {
     paddingHorizontal: 24,
-    paddingTop: 10, // 상단바가 생겼으므로 기존 여백을 줄임
+    paddingTop: Platform.OS === 'ios' ? 20 : 40,
     marginBottom: 20,
   },
   title: {

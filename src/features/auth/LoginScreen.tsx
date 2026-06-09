@@ -17,12 +17,20 @@ export function LoginScreen() {
         
         {/* TODO: 테스트 완료 후 삭제 (홈 화면 바로가기) */}
         {__DEV__ && (
-          <TouchableOpacity
-            style={{ alignSelf: 'flex-end', padding: 8, backgroundColor: '#EAE6E1', borderRadius: 8, marginBottom: 10 }}
-            onPress={() => navigation.reset({ index: 0, routes: [{ name: "MainTabs" }] })}
-          >
-            <Text style={{ fontSize: 12, color: '#3B2B26', fontWeight: 'bold' }}>🚀 홈 바로가기 (테스트)</Text>
-          </TouchableOpacity>
+          <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 8, marginBottom: 10 }}>
+            <TouchableOpacity
+              style={{ padding: 8, backgroundColor: '#EAE6E1', borderRadius: 8 }}
+              onPress={() => navigation.reset({ index: 0, routes: [{ name: "MainTabs" }] })}
+            >
+              <Text style={{ fontSize: 12, color: '#3B2B26', fontWeight: 'bold' }}>🚀 일반 홈</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={{ padding: 8, backgroundColor: '#3B2B26', borderRadius: 8 }}
+              onPress={() => navigation.reset({ index: 0, routes: [{ name: "MasterHome" }] })}
+            >
+              <Text style={{ fontSize: 12, color: '#FFF', fontWeight: 'bold' }}>🛠️ 장인 홈</Text>
+            </TouchableOpacity>
+          </View>
         )}
 
         {/* 헤더 및 로고 영역 */}
@@ -93,8 +101,18 @@ export function LoginScreen() {
             </TouchableOpacity>
           </View>
 
-          {/* 로그인 버튼 */}
-          <TouchableOpacity style={styles.loginButton} activeOpacity={0.8}>
+          {/* 로그인 버튼 (선택된 탭에 따라 이동 분기) */}
+          <TouchableOpacity 
+            style={styles.loginButton}
+            activeOpacity={0.8}
+            onPress={() => {
+              if (isGeneralMember) {
+                navigation.reset({ index: 0, routes: [{ name: "MainTabs" }] });
+              } else {
+                navigation.reset({ index: 0, routes: [{ name: "MasterHome" }] });
+              }
+            }}
+          >
             <Text style={styles.loginButtonText}>로그인</Text>
           </TouchableOpacity>
 

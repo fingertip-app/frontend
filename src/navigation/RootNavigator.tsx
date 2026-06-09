@@ -21,6 +21,17 @@ import { WishlistScreen } from "@/features/mypage/WishlistScreen";
 import { ReviewScreen } from "@/features/review/ReviewScreen";
 import { MyReviewsScreen } from "@/features/mypage/MyReviewsScreen";
 import { SettingScreen } from "@/features/setting/SettingScreen";
+import { MasterHomeScreen } from "@/features/master/masterHome/MasterHomeScreen";
+import { MasterExperienceScreen } from "@/features/master/experienceManagement/MasterExperienceScreen";
+import { MasterBookingsScreen } from "@/features/master/masterBookings/MasterBookingsScreen";
+import { MasterReviewsScreen } from "@/features/master/masterReviews/MasterReviewsScreen";
+import { MasterMyPageScreen } from "@/features/master/masterMypage/MasterMyPageScreen";
+import { MasterExperienceCreateScreen } from "@/features/master/experienceManagement/MasterExperienceCreateScreen";
+import { Step1BasicInfo } from "@/features/master/experienceManagement/experienceRegistration/Step1BasicInfo";
+import { Step2Photos } from "@/features/master/experienceManagement/experienceRegistration/Step2Photos";
+import { Step3Schedule } from "@/features/master/experienceManagement/experienceRegistration/Step3Schedule";
+import { Step4Pricing } from "@/features/master/experienceManagement/experienceRegistration/Step4Pricing";
+import { Step5Location } from "@/features/master/experienceManagement/experienceRegistration/Step5Location";
 
 export type MainTabParamList = {
   Home: undefined;
@@ -42,6 +53,17 @@ export type RootStackParamList = {
   Review: { booking: Booking };
   MyReviews: undefined;
   Settings: undefined;
+  MasterHome: undefined;
+  MasterExperience: undefined;
+  MasterBookings: undefined;
+  MasterReviews: undefined;
+  MasterMyPage: undefined;
+  MasterExperienceCreate: undefined;
+  Step1BasicInfo: undefined;
+  Step2Photos: undefined;
+  Step3Schedule: undefined;
+  Step4Pricing: undefined;
+  Step5Location: undefined;
 };
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
@@ -101,6 +123,17 @@ export function RootNavigator() {
       <Stack.Screen name="Review" component={ReviewScreen} />
       <Stack.Screen name="MyReviews" component={MyReviewsScreen} />
       <Stack.Screen name="Settings" component={SettingScreen} />
+      <Stack.Screen name="MasterHome" component={MasterHomeScreen} />
+      <Stack.Screen name="MasterExperience" component={MasterExperienceScreen} />
+      <Stack.Screen name="MasterBookings" component={MasterBookingsScreen} />
+      <Stack.Screen name="MasterReviews" component={MasterReviewsScreen} />
+      <Stack.Screen name="MasterMyPage" component={MasterMyPageScreen} />
+      <Stack.Screen name="MasterExperienceCreate" component={MasterExperienceCreateScreen} />
+      <Stack.Screen name="Step1BasicInfo" component={Step1BasicInfo} />
+      <Stack.Screen name="Step2Photos" component={Step2Photos} />
+      <Stack.Screen name="Step3Schedule" component={Step3Schedule} />
+      <Stack.Screen name="Step4Pricing" component={Step4Pricing} />
+      <Stack.Screen name="Step5Location" component={Step5Location} />
     </Stack.Navigator>
   );
 }

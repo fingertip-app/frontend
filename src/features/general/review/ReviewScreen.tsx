@@ -3,6 +3,7 @@ import {
   View,
   Text,
   StyleSheet,
+  SafeAreaView,
   TouchableOpacity,
   TextInput,
   Platform,
@@ -13,7 +14,6 @@ import {
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { RootStackParamList } from "@/navigation/RootNavigator";
-import { MainLayout } from "@/features/home/MainLayout";
 
 const BRAND = "#3D1F0D";
 const GRAY = "#8A8077";
@@ -53,7 +53,7 @@ export function ReviewScreen() {
   const canSubmit = rating > 0 && content.length >= 10;
 
   return (
-    <MainLayout>
+    <SafeAreaView style={styles.safeArea}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -194,7 +194,7 @@ export function ReviewScreen() {
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
-    </MainLayout>
+    </SafeAreaView>
   );
 }
 
