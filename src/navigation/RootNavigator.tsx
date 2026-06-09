@@ -8,6 +8,8 @@ import { LoginScreen } from "@/features/auth/LoginScreen";
 import { GeneralSignUpScreen } from "@/features/auth/GeneralSignup/GeneralSignUpScreen";
 import { MasterSignUpScreen } from "@/features/auth/MasterSignup/MasterSignUpScreen";
 import { SignUpCompleteScreen } from "@/features/auth/SignUpCompleteScreen";
+import { FindIdScreen } from "@/features/auth/FindIdScreen";
+import { FindPasswordScreen } from "@/features/auth/FindPasswordScreen";
 import { HomeScreen } from "@/features/home/HomeScreen";
 import { SearchScreen } from "@/features/Search/SearchScreen";
 import { AIrecommendationScreen } from "@/features/AI/AIrecommendationScreen";
@@ -46,6 +48,8 @@ export type RootStackParamList = {
   GeneralSignUp: undefined;
   MasterSignUp: undefined;
   SignUpComplete: undefined;
+  FindId: undefined;
+  FindPassword: undefined;
   MainTabs: NavigatorScreenParams<MainTabParamList>;
   BookingCreate: { exp: Experience };
   BookingDetail: { booking: Booking };
@@ -116,6 +120,8 @@ export function RootNavigator() {
       <Stack.Screen name="GeneralSignUp" component={GeneralSignUpScreen} />
       <Stack.Screen name="MasterSignUp" component={MasterSignUpScreen} />
       <Stack.Screen name="SignUpComplete" component={SignUpCompleteScreen} />
+      <Stack.Screen name="FindId" component={FindIdScreen} />
+      <Stack.Screen name="FindPassword" component={FindPasswordScreen} />
       <Stack.Screen name="MainTabs" component={MainTabs} />
       <Stack.Screen name="BookingCreate" component={BookingCreateScreen} />
       <Stack.Screen name="BookingDetail" component={BookingDetailScreen} />

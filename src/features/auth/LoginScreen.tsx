@@ -3,6 +3,7 @@ import { ScrollView, Text, TextInput, View, TouchableOpacity, StyleSheet, SafeAr
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "@/navigation/RootNavigator";
+import Svg, { Path, G, Circle } from "react-native-svg";
 
 export function LoginScreen() {
   const [isGeneralMember, setIsGeneralMember] = useState(true);
@@ -73,7 +74,6 @@ export function LoginScreen() {
         <View style={styles.formSection}>
           {/* 아이디 입력 */}
           <View style={styles.inputContainer}>
-            <Text style={styles.inputIcon}>👤</Text>
             <TextInput
               style={styles.input}
               placeholder="아이디(이메일)"
@@ -87,7 +87,6 @@ export function LoginScreen() {
 
           {/* 비밀번호 입력 */}
           <View style={styles.inputContainer}>
-            <Text style={styles.inputIcon}>🔒</Text>
             <TextInput
               style={styles.input}
               placeholder="비밀번호"
@@ -96,9 +95,22 @@ export function LoginScreen() {
               onChangeText={setPassword}
               secureTextEntry={!isPasswordVisible}
             />
-            <TouchableOpacity onPress={() => setIsPasswordVisible(!isPasswordVisible)} style={styles.eyeIcon}>
-              <Text style={styles.inputIcon}>{isPasswordVisible ? "👁️" : "👁️‍🗨️"}</Text>
-            </TouchableOpacity>
+                       <TouchableOpacity onPress={() => setIsPasswordVisible(!isPasswordVisible)} style={styles.eyeIcon}>
+                              {isPasswordVisible ? (
+                                // 눈 뜬 상태
+                                <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+                                  <Path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="#8A8077" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"/>
+                                  <Circle cx={12} cy={12} r={3} stroke="#8A8077" strokeWidth={1.8}/>
+                                </Svg>
+                              ) : (
+                                // 눈 감은 상태 (사선)
+                                <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+                                  <Path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94" stroke="#8A8077" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"/>
+                                  <Path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19" stroke="#8A8077" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"/>
+                                  <Path d="M1 1l22 22" stroke="#8A8077" strokeWidth={1.8} strokeLinecap="round"/>
+                                </Svg>
+                              )}
+                      </TouchableOpacity>
           </View>
 
           {/* 로그인 버튼 (선택된 탭에 따라 이동 분기) */}
@@ -118,11 +130,11 @@ export function LoginScreen() {
 
           {/* 아이디/비밀번호 찾기 */}
           <View style={styles.findInfoContainer}>
-            <TouchableOpacity>
+            <TouchableOpacity onPress={() => navigation.navigate("FindId" as never)}>
               <Text style={styles.findInfoText}>아이디 찾기</Text>
             </TouchableOpacity>
             <Text style={styles.findInfoDot}>•</Text>
-            <TouchableOpacity>
+            <TouchableOpacity onPress={() => navigation.navigate("FindPassword" as never)}>
               <Text style={styles.findInfoText}>비밀번호 찾기</Text>
             </TouchableOpacity>
           </View>
@@ -294,7 +306,6 @@ const styles = StyleSheet.create({
   },
   inputIcon: {
     fontSize: 18,
-    marginRight: 10,
     color: '#8A8077',
   },
   input: {
