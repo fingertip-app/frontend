@@ -1,5 +1,6 @@
 import React from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, Image } from "react-native";
+import * as ImagePicker from 'expo-image-picker';
 
 interface Step4PortfolioProps {
   shortIntro: string;
@@ -23,14 +24,28 @@ export function Step4Portfolio({
   setSnsLink,
 }: Step4PortfolioProps) {
   
-  // 임시 사진 첨부 핸들러 (실제 기기에서는 expo-image-picker 사용 필요)
-  const handleAddImage = () => {
+  const handleAddImage = async () => {
     if (portfolioImages.length >= 5) {
       Alert.alert("알림", "사진은 최대 5장까지 첨부할 수 있습니다.");
       return;
     }
-    // 가짜 이미지 URI 추가 (UI 확인용)
-    setPortfolioImages([...portfolioImages, `mock_image_${Date.now()}`]);
+
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert("알림", "사진을 업로드하려면 카메라 롤 접근 권한이 필요합니다.");
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 1,
+    });
+
+    if (!result.canceled && result.assets) {
+      setPortfolioImages([...portfolioImages, result.assets[0].uri]);
+    }
   };
 
   const handleRemoveImage = (indexToRemove: number) => {
@@ -86,9 +101,7 @@ export function Step4Portfolio({
           
           {portfolioImages.map((uri, index) => (
             <View key={uri} style={styles.imagePreviewWrapper}>
-              <View style={styles.imagePreviewDummy}>
-                <Text style={styles.imagePreviewText}>사진 {index + 1}</Text>
-              </View>
+              <Image source={{ uri }} style={styles.imagePreview} />
               <TouchableOpacity
                 style={styles.removeImageButton}
                 onPress={() => handleRemoveImage(index)}
@@ -104,7 +117,6 @@ export function Step4Portfolio({
       <View style={styles.inputGroup}>
         <Text style={styles.inputLabel}>SNS 또는 웹사이트 (선택)</Text>
         <View style={styles.inputContainer}>
-          <Text style={styles.inputIcon}>🔗</Text>
           <TextInput
             style={styles.input}
             placeholder="인스타그램, 블로그 등의 링크"
@@ -138,7 +150,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#FAF9F6",
   },
   textAreaContainer: { height: 120, paddingVertical: 12 },
-  inputIcon: { fontSize: 18, marginRight: 10, color: "#8A8077" },
   input: { flex: 1, fontSize: 14, color: "#3B2B26" },
   textArea: { minHeight: 96 },
   imageScrollContainer: { flexDirection: "row", alignItems: "center", paddingVertical: 4 },
@@ -146,8 +157,7 @@ const styles = StyleSheet.create({
   addImagePlus: { fontSize: 24, color: "#8A8077", fontWeight: "300" },
   addImageText: { fontSize: 12, color: "#8A8077", marginTop: 4 },
   imagePreviewWrapper: { width: 80, height: 80, borderRadius: 12, marginRight: 12 },
-  imagePreviewDummy: { flex: 1, backgroundColor: "#EAE6E1", borderRadius: 12, justifyContent: "center", alignItems: "center", borderWidth: 1, borderColor: "#D4CDC4" },
-  imagePreviewText: { fontSize: 12, color: "#8A8077" },
+  imagePreview: { width: '100%', height: '100%', borderRadius: 12 },
   removeImageButton: { position: "absolute", top: -6, right: -6, width: 22, height: 22, borderRadius: 11, backgroundColor: "#3B2B26", justifyContent: "center", alignItems: "center", borderWidth: 2, borderColor: "#FFF" },
   removeImageText: { color: "#FFF", fontSize: 10, fontWeight: "bold" },
 });

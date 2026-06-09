@@ -1,7 +1,7 @@
-import React from "react";
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from "react-native";
+import React, { useState } from "react";
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, TextInput } from "react-native";
+import Svg, { Path, Circle } from "react-native-svg";
 
-// 시/도 및 구/군 하드코딩 데이터 (필요시 확장 가능)
 const REGIONS: Record<string, string[]> = {
   "서울": ["강남구", "강동구", "강북구", "강서구", "관악구", "광진구", "구로구", "금천구", "노원구", "도봉구", "동대문구", "동작구", "마포구", "서대문구", "서초구", "성동구", "성북구", "송파구", "양천구", "영등포구", "용산구", "은평구", "종로구", "중구", "중랑구"],
   "경기": ["가평군", "고양시", "과천시", "광명시", "광주시", "구리시", "군포시", "김포시", "남양주시", "동두천시", "부천시", "성남시", "수원시", "시흥시", "안산시", "안성시", "안양시", "양주시", "양평군", "여주시", "연천군", "오산시", "용인시", "의왕시", "의정부시", "이천시", "파주시", "평택시", "포천시", "하남시", "화성시"],
@@ -22,132 +22,300 @@ const REGIONS: Record<string, string[]> = {
   "제주": ["서귀포시", "제주시"],
 };
 
+// 인기 지역 데이터
+const POPULAR_REGIONS = [
+  { label: "서울특별시 종로구", desc: "북촌, 인사동 공방 밀집 지역" },
+  { label: "경기도 이천시", desc: "사기막골 도예촌 중심" },
+  { label: "전라북도 전주시", desc: "전주 한옥마을 장인 지구" },
+];
+
 interface Step3RegionProps {
-  selectedCity: string;
-  selectedDistrict: string;
-  onSelectCity: (city: string) => void;
-  onSelectDistrict: (district: string) => void;
+  selectedRegions: string[];
+  setSelectedRegions: (regions: string[]) => void;
 }
 
-export function Step3Region({ selectedCity, selectedDistrict, onSelectCity, onSelectDistrict }: Step3RegionProps) {
+export function Step3Region({ selectedRegions, setSelectedRegions }: Step3RegionProps) {
+  const [searchText, setSearchText] = useState("");
+  const [showDirectInput, setShowDirectInput] = useState(false);
+  const [directInput, setDirectInput] = useState("");
+
+  // 검색 필터링
+  const searchResults: { city: string; district: string }[] = [];
+  if (searchText.length > 0) {
+    Object.entries(REGIONS).forEach(([city, districts]) => {
+      districts.forEach((district) => {
+        if (district.includes(searchText) || city.includes(searchText)) {
+          searchResults.push({ city, district });
+        }
+      });
+    });
+  }
+
+  const addRegion = (label: string) => {
+    if (!selectedRegions.includes(label)) {
+      setSelectedRegions([...selectedRegions, label]);
+    }
+  };
+
+  const removeRegion = (label: string) => {
+    setSelectedRegions(selectedRegions.filter((r) => r !== label));
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>주로 활동하시는 지역은 어디인가요?</Text>
-        <Text style={styles.subtitle}>공방 위치나 클래스를 주로 진행하는 지역을 선택해주세요.</Text>
+        <Text style={styles.title}>활동 지역 선택</Text>
+        <Text style={styles.subtitle}>주로 활동하시는 지역을 지도에서 선택하거나 검색해주세요.</Text>
       </View>
 
-      <View style={styles.selectionBox}>
-        {/* 좌측: 시/도 (City) */}
-        <View style={styles.cityList}>
-          <ScrollView showsVerticalScrollIndicator={false} nestedScrollEnabled>
-            {Object.keys(REGIONS).map((city) => (
+      {/* 검색창 */}
+      <View style={styles.searchBox}>
+        <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" style={{ marginRight: 8 }}>
+          <Circle cx="11" cy="11" r="7" stroke="#A39B92" strokeWidth={1.8} />
+          <Path d="M16.5 16.5l4 4" stroke="#A39B92" strokeWidth={1.8} strokeLinecap="round" />
+        </Svg>
+        <TextInput
+          style={styles.searchInput}
+          placeholder="시/군/구 검색 (예: 종로구, 이천시)"
+          placeholderTextColor="#A39B92"
+          value={searchText}
+          onChangeText={setSearchText}
+        />
+        {searchText.length > 0 && (
+          <TouchableOpacity onPress={() => setSearchText("")}>
+            <Text style={styles.clearBtn}>✕</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+
+      {/* 검색 결과 */}
+      {searchText.length > 0 && (
+        <View style={styles.searchResults}>
+          {searchResults.length > 0 ? (
+            searchResults.slice(0, 6).map((r, i) => (
               <TouchableOpacity
-                key={city}
-                style={[styles.cityItem, selectedCity === city && styles.activeCityItem]}
+                key={i}
+                style={styles.searchResultItem}
                 onPress={() => {
-                  onSelectCity(city);
-                  onSelectDistrict(""); // 시/도 변경 시 구/군 초기화
+                  addRegion(`${r.city} ${r.district}`);
+                  setSearchText("");
                 }}
                 activeOpacity={0.7}
               >
-                <Text style={[styles.cityText, selectedCity === city && styles.activeCityText]}>
-                  {city}
-                </Text>
+                <Text style={styles.searchResultText}>{r.city} {r.district}</Text>
+              </TouchableOpacity>
+            ))
+          ) : (
+            <Text style={styles.noResultText}>검색 결과가 없습니다.</Text>
+          )}
+        </View>
+      )}
+
+      {/* 인기 지역 */}
+      <Text style={styles.sectionLabel}>인기 지역</Text>
+      <View style={styles.popularList}>
+        {POPULAR_REGIONS.map((region) => {
+          const isSelected = selectedRegions.includes(region.label);
+          return (
+            <TouchableOpacity
+              key={region.label}
+              style={[styles.popularItem, isSelected && styles.popularItemSelected]}
+              onPress={() => isSelected ? removeRegion(region.label) : addRegion(region.label)}
+              activeOpacity={0.8}
+            >
+              <View style={styles.popularItemInner}>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.popularItemTitle, isSelected && styles.popularItemTitleSelected]}>
+                    {region.label}
+                  </Text>
+                  <Text style={[styles.popularItemDesc, isSelected && styles.popularItemDescSelected]}>
+                    {region.desc}
+                  </Text>
+                </View>
+                {isSelected && (
+                  <View style={styles.checkBadge}>
+                    <Text style={styles.checkBadgeText}>✓</Text>
+                  </View>
+                )}
+              </View>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
+      {/* 기타 지역 직접 입력 */}
+      <TouchableOpacity
+        style={styles.directInputBtn}
+        onPress={() => setShowDirectInput(!showDirectInput)}
+        activeOpacity={0.7}
+      >
+        <Text style={styles.directInputBtnText}>기타 지역 직접 입력하기</Text>
+      </TouchableOpacity>
+
+      {showDirectInput && (
+        <View style={styles.directInputBox}>
+          <TextInput
+            style={styles.directInputField}
+            placeholder="지역명을 직접 입력해주세요"
+            placeholderTextColor="#A39B92"
+            value={directInput}
+            onChangeText={setDirectInput}
+          />
+          <TouchableOpacity
+            style={styles.directInputConfirm}
+            onPress={() => {
+              if (directInput.trim()) {
+                addRegion(directInput.trim());
+                setDirectInput("");
+                setShowDirectInput(false);
+              }
+            }}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.directInputConfirmText}>추가</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* 선택된 활동 지역 태그 */}
+      {selectedRegions.length > 0 && (
+        <View style={styles.selectedSection}>
+          <Text style={styles.sectionLabel}>선택된 활동 지역</Text>
+          <View style={styles.selectedTags}>
+            {selectedRegions.map((region) => (
+              <TouchableOpacity
+                key={region}
+                style={styles.selectedTag}
+                onPress={() => removeRegion(region)}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.selectedTagText}>{region}</Text>
+                <Text style={styles.selectedTagRemove}> ✕</Text>
               </TouchableOpacity>
             ))}
-          </ScrollView>
+          </View>
         </View>
-
-        {/* 우측: 구/군 (District) */}
-        <View style={styles.districtList}>
-          <ScrollView showsVerticalScrollIndicator={false} nestedScrollEnabled>
-            {selectedCity ? (
-              REGIONS[selectedCity].map((district) => (
-                <TouchableOpacity
-                  key={district}
-                  style={[styles.districtItem, selectedDistrict === district && styles.activeDistrictItem]}
-                  onPress={() => onSelectDistrict(district)}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[styles.districtText, selectedDistrict === district && styles.activeDistrictText]}>
-                    {district}
-                  </Text>
-                </TouchableOpacity>
-              ))
-            ) : (
-              <View style={styles.emptyDistrict}>
-                <Text style={styles.emptyDistrictText}>먼저 시/도를 선택해주세요.</Text>
-              </View>
-            )}
-          </ScrollView>
-        </View>
-      </View>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    marginBottom: 24,
-  },
-  header: {
-    marginBottom: 24,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#3B2B26",
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: "#6E665F",
-  },
-  selectionBox: {
+  container: { marginBottom: 24 },
+  header: { marginBottom: 24 },
+  title: { fontSize: 22, fontWeight: "bold", color: "#3B2B26", marginBottom: 8 },
+  subtitle: { fontSize: 13, color: "#6E665F", lineHeight: 20 },
+
+  // 검색창
+  searchBox: {
     flexDirection: "row",
-    height: 380, // 내부 스크롤을 위해 고정 높이 지정
+    alignItems: "center",
     borderWidth: 1,
     borderColor: "#D4CDC4",
-    borderRadius: 16,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    height: 52,
+    backgroundColor: "#FAF9F6",
+    marginBottom: 8,
+  },
+  searchInput: { flex: 1, fontSize: 14, color: "#3B2B26" },
+  clearBtn: { color: "#A39B92", fontSize: 14, paddingLeft: 8 },
+
+  // 검색 결과
+  searchResults: {
+    borderWidth: 1,
+    borderColor: "#D4CDC4",
+    borderRadius: 12,
+    backgroundColor: "#FAF9F6",
+    marginBottom: 16,
     overflow: "hidden",
   },
-  cityList: {
-    flex: 1,
-    backgroundColor: "#EAE6E1", // 살짝 어두운 베이지 배경
+  searchResultItem: {
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#EAE6E1",
   },
-  cityItem: {
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-  },
-  activeCityItem: {
-    backgroundColor: "#FAF9F6", // 우측 리스트와 이어지는 배경색
-  },
-  cityText: {
-    fontSize: 15,
-    color: "#6E665F",
-    fontWeight: "600",
-  },
-  activeCityText: {
+  searchResultText: { fontSize: 14, color: "#3B2B26" },
+  noResultText: { padding: 16, color: "#A39B92", fontSize: 14 },
+
+  // 섹션 라벨
+  sectionLabel: {
+    fontSize: 14,
+    fontWeight: "700",
     color: "#3B2B26",
-    fontWeight: "bold",
+    marginBottom: 12,
+    marginTop: 8,
   },
-  districtList: {
-    flex: 1.5, // 우측 비율을 조금 더 넓게
+
+  // 인기 지역
+  popularList: { marginBottom: 16 },
+  popularItem: {
+    borderWidth: 1,
+    borderColor: "#D4CDC4",
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 10,
     backgroundColor: "#FAF9F6",
   },
-  districtItem: {
-    paddingVertical: 16,
-    paddingHorizontal: 20,
+  popularItemSelected: {
+    borderColor: "#3B2B26",
+    backgroundColor: "#FAF9F6",
   },
-  activeDistrictItem: {
+  popularItemInner: { flexDirection: "row", alignItems: "center" },
+  popularItemTitle: { fontSize: 15, fontWeight: "700", color: "#3B2B26", marginBottom: 3 },
+  popularItemTitleSelected: { color: "#3B2B26" },
+  popularItemDesc: { fontSize: 12, color: "#A39B92" },
+  popularItemDescSelected: { color: "#6E665F" },
+  checkBadge: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     backgroundColor: "#3B2B26",
-    borderRadius: 8,
-    marginHorizontal: 8,
-    marginVertical: 4,
+    justifyContent: "center",
+    alignItems: "center",
   },
-  districtText: { fontSize: 15, color: "#3B2B26" },
-  activeDistrictText: { color: "#FFF", fontWeight: "bold" },
-  emptyDistrict: { flex: 1, justifyContent: "center", alignItems: "center", paddingTop: 40 },
-  emptyDistrictText: { color: "#A39B92", fontSize: 14 },
+  checkBadgeText: { color: "#FFF", fontSize: 13, fontWeight: "bold" },
+
+  // 직접 입력
+  directInputBtn: {
+    paddingVertical: 14,
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  directInputBtnText: { fontSize: 14, color: "#6E665F", textDecorationLine: "underline" },
+  directInputBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#D4CDC4",
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    height: 52,
+    backgroundColor: "#FAF9F6",
+    marginBottom: 16,
+    gap: 8,
+  },
+  directInputField: { flex: 1, fontSize: 14, color: "#3B2B26" },
+  directInputConfirm: {
+    backgroundColor: "#3B2B26",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  directInputConfirmText: { color: "#FFF", fontSize: 13, fontWeight: "600" },
+
+  // 선택된 태그
+  selectedSection: { marginTop: 8 },
+  selectedTags: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  selectedTag: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#3B2B26",
+    borderRadius: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+  },
+  selectedTagText: { color: "#FFF", fontSize: 13, fontWeight: "600" },
+  selectedTagRemove: { color: "rgba(255,255,255,0.7)", fontSize: 12 },
 });
