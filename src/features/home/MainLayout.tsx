@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { SafeAreaView, View, StyleSheet, TouchableOpacity } from "react-native";
+import { SafeAreaView, View, StyleSheet, TouchableOpacity, Text } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { CustomDrawer } from "@/features/home/CustomDrawer";
 
@@ -17,6 +17,8 @@ export function MainLayout({ children }: MainLayoutProps) {
         <TouchableOpacity onPress={() => setIsDrawerOpen(true)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} activeOpacity={0.7}>
           <Ionicons name="menu" size={28} color="#3B2B26" />
         </TouchableOpacity>
+        <Text style={styles.logoText}>장인과 하루</Text>
+        <View style={{ width: 28 }} />
       </View>
 
       {/* 메인 콘텐츠 영역 (각 화면의 알맹이) */}
@@ -36,7 +38,13 @@ const styles = StyleSheet.create({
     height: 56,
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 20,
+  },
+  logoText: {
+    fontSize: 17,
+    fontWeight: "bold",
+    color: "#3B2B26",
   },
   content: { flex: 1 },
 });
