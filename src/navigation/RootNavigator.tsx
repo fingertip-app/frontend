@@ -34,10 +34,22 @@ import { Step2Photos } from "@/features/master/experienceManagement/experienceRe
 import { Step3Schedule } from "@/features/master/experienceManagement/experienceRegistration/Step3Schedule";
 import { Step4Pricing } from "@/features/master/experienceManagement/experienceRegistration/Step4Pricing";
 import { Step5Location } from "@/features/master/experienceManagement/experienceRegistration/Step5Location";
+import { CardNewsListScreen } from "@/features/cardnews/CardNewsListScreen";
+import { CardNewsDetailScreen } from "@/features/cardnews/CardNewsDetailScreen";
+import { AIChatScreen } from "@/features/AI/AIChatScreen";
+import { ArtisanDetailScreen } from "@/features/home/ArtisanDetailScreen";
+
+export type CardNews = {
+  id: string;
+  title: string;
+  desc: string;
+  tag: string;
+  imageUri: string;
+};
 
 export type MainTabParamList = {
   Home: undefined;
-  Explore: undefined;
+  Explore: { filter?: string } | undefined;
   AIRecommend: undefined;
   Bookings: undefined;
   MyPage: undefined;
@@ -68,6 +80,10 @@ export type RootStackParamList = {
   Step3Schedule: undefined;
   Step4Pricing: undefined;
   Step5Location: undefined;
+  CardNewsList: undefined;
+  CardNewsDetail: { news: CardNews };
+  AIChat: { news: CardNews };
+  ArtisanDetail: undefined;
 };
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
@@ -140,6 +156,10 @@ export function RootNavigator() {
       <Stack.Screen name="Step3Schedule" component={Step3Schedule} />
       <Stack.Screen name="Step4Pricing" component={Step4Pricing} />
       <Stack.Screen name="Step5Location" component={Step5Location} />
+      <Stack.Screen name="CardNewsList" component={CardNewsListScreen} />
+      <Stack.Screen name="CardNewsDetail" component={CardNewsDetailScreen} />
+      <Stack.Screen name="AIChat" component={AIChatScreen} />
+      <Stack.Screen name="ArtisanDetail" component={ArtisanDetailScreen} />
     </Stack.Navigator>
   );
 }
