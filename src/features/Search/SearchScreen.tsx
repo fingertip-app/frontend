@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from "react";
+import React, { useState, useMemo, useRef, useEffect } from "react";
 import {
   View,
   Text,
@@ -12,8 +12,10 @@ import {
   Animated,
 } from "react-native";
 import { Ionicons, Feather } from "@expo/vector-icons";
+import { useRoute, RouteProp, useNavigation } from "@react-navigation/native";
 import { DetailBottomSheet } from "./DetailBottomSheet";
 import { MainLayout } from "@/features/home/MainLayout";
+import { MainTabParamList } from "@/navigation/RootNavigator";
 
 // ─── 타입 ────────────────────────────────────────────────────────────────────
 
@@ -651,9 +653,12 @@ type DropdownKey = "region" | "date" | "time" | "level" | "sort" | null;
 // ─── 메인 스크린 ──────────────────────────────────────────────────────────────
 
 export function SearchScreen() {
+  const route = useRoute<RouteProp<MainTabParamList, "Explore">>();
+  const navigation = useNavigation();
+
   const [query, setQuery]               = useState("");
   const [activeCategory, setCategory]   = useState("all");
-  const [activeFilter, setFilter]       = useState("popular");
+  const [activeFilter, setFilter]       = useState(route.params?.filter ?? "popular");
   const [openDropdown, setDropdown]     = useState<DropdownKey>(null);
   const [selectedExp, setSelectedExp]   = useState<Experience | null>(null);
 
@@ -663,6 +668,15 @@ export function SearchScreen() {
   const [time,   setTime]   = useState("시간");
   const [level,  setLevel]  = useState("난이도");
   const [sort,   setSort]   = useState<SortOption>("추천순");
+
+  // 라우트 파라미터가 변경될 때마다 필터를 갱신
+  useEffect(() => {
+    if (route.params?.filter) {
+      setFilter(route.params.filter);
+      // 파라미터를 적용한 후 초기화하여 다음에 또 들어와도 useEffect가 다시 실행되게 함
+      navigation.setParams({ filter: undefined });
+    }
+  }, [route.params?.filter, navigation]);
 
   // 드롭다운 설정 맵
   const dropdownConfig: Record<
