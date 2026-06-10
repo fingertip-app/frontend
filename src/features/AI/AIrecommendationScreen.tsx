@@ -1,42 +1,73 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
   Platform,
   Image,
   FlatList,
+  TextInput,
+  KeyboardAvoidingView,
+  Animated,
+  ActivityIndicator,
 } from "react-native";
-import { Ionicons, Feather } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import { MainLayout } from "@/features/home/MainLayout";
 
-// ─── 팔레트 ────────────────────────────────────────────────────────────────────
-const BG        = "#F5F0EA";   // 크림 배경
-const BRAND     = "#3B2314";   // 다크 브라운 (버튼/활성)
-const BRAND_MID = "#92400E";   // 미드 브라운 (가격/강조)
-const CHIP_BG   = "#FFFFFF";   // 칩 기본 배경
-const CHIP_BD   = "#DDD8D0";   // 칩 기본 테두리
+// ─── 팔레트 (기존 유지) ────────────────────────────────────────────────────────
+const BG        = "#F5F0EA";
+const BRAND     = "#3B2314";
+const BRAND_MID = "#92400E";
+const CHIP_BG   = "#FFFFFF";
+const CHIP_BD   = "#DDD8D0";
 const TEXT_MAIN = "#1C1410";
 const TEXT_SUB  = "#7A6F65";
+const AI_BUBBLE = "#FFFFFF";
+const USER_BUBBLE = BRAND;
 
-// ─── 데이터 ────────────────────────────────────────────────────────────────────
-const EXPERIENCES_LIST = ["쉼/힐링", "자기계발", "활동적인", "전통문화", "예술체험"];
+// ─── 대화 흐름 정의 ────────────────────────────────────────────────────────────
+type Step =
+  | "companion"
+  | "vibe"
+  | "budget"
+  | "duration"
+  | "done";
 
-const FIELDS = ["도예", "목공", "한지", "염색", "전통음식", "전통주", "국악", "기타"];
+interface ConversationNode {
+  aiText: string;
+  chips?: string[];
+  nextStep: Step | null;
+}
 
-type Companion = { id: string; icon: string; label: string };
-const COMPANIONS: Companion[] = [
-  { id: "solo",    icon: "person-outline",       label: "혼자"      },
-  { id: "couple",  icon: "heart-outline",         label: "연인"      },
-  { id: "friend",  icon: "people-outline",        label: "친구"      },
-  { id: "family",  icon: "people-circle-outline", label: "가족"      },
-  { id: "child",   icon: "happy-outline",         label: "아이와 함께" },
-];
+const FLOW: Record<Step, ConversationNode> = {
+  companion: {
+    aiText: "안녕하세요! 어떤 분과 함께 체험을 찾고 계신가요?",
+    chips: ["혼자요", "연인과 함께", "친구와 함께", "가족과 함께", "아이와 함께"],
+    nextStep: "vibe",
+  },
+  vibe: {
+    aiText: "어떤 분위기를 원하세요? 같이 뭔가 만들면서 집중하는 타입인지, 아니면 가볍게 즐기면서 얘기도 나누는 타입인지요.",
+    chips: ["같이 만드는 게 좋아요", "가볍게 즐기고 싶어요", "색다른 문화 체험", "조용히 쉬고 싶어요"],
+    nextStep: "budget",
+  },
+  budget: {
+    aiText: "손으로 직접 만드는 체험이 잘 맞겠네요.\n\n도자기 물레나 매듭 같은 게 후기에서도 \"같이 왔는데 둘 다 집중했다\"는 말이 많아요. 예산은 어느 정도 생각하세요?",
+    chips: ["2만원대", "3~5만원대", "상관없어요"],
+    nextStep: "duration",
+  },
+  duration: {
+    aiText: "좋아요! 마지막으로 체험 시간은 어느 정도가 좋으세요?",
+    chips: ["1시간 이내", "1~2시간", "2~3시간", "3시간 이상"],
+    nextStep: "done",
+  },
+  done: {
+    aiText: "완벽해요! 딱 맞는 체험을 찾았어요 ✨",
+    nextStep: null,
+  },
+};
 
-const DURATIONS = ["1시간 이내", "1~2시간", "2~3시간", "3시간 이상"];
-
+// ─── 추천 결과 ─────────────────────────────────────────────────────────────────
 const MOCK_RECOMMENDATIONS = [
   {
     id: "1",
@@ -47,86 +78,40 @@ const MOCK_RECOMMENDATIONS = [
     reviewCount: 128,
     price: 35000,
     imageUri: "https://picsum.photos/seed/pottery/300/200",
-    reason: "가족과 함께 활동적으로 즐기기에 완벽한 도예 체험이에요!",
+    reason: "같이 집중해서 만들기에 완벽한 도예 체험이에요!",
   },
   {
     id: "2",
-    title: "전주 한지 등 만들기 체험",
-    category: "한지",
-    location: "전북 전주시",
+    title: "전통 매듭 공예 원데이 클래스",
+    category: "공예",
+    location: "서울 종로구",
     rating: 4.8,
     reviewCount: 96,
-    price: 28000,
-    imageUri: "https://picsum.photos/seed/hanji/300/200",
-    reason: "선택하신 '한지' 관심사에 딱 맞는 인기 체험입니다.",
+    price: 38000,
+    imageUri: "https://picsum.photos/seed/knot/300/200",
+    reason: "후기에서 \"둘 다 집중했다\"는 말이 가장 많은 클래스예요.",
   },
   {
     id: "3",
-    title: "전통 다과 & 다도 체험",
-    category: "전통음식",
-    location: "서울 중구",
-    rating: 4.9,
-    reviewCount: 203,
-    price: 42000,
-    imageUri: "https://picsum.photos/seed/tea/300/200",
-    reason: "쉼/힐링을 원하시는 분께 조용한 다도 체험을 추천드려요.",
+    title: "전통 한지 공예 체험",
+    category: "한지",
+    location: "전북 전주시",
+    rating: 4.7,
+    reviewCount: 74,
+    price: 28000,
+    imageUri: "https://picsum.photos/seed/hanji/300/200",
+    reason: "예산 범위 안에서 가장 만족도가 높은 체험이에요.",
   },
 ];
 
-// ─── 서브 컴포넌트 ─────────────────────────────────────────────────────────────
-
-/** 알약형 선택 칩 */
-function Chip({
-  label,
-  active,
-  onPress,
-}: {
-  label: string;
-  active: boolean;
-  onPress: () => void;
-}) {
-  return (
-    <TouchableOpacity
-      onPress={onPress}
-      activeOpacity={0.75}
-      style={[s.chip, active && s.chipActive]}
-    >
-      <Text style={[s.chipText, active && s.chipTextActive]}>{label}</Text>
-    </TouchableOpacity>
-  );
-}
-
-/** 누구와 — 아이콘 카드 */
-function CompanionCard({
-  item,
-  active,
-  onPress,
-}: {
-  item: Companion;
-  active: boolean;
-  onPress: () => void;
-}) {
-  return (
-    <TouchableOpacity
-      onPress={onPress}
-      activeOpacity={0.8}
-      style={[s.companionCard, active && s.companionCardActive]}
-    >
-      <Ionicons
-        name={item.icon as any}
-        size={26}
-        color={active ? "#FFFFFF" : TEXT_MAIN}
-      />
-      <Text style={[s.companionLabel, active && s.companionLabelActive]}>
-        {item.label}
-      </Text>
-    </TouchableOpacity>
-  );
-}
-
-/** 섹션 제목 */
-function SectionTitle({ children }: { children: string }) {
-  return <Text style={s.sectionTitle}>{children}</Text>;
+// ─── 타입 ──────────────────────────────────────────────────────────────────────
+interface Message {
+  id: string;
+  role: "ai" | "user";
+  text: string;
+  chips?: string[];
+  showResults?: boolean;
+  isFallback?: boolean;
 }
 
 // ─── 결과 카드 ─────────────────────────────────────────────────────────────────
@@ -135,7 +120,6 @@ function ResultCard({ item }: { item: typeof MOCK_RECOMMENDATIONS[0] }) {
   return (
     <TouchableOpacity style={s.resultCard} activeOpacity={0.9}>
       <Image source={{ uri: item.imageUri }} style={s.resultImage} resizeMode="cover" />
-      {/* AI 추천 이유 뱃지 */}
       <View style={s.reasonBadge}>
         <Text style={s.reasonText}>✨ {item.reason}</Text>
       </View>
@@ -167,212 +151,283 @@ function ResultCard({ item }: { item: typeof MOCK_RECOMMENDATIONS[0] }) {
   );
 }
 
+// ─── AI 아바타 ─────────────────────────────────────────────────────────────────
+function AIAvatar() {
+  return (
+    <View style={s.avatar}>
+      <Text style={s.avatarText}>AI</Text>
+    </View>
+  );
+}
+
+// ─── 타이핑 인디케이터 ─────────────────────────────────────────────────────────
+function TypingIndicator() {
+  const dot1 = useRef(new Animated.Value(0)).current;
+  const dot2 = useRef(new Animated.Value(0)).current;
+  const dot3 = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const anim = (dot: Animated.Value, delay: number) =>
+      Animated.loop(
+        Animated.sequence([
+          Animated.delay(delay),
+          Animated.timing(dot, { toValue: 1, duration: 300, useNativeDriver: true }),
+          Animated.timing(dot, { toValue: 0, duration: 300, useNativeDriver: true }),
+          Animated.delay(600 - delay),
+        ])
+      );
+    const a1 = anim(dot1, 0);
+    const a2 = anim(dot2, 200);
+    const a3 = anim(dot3, 400);
+    a1.start(); a2.start(); a3.start();
+    return () => { a1.stop(); a2.stop(); a3.stop(); };
+  }, []);
+
+  return (
+    <View style={s.messageRow}>
+      <AIAvatar />
+      <View style={[s.aiBubble, { paddingHorizontal: 16, paddingVertical: 14 }]}>
+        <View style={{ flexDirection: "row", gap: 5, alignItems: "center" }}>
+          {[dot1, dot2, dot3].map((dot, i) => (
+            <Animated.View
+              key={i}
+              style={[s.typingDot, { opacity: dot, transform: [{ translateY: dot.interpolate({ inputRange: [0, 1], outputRange: [0, -4] }) }] }]}
+            />
+          ))}
+        </View>
+      </View>
+    </View>
+  );
+}
+
 // ─── 메인 스크린 ───────────────────────────────────────────────────────────────
 export function AIrecommendationScreen() {
-  const [selExperiences, setSelExperiences] = useState<string[]>([]);
-  const [selFields,      setSelFields]      = useState<string[]>([]);
-  const [selCompanion,   setSelCompanion]   = useState<string | null>(null);
-  const [selDuration,    setSelDuration]    = useState<string | null>(null);
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      id: "init",
+      role: "ai",
+      text: FLOW.companion.aiText,
+      chips: FLOW.companion.chips,
+    },
+  ]);
+  const [currentStep, setCurrentStep] = useState<Step>("companion");
+  const [inputText, setInputText] = useState("");
+  const [isTyping, setIsTyping] = useState(false);
+  const [chipsDisabled, setChipsDisabled] = useState(false);
 
-  const [isAnalyzing,   setIsAnalyzing]   = useState(false);
-  const [isRecommended, setIsRecommended] = useState(false);
+  const flatListRef = useRef<FlatList>(null);
 
-  const toggleArr = (arr: string[], val: string) =>
-    arr.includes(val) ? arr.filter((v) => v !== val) : [...arr, val];
+  const scrollToBottom = () => {
+    setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+  };
 
-  const handleRecommend = () => {
-    setIsAnalyzing(true);
+  const sendMessage = (text: string) => {
+    if (!text.trim() || isTyping) return;
+
+    // 현재 단계의 칩 비활성화
+    setChipsDisabled(true);
+
+    const userMsg: Message = {
+      id: Date.now().toString(),
+      role: "user",
+      text: text.trim(),
+    };
+
+    setMessages((prev) => {
+      // 마지막 AI 메시지의 칩 제거 (선택 완료)
+      const updated = prev.map((m, i) =>
+        i === prev.length - 1 && m.role === "ai" ? { ...m, chips: undefined } : m
+      );
+      return [...updated, userMsg];
+    });
+
+    setInputText("");
+    setIsTyping(true);
+    scrollToBottom();
+
+    // [추가] 서버 오류 시뮬레이션 (API 연동 전 테스트용)
+    if (text.trim() === "에러" || text.trim() === "오류") {
+      setTimeout(() => {
+        setIsTyping(false);
+        const errorMsg: Message = {
+          id: (Date.now() + 1).toString(),
+          role: "ai",
+          text: "현재 AI 서버와의 연결이 원활하지 않아요 🥲",
+          showResults: true,
+          isFallback: true,
+        };
+        setMessages((prev) => [...prev, errorMsg]);
+        setCurrentStep("done");
+        setChipsDisabled(false);
+        scrollToBottom();
+      }, 1200);
+      return;
+    }
+
+    const nextStep = FLOW[currentStep]?.nextStep;
+
     setTimeout(() => {
-      setIsAnalyzing(false);
-      setIsRecommended(true);
-    }, 1400);
+      setIsTyping(false);
+
+      if (nextStep && nextStep !== "done") {
+        const node = FLOW[nextStep];
+        const aiMsg: Message = {
+          id: (Date.now() + 1).toString(),
+          role: "ai",
+          text: node.aiText,
+          chips: node.chips,
+        };
+        setMessages((prev) => [...prev, aiMsg]);
+        setCurrentStep(nextStep);
+        setChipsDisabled(false);
+      } else {
+        // 결과 표시
+        const finalMsg: Message = {
+          id: (Date.now() + 1).toString(),
+          role: "ai",
+          text: FLOW.done.aiText,
+          showResults: true,
+        };
+        setMessages((prev) => [...prev, finalMsg]);
+        setCurrentStep("done");
+      }
+      scrollToBottom();
+    }, 1200);
   };
 
   const handleReset = () => {
-    setIsRecommended(false);
-    setSelExperiences([]);
-    setSelFields([]);
-    setSelCompanion(null);
-    setSelDuration(null);
+    setMessages([
+      {
+        id: "init",
+        role: "ai",
+        text: FLOW.companion.aiText,
+        chips: FLOW.companion.chips,
+      },
+    ]);
+    setCurrentStep("companion");
+    setInputText("");
+    setIsTyping(false);
+    setChipsDisabled(false);
   };
 
-  // ── 결과 화면 ──────────────────────────────────────────────────────────────
-  if (isRecommended) {
-    return (
-      <MainLayout>
-        <View style={s.safeArea}>
-          {/* 헤더 */}
-          <View style={[s.header, { justifyContent: "flex-start" }]}>
-            <TouchableOpacity onPress={handleReset} hitSlop={8}>
-              <Ionicons name="arrow-back" size={22} color={TEXT_MAIN} />
-            </TouchableOpacity>
+  const renderMessage = ({ item, index }: { item: Message; index: number }) => {
+    if (item.role === "user") {
+      return (
+        <View style={[s.messageRow, s.userRow]}>
+          <View style={s.userBubble}>
+            <Text style={s.userBubbleText}>{item.text}</Text>
           </View>
-
-        <FlatList
-          data={MOCK_RECOMMENDATIONS}
-          keyExtractor={(item) => item.id}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}
-          ListHeaderComponent={
-            <View style={{ marginTop: 24, marginBottom: 20 }}>
-              <Text style={{ fontSize: 22, fontWeight: "800", color: TEXT_MAIN, lineHeight: 30 }}>
-                ✨ AI가 분석한{"\n"}맞춤 체험이에요
-              </Text>
-              <Text style={{ fontSize: 14, color: TEXT_SUB, marginTop: 6 }}>
-                선택하신 취향을 바탕으로 가장 적합한 체험을 찾았어요.
-              </Text>
-            </View>
-          }
-          renderItem={({ item }) => <ResultCard item={item} />}
-          ListFooterComponent={
-            <TouchableOpacity style={s.resetButton} onPress={handleReset} activeOpacity={0.8}>
-              <Ionicons name="refresh" size={17} color={TEXT_MAIN} />
-              <Text style={s.resetButtonText}>다시 추천받기</Text>
-            </TouchableOpacity>
-          }
-        />
         </View>
-      </MainLayout>
-    );
-  }
+      );
+    }
 
-  // ── 설문 화면 ──────────────────────────────────────────────────────────────
+    return (
+      <View>
+        <View style={s.messageRow}>
+          <AIAvatar />
+          <View style={{ flex: 1 }}>
+            <View style={s.aiBubble}>
+              <Text style={s.aiBubbleText}>{item.text}</Text>
+            </View>
+            {/* 추천 결과 카드 */}
+            {item.showResults && (
+              <View style={{ marginTop: 14 }}>
+                <Text style={[s.resultGuideText, item.isFallback && s.fallbackGuideText]}>
+                  {item.isFallback 
+                    ? "💡 AI 추천이 원활하지 않아 인기 체험을 보여드려요." 
+                    : "선택하신 취향을 바탕으로 가장 적합한 체험을 찾았어요."}
+                </Text>
+                {MOCK_RECOMMENDATIONS.map((rec) => (
+                  <ResultCard key={rec.id} item={rec} />
+                ))}
+                <TouchableOpacity style={s.resetButton} onPress={handleReset} activeOpacity={0.8}>
+                  <Ionicons name="refresh" size={15} color={TEXT_MAIN} />
+                  <Text style={s.resetButtonText}>다시 추천받기</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        </View>
+        {/* 칩 선택지 */}
+        {item.chips && !chipsDisabled && (
+          <View style={s.chipsContainer}>
+            {item.chips.map((chip) => (
+              <TouchableOpacity
+                key={chip}
+                style={s.chipOption}
+                onPress={() => sendMessage(chip)}
+                activeOpacity={0.75}
+              >
+                <Text style={s.chipOptionText}>{chip}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+      </View>
+    );
+  };
+
   return (
     <MainLayout>
-      <View style={s.safeArea}>
-      {/* 헤더 */}
-        <View style={[s.header, { justifyContent: "flex-end" }]}>
-        <Text style={s.headerStep}>1/5</Text>
-      </View>
-
-      {/* 진행 바 */}
-      <View style={s.progressBar}>
-        <View style={[s.progressFill, { width: "20%" }]} />
-      </View>
-
-      <ScrollView
-        contentContainerStyle={s.scroll}
-        showsVerticalScrollIndicator={false}
+      <KeyboardAvoidingView
+        style={{ flex: 1, backgroundColor: BG }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
       >
-        {/* 인트로 */}
-        <View style={{ marginBottom: 32 }}>
-          <Text style={s.pageTitle}>당신의 취향을{"\n"}선택해주세요</Text>
-          <Text style={s.pageSubtitle}>
-            선택한 취향을 바탕으로 딱 맞는 체험을 추천해드려요.
-          </Text>
+        {/* 헤더 */}
+        <View style={s.header}>
+          <TouchableOpacity hitSlop={10}>
+            <Ionicons name="arrow-back" size={22} color={TEXT_MAIN} />
+          </TouchableOpacity>
+          <View style={s.headerCenter}>
+            <View style={s.headerDot} />
+            <Text style={s.headerTitle}>AI 추천</Text>
+          </View>
+          <View style={{ width: 22 }} />
         </View>
 
-        {/* ① 어떤 경험을 원하시나요? */}
-        <View style={s.section}>
-          <SectionTitle>어떤 경험을 원하시나요?</SectionTitle>
-          <View style={s.chipRow}>
-            {EXPERIENCES_LIST.map((exp) => (
-              <Chip
-                key={exp}
-                label={exp}
-                active={selExperiences.includes(exp)}
-                onPress={() =>
-                  setSelExperiences((p) => toggleArr(p, exp))
-                }
-              />
-            ))}
-          </View>
-        </View>
+        {/* 채팅 영역 */}
+        <FlatList
+          ref={flatListRef}
+          data={messages}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={s.chatContent}
+          showsVerticalScrollIndicator={false}
+          renderItem={renderMessage}
+          ListFooterComponent={isTyping ? <TypingIndicator /> : null}
+          onContentSizeChange={scrollToBottom}
+        />
 
-        {/* ② 어떤 분야에 관심이 있으신가요? */}
-        <View style={s.section}>
-          <SectionTitle>어떤 분야에 관심이 있으신가요?</SectionTitle>
-          <View style={s.chipRow}>
-            {FIELDS.map((f) => (
-              <Chip
-                key={f}
-                label={f}
-                active={selFields.includes(f)}
-                onPress={() => setSelFields((p) => toggleArr(p, f))}
-              />
-            ))}
-          </View>
-        </View>
-
-        {/* ③ 누구와 함께하시나요? */}
-        <View style={s.section}>
-          <SectionTitle>누구와 함께하시나요?</SectionTitle>
-          {/* 첫 줄: 혼자 / 연인 / 친구 */}
-          <View style={s.companionRow}>
-            {COMPANIONS.slice(0, 3).map((c) => (
-              <CompanionCard
-                key={c.id}
-                item={c}
-                active={selCompanion === c.id}
-                onPress={() => setSelCompanion(c.id)}
-              />
-            ))}
-          </View>
-          {/* 둘째 줄: 가족 / 아이와 함께 */}
-          <View style={[s.companionRow, { marginTop: 10 }]}>
-            {COMPANIONS.slice(3).map((c) => (
-              <CompanionCard
-                key={c.id}
-                item={c}
-                active={selCompanion === c.id}
-                onPress={() => setSelCompanion(c.id)}
-              />
-            ))}
-          </View>
-        </View>
-
-        {/* ④ 어느 정도의 시간을 원하시나요? */}
-        <View style={s.section}>
-          <SectionTitle>어느 정도의 시간을 원하시나요?</SectionTitle>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ gap: 8 }}
+        {/* 입력창 */}
+        <View style={s.inputContainer}>
+          <TextInput
+            style={s.textInput}
+            placeholder="답변하거나 자유롭게 입력..."
+            placeholderTextColor={TEXT_SUB}
+            value={inputText}
+            onChangeText={setInputText}
+            multiline
+            maxLength={200}
+            returnKeyType="send"
+            onSubmitEditing={() => sendMessage(inputText)}
+            editable={!isTyping && currentStep !== "done"}
+          />
+          <TouchableOpacity
+            style={[s.sendBtn, (!inputText.trim() || isTyping) && s.sendBtnDisabled]}
+            onPress={() => sendMessage(inputText)}
+            disabled={!inputText.trim() || isTyping}
+            activeOpacity={0.8}
           >
-            {DURATIONS.map((d) => (
-              <Chip
-                key={d}
-                label={d}
-                active={selDuration === d}
-                onPress={() => setSelDuration(d)}
-              />
-            ))}
-          </ScrollView>
+            <Ionicons name="arrow-up" size={18} color="#FFFFFF" />
+          </TouchableOpacity>
         </View>
-
-        <View style={{ height: 24 }} />
-      </ScrollView>
-
-      {/* 하단 버튼 */}
-      <View style={s.footer}>
-        <TouchableOpacity
-          style={[s.submitBtn, isAnalyzing && s.submitBtnDisabled]}
-          onPress={handleRecommend}
-          activeOpacity={0.85}
-          disabled={isAnalyzing}
-        >
-          {isAnalyzing ? (
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-              <Ionicons name="sparkles-outline" size={18} color="#FFFFFF" />
-              <Text style={s.submitBtnText}>AI가 취향을 분석하고 있어요...</Text>
-            </View>
-          ) : (
-            <Text style={s.submitBtnText}>추천 체험 보기</Text>
-          )}
-        </TouchableOpacity>
-      </View>
-      </View>
+      </KeyboardAvoidingView>
     </MainLayout>
   );
 }
 
 // ─── 스타일 ────────────────────────────────────────────────────────────────────
 const s = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: BG,
-  },
-
   // 헤더
   header: {
     flexDirection: "row",
@@ -382,6 +437,19 @@ const s = StyleSheet.create({
     paddingTop: Platform.OS === "ios" ? 4 : 12,
     paddingBottom: 12,
     backgroundColor: BG,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E8E2D9",
+  },
+  headerCenter: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
+  },
+  headerDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#22C55E",
   },
   headerTitle: {
     fontSize: 17,
@@ -389,144 +457,164 @@ const s = StyleSheet.create({
     color: TEXT_MAIN,
     fontFamily: Platform.OS === "ios" ? "Georgia" : "serif",
   },
-  headerStep: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: TEXT_SUB,
+
+  // 채팅 콘텐츠
+  chatContent: {
+    paddingHorizontal: 16,
+    paddingTop: 20,
+    paddingBottom: 12,
   },
 
-  // 진행 바
-  progressBar: {
-    height: 2,
-    backgroundColor: "#E8E2D9",
-    marginHorizontal: 0,
-  },
-  progressFill: {
-    height: 2,
-    backgroundColor: BRAND,
-    borderRadius: 1,
-  },
-
-  // 스크롤
-  scroll: {
-    paddingHorizontal: 24,
-    paddingTop: 28,
-    paddingBottom: 20,
-  },
-
-  // 페이지 제목
-  pageTitle: {
-    fontSize: 26,
-    fontWeight: "800",
-    color: TEXT_MAIN,
-    lineHeight: 36,
-    marginBottom: 8,
-    fontFamily: Platform.OS === "ios" ? "Georgia" : "serif",
-  },
-  pageSubtitle: {
-    fontSize: 14,
-    color: TEXT_SUB,
-    lineHeight: 20,
-  },
-
-  // 섹션
-  section: {
-    marginBottom: 32,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: TEXT_MAIN,
+  // 메시지 행
+  messageRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
     marginBottom: 14,
+    gap: 10,
+  },
+  userRow: {
+    justifyContent: "flex-end",
   },
 
-  // 칩
-  chipRow: {
+  // AI 아바타
+  avatar: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: BRAND,
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+    marginTop: 2,
+  },
+  avatarText: {
+    fontSize: 11,
+    fontWeight: "800",
+    color: "#FFFFFF",
+  },
+
+  // AI 말풍선
+  aiBubble: {
+    backgroundColor: AI_BUBBLE,
+    borderRadius: 18,
+    borderTopLeftRadius: 4,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    maxWidth: "90%",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  aiBubbleText: {
+    fontSize: 15,
+    color: TEXT_MAIN,
+    lineHeight: 22,
+  },
+
+  // 유저 말풍선
+  userBubble: {
+    backgroundColor: USER_BUBBLE,
+    borderRadius: 18,
+    borderTopRightRadius: 4,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    maxWidth: "72%",
+  },
+  userBubbleText: {
+    fontSize: 15,
+    color: "#FFFFFF",
+    lineHeight: 22,
+  },
+
+  // 칩 선택지
+  chipsContainer: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 8,
+    paddingLeft: 44,
+    marginBottom: 14,
+    marginTop: -4,
   },
-  chip: {
-    paddingHorizontal: 18,
-    paddingVertical: 10,
+  chipOption: {
+    paddingHorizontal: 16,
+    paddingVertical: 9,
     borderRadius: 999,
     backgroundColor: CHIP_BG,
     borderWidth: 1,
     borderColor: CHIP_BD,
   },
-  chipActive: {
-    backgroundColor: BRAND,
-    borderColor: BRAND,
-  },
-  chipText: {
+  chipOptionText: {
     fontSize: 14,
     fontWeight: "500",
     color: TEXT_MAIN,
   },
-  chipTextActive: {
-    color: "#FFFFFF",
-    fontWeight: "700",
+
+  // 타이핑 인디케이터
+  typingDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
+    backgroundColor: "#C4BDB5",
   },
 
-  // 동반자 카드
-  companionRow: {
+  // 입력창
+  inputContainer: {
     flexDirection: "row",
-    gap: 10,
-  },
-  companionCard: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 18,
-    borderRadius: 14,
-    backgroundColor: CHIP_BG,
-    borderWidth: 1,
-    borderColor: CHIP_BD,
-    gap: 6,
-  },
-  companionCardActive: {
-    backgroundColor: BRAND,
-    borderColor: BRAND,
-  },
-  companionLabel: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: TEXT_MAIN,
-  },
-  companionLabelActive: {
-    color: "#FFFFFF",
-  },
-
-  // 하단 버튼
-  footer: {
-    paddingHorizontal: 20,
-    paddingVertical: 14,
+    alignItems: "flex-end",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    paddingBottom: Platform.OS === "ios" ? 24 : 12,
     backgroundColor: BG,
     borderTopWidth: 1,
     borderTopColor: "#E8E2D9",
+    gap: 10,
   },
-  submitBtn: {
+  textInput: {
+    flex: 1,
+    minHeight: 46,
+    maxHeight: 110,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 23,
+    borderWidth: 1,
+    borderColor: CHIP_BD,
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+    fontSize: 15,
+    color: TEXT_MAIN,
+    lineHeight: 20,
+  },
+  sendBtn: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
     backgroundColor: BRAND,
-    paddingVertical: 17,
-    borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
+    flexShrink: 0,
   },
-  submitBtnDisabled: {
+  sendBtnDisabled: {
     backgroundColor: "#C4BDB5",
   },
-  submitBtnText: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "800",
-    letterSpacing: 0.3,
+  
+  // 결과 안내 텍스트
+  resultGuideText: {
+    fontSize: 13,
+    color: TEXT_SUB,
+    marginBottom: 10,
+    marginLeft: 2,
+  },
+  fallbackGuideText: {
+    color: "#D97706",
+    fontWeight: "600",
   },
 
-  // ── 결과 화면 ──
+  // 결과 카드
   resultCard: {
     backgroundColor: "#FFFFFF",
     borderRadius: 18,
-    marginBottom: 18,
+    marginBottom: 14,
     overflow: "hidden",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 3 },
@@ -536,11 +624,11 @@ const s = StyleSheet.create({
   },
   resultImage: {
     width: "100%",
-    height: 170,
+    height: 160,
   },
   reasonBadge: {
     position: "absolute",
-    top: 136,
+    top: 126,
     left: 12,
     right: 12,
     backgroundColor: "rgba(59,35,20,0.82)",
@@ -556,8 +644,8 @@ const s = StyleSheet.create({
   },
   resultInfo: {
     paddingHorizontal: 16,
-    paddingTop: 20,
-    paddingBottom: 16,
+    paddingTop: 18,
+    paddingBottom: 14,
   },
   resultCategory: {
     fontSize: 12,
@@ -566,30 +654,32 @@ const s = StyleSheet.create({
     marginBottom: 3,
   },
   resultTitle: {
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: "800",
     color: TEXT_MAIN,
-    lineHeight: 24,
+    lineHeight: 23,
   },
   resultPrice: {
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: "800",
     color: BRAND_MID,
-    marginTop: 10,
+    marginTop: 8,
     textAlign: "right",
   },
+
+  // 다시 추천
   resetButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#EAE4DC",
-    paddingVertical: 15,
+    paddingVertical: 14,
     borderRadius: 14,
     marginTop: 4,
     gap: 6,
   },
   resetButtonText: {
-    fontSize: 15,
+    fontSize: 14,
     color: TEXT_MAIN,
     fontWeight: "700",
   },
