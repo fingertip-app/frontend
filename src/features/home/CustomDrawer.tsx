@@ -7,9 +7,9 @@ import {
   Animated,
   Modal,
   Dimensions,
-  SafeAreaView,
   ScrollView,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation, NavigationProp } from "@react-navigation/native";
 import { RootStackParamList, MainTabParamList } from "@/navigation/RootNavigator";
@@ -22,22 +22,31 @@ interface CustomDrawerProps {
   onClose: () => void;
   activeItem?: string;
   onItemPress?: (item: string) => void;
+  isMaster?: boolean;
 }
 
 type DrawerNavigationProp = NavigationProp<RootStackParamList & MainTabParamList>;
 
 const MAIN_MENU = [
-  { key: "홈",       label: "홈",       icon: "home",            lib: "Ionicons", route: "Home" },
-  { key: "탐색",     label: "탐색",     icon: "search",          lib: "Ionicons", route: "Explore" },
-  { key: "예약내역", label: "예약 내역", icon: "calendar-outline", lib: "Ionicons", route: "Bookings" },
-  { key: "찜한체험", label: "찜한 체험", icon: "bookmark-outline", lib: "Ionicons", route: "Wishlist" },
-  { key: "AI추천",   label: "AI 추천",  icon: "sparkles",        lib: "Ionicons", route: "AIRecommend" },
+  { key: "홈",       label: "홈",       icon: "home",     route: "Home" },
+  { key: "탐색",     label: "탐색",     icon: "compass",  route: "Explore" },
+  { key: "예약내역", label: "예약 내역", icon: "calendar", route: "Bookings" },
+  { key: "찜한체험", label: "찜한 체험", icon: "bookmark", route: "Wishlist" },
+  { key: "AI추천",   label: "AI 추천",  icon: "sparkles", route: "AIRecommend" },
 ];
 
 const CATEGORY_MENU = ["도예", "목공", "염색", "전통음식"];
 
+const MASTER_MENU = [
+  { key: "홈",       label: "장인 홈",   icon: "home",          route: "MasterHome" },
+  { key: "체험관리", label: "클래스 관리", icon: "color-palette", route: "MasterExperience" },
+  { key: "예약관리", label: "예약 관리",   icon: "calendar",      route: "MasterBookings" },
+  { key: "후기",     label: "후기 관리",   icon: "star",          route: "MasterReviews" },
+  { key: "프로필",   label: "마이페이지",   icon: "person",        route: "MasterMyPage" },
+];
+
 const BOTTOM_MENU = [
-  { key: "설정",   label: "설정",   icon: "settings-outline",     lib: "Ionicons", route: "Settings" },
+  { key: "설정",   label: "설정",   icon: "settings", route: "Settings" },
   { key: "고객센터", label: "고객센터", icon: "headset-outline", lib: "Ionicons" },
 ];
 
@@ -50,6 +59,7 @@ export function CustomDrawer({
   onClose,
   activeItem = "홈",
   onItemPress,
+  isMaster = false,
 }: CustomDrawerProps) {
   const slideAnim = useRef(new Animated.Value(-DRAWER_WIDTH)).current;
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -116,7 +126,7 @@ export function CustomDrawer({
               showsVerticalScrollIndicator={false}
             >
               {/* ── 메인 메뉴 ── */}
-              {MAIN_MENU.map((item) => {
+              {(isMaster ? MASTER_MENU : MAIN_MENU).map((item) => {
                 const isActive = activeItem === item.key;
                 return (
                   <TouchableOpacity
@@ -126,7 +136,7 @@ export function CustomDrawer({
                     activeOpacity={0.7}
                   >
                     <MenuIcon
-                      name={item.icon}
+                      name={isActive ? (item.icon as any) : `${item.icon}-outline`}
                       size={18}
                       color={isActive ? "#FAF9F6" : "#5C4033"}
                     />
@@ -143,17 +153,21 @@ export function CustomDrawer({
               })}
 
               {/* ── 체험 분야 섹션 ── */}
-              <Text style={styles.sectionTitle}>체험 분야</Text>
-              {CATEGORY_MENU.map((cat) => (
-                <TouchableOpacity
-                  key={cat}
-                  style={styles.categoryItem}
-                  onPress={() => handlePress(cat)}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.categoryLabel}>{cat}</Text>
-                </TouchableOpacity>
-              ))}
+              {!isMaster && (
+                <>
+                  <Text style={styles.sectionTitle}>체험 분야</Text>
+                  {CATEGORY_MENU.map((cat) => (
+                    <TouchableOpacity
+                      key={cat}
+                      style={styles.categoryItem}
+                      onPress={() => handlePress(cat)}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={styles.categoryLabel}>{cat}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </>
+              )}
             </ScrollView>
 
             {/* ── 하단 고정 영역 ── */}
@@ -166,7 +180,7 @@ export function CustomDrawer({
                   onPress={() => handlePress(item.key, item.route)}
                   activeOpacity={0.7}
                 >
-                  <MenuIcon name={item.icon} size={18} color="#5C4033" />
+                  <MenuIcon name={item.icon as any} size={18} color="#5C4033" />
                   <Text style={styles.bottomLabel}>{item.label}</Text>
                 </TouchableOpacity>
               ))}

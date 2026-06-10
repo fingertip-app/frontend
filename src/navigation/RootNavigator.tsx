@@ -26,7 +26,9 @@ import { SettingScreen } from "@/features/setting/SettingScreen";
 import { MasterHomeScreen } from "@/features/master/masterHome/MasterHomeScreen";
 import { MasterExperienceScreen } from "@/features/master/experienceManagement/MasterExperienceScreen";
 import { MasterBookingsScreen } from "@/features/master/masterBookings/MasterBookingsScreen";
+import { MasterBookingDetailScreen } from "@/features/master/masterBookings/MasterBookingDetailScreen";
 import { MasterReviewsScreen } from "@/features/master/masterReviews/MasterReviewsScreen";
+import { MasterReviewReplyScreen } from "@/features/master/masterReviews/MasterReviewReplyScreen";
 import { MasterMyPageScreen } from "@/features/master/masterMypage/MasterMyPageScreen";
 import { MasterExperienceCreateScreen } from "@/features/master/experienceManagement/MasterExperienceCreateScreen";
 import { Step1BasicInfo } from "@/features/master/experienceManagement/experienceRegistration/Step1BasicInfo";
@@ -38,6 +40,8 @@ import { CardNewsListScreen } from "@/features/cardnews/CardNewsListScreen";
 import { CardNewsDetailScreen } from "@/features/cardnews/CardNewsDetailScreen";
 import { AIChatScreen } from "@/features/AI/AIChatScreen";
 import { ArtisanDetailScreen } from "@/features/home/ArtisanDetailScreen";
+import { MasterTodayStatusScreen } from "@/features/master/today-status/MasterTodayStatusScreen";
+import { MasterProfileScreen } from "@/features/master/masterProfile/MasterProfileScreen";
 
 export type CardNews = {
   id: string;
@@ -72,8 +76,11 @@ export type RootStackParamList = {
   MasterHome: undefined;
   MasterExperience: undefined;
   MasterBookings: undefined;
-  MasterReviews: undefined;
+  MasterBookingDetail: { booking: any };
+  MasterReviews: { repliedReviewId?: string; replyContent?: string } | undefined;
+  MasterReviewReply: { review: any };
   MasterMyPage: undefined;
+  MasterProfile: undefined;
   MasterExperienceCreate: undefined;
   Step1BasicInfo: undefined;
   Step2Photos: undefined;
@@ -84,6 +91,7 @@ export type RootStackParamList = {
   CardNewsDetail: { news: CardNews };
   AIChat: { news: CardNews };
   ArtisanDetail: undefined;
+  MasterTodayStatus: undefined;
 };
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
@@ -145,11 +153,14 @@ export function RootNavigator() {
       <Stack.Screen name="Review" component={ReviewScreen} />
       <Stack.Screen name="MyReviews" component={MyReviewsScreen} />
       <Stack.Screen name="Settings" component={SettingScreen} />
-      <Stack.Screen name="MasterHome" component={MasterHomeScreen} />
-      <Stack.Screen name="MasterExperience" component={MasterExperienceScreen} />
-      <Stack.Screen name="MasterBookings" component={MasterBookingsScreen} />
-      <Stack.Screen name="MasterReviews" component={MasterReviewsScreen} />
-      <Stack.Screen name="MasterMyPage" component={MasterMyPageScreen} />
+      <Stack.Screen name="MasterHome" component={MasterHomeScreen} options={{ animation: "none" }} />
+      <Stack.Screen name="MasterExperience" component={MasterExperienceScreen} options={{ animation: "none" }} />
+      <Stack.Screen name="MasterBookings" component={MasterBookingsScreen} options={{ animation: "none" }} />
+      <Stack.Screen name="MasterBookingDetail" component={MasterBookingDetailScreen} />
+      <Stack.Screen name="MasterReviews" component={MasterReviewsScreen} options={{ animation: "none" }} />
+      <Stack.Screen name="MasterReviewReply" component={MasterReviewReplyScreen} />
+      <Stack.Screen name="MasterMyPage" component={MasterMyPageScreen} options={{ animation: "none" }} />
+      <Stack.Screen name="MasterProfile" component={MasterProfileScreen} />
       <Stack.Screen name="MasterExperienceCreate" component={MasterExperienceCreateScreen} />
       <Stack.Screen name="Step1BasicInfo" component={Step1BasicInfo} />
       <Stack.Screen name="Step2Photos" component={Step2Photos} />
@@ -160,6 +171,7 @@ export function RootNavigator() {
       <Stack.Screen name="CardNewsDetail" component={CardNewsDetailScreen} />
       <Stack.Screen name="AIChat" component={AIChatScreen} />
       <Stack.Screen name="ArtisanDetail" component={ArtisanDetailScreen} />
+      <Stack.Screen name="MasterTodayStatus" component={MasterTodayStatusScreen} />
     </Stack.Navigator>
   );
 }

@@ -5,12 +5,16 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  SafeAreaView,
   Image,
   Platform,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useNavigation } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
 import { MasterBottomTabs } from "../components/MasterBottomTabs";
+import { MasterHeader } from "../components/MasterHeader";
+import { RootStackParamList } from "@/navigation/RootNavigator";
 
 // ─── 팔레트 ────────────────────────────────────────────────────────────────────
 const BRAND = "#3B2B26";
@@ -62,18 +66,12 @@ export function MasterHomeScreen({
   onMenuPress?: () => void;
   onNotificationPress?: () => void;
 }) {
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+
   return (
     <SafeAreaView style={styles.safeArea}>
-      {/* ── 상단 네비 바 ── */}
-      <View style={styles.navbar}>
-        <TouchableOpacity onPress={onMenuPress} hitSlop={12}>
-          <Ionicons name="menu" size={24} color={BRAND} />
-        </TouchableOpacity>
-        <Text style={styles.navTitle}>장인 홈</Text>
-        <TouchableOpacity onPress={onNotificationPress} hitSlop={12}>
-          <Ionicons name="notifications-outline" size={24} color={BRAND} />
-        </TouchableOpacity>
-      </View>
+      {/* ── 공통 상단바 및 서랍 ── */}
+      <MasterHeader activeItem="홈" hasNotification={false} />
 
       {/* ── 본문 스크롤 ── */}
       <ScrollView
@@ -96,7 +94,10 @@ export function MasterHomeScreen({
             </View>
             <Text style={styles.profileDesc}>국가무형문화재 제105호 도예</Text>
             <Text style={styles.profileDesc}>경기도 이천시</Text>
-            <TouchableOpacity style={styles.profileLinkRow}>
+            <TouchableOpacity 
+              style={styles.profileLinkRow}
+              onPress={() => navigation.navigate("MasterProfile")}
+            >
               <Text style={styles.profileLink}>프로필 보기</Text>
               <Ionicons name="chevron-forward" size={13} color={GRAY} />
             </TouchableOpacity>
@@ -106,7 +107,10 @@ export function MasterHomeScreen({
         {/* ── 오늘의 현황 ── */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>오늘의 현황</Text>
-          <TouchableOpacity hitSlop={8}>
+          <TouchableOpacity 
+            hitSlop={8}
+            onPress={() => navigation.navigate("MasterTodayStatus")}
+          >
             <Text style={styles.moreLink}>더보기 &gt;</Text>
           </TouchableOpacity>
         </View>
@@ -144,7 +148,10 @@ export function MasterHomeScreen({
         {/* ── 예약 요청 ── */}
         <View style={[styles.sectionHeader, { marginTop: 28 }]}>
           <Text style={styles.sectionTitle}>예약 요청</Text>
-          <TouchableOpacity hitSlop={8}>
+          <TouchableOpacity 
+            hitSlop={8}
+            onPress={() => navigation.navigate("MasterBookings")}
+          >
             <Text style={styles.moreLink}>전체 보기 &gt;</Text>
           </TouchableOpacity>
         </View>
@@ -181,7 +188,10 @@ export function MasterHomeScreen({
         {/* ── 오늘 체험 일정 ── */}
         <View style={[styles.sectionHeader, { marginTop: 28 }]}>
           <Text style={styles.sectionTitle}>오늘 체험 일정</Text>
-          <TouchableOpacity hitSlop={8}>
+          <TouchableOpacity 
+            hitSlop={8}
+            onPress={() => navigation.navigate("MasterBookings")}
+          >
             <Text style={styles.moreLink}>전체 보기 &gt;</Text>
           </TouchableOpacity>
         </View>
@@ -214,17 +224,6 @@ export function MasterHomeScreen({
 // ─── 스타일 ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: BG },
-
-  // 네비바
-  navbar: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    backgroundColor: BG,
-  },
-  navTitle: { fontSize: 17, fontWeight: "700", color: BRAND },
 
   scrollContent: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 32 },
 

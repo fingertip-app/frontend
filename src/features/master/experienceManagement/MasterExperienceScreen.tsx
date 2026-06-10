@@ -3,18 +3,19 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   ScrollView,
   TouchableOpacity,
   Image,
   Switch,
   Platform,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
 import { MasterBottomTabs } from "../components/MasterBottomTabs";
 import { RootStackParamList } from "@/navigation/RootNavigator";
+import { MasterHeader } from "../components/MasterHeader";
 
 // ─── 팔레트 ────────────────────────────────────────────────────────────────────
 const BRAND = "#3B2B26";
@@ -80,20 +81,8 @@ export function MasterExperienceScreen({
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      {/* ── 네비바 ── */}
-      <View style={styles.navbar}>
-        <TouchableOpacity onPress={onMenuPress} hitSlop={12}>
-          <Ionicons name="menu" size={24} color={BRAND} />
-        </TouchableOpacity>
-        <Text style={styles.navTitle}>체험 관리</Text>
-        <TouchableOpacity onPress={onNotificationPress} hitSlop={12}>
-          <View>
-            <Ionicons name="notifications-outline" size={24} color={BRAND} />
-            {/* 알림 빨간 점 */}
-            <View style={styles.notiBadge} />
-          </View>
-        </TouchableOpacity>
-      </View>
+      {/* ── 공통 상단바 및 서랍 ── */}
+      <MasterHeader activeItem="체험관리" hasNotification={true} />
 
       <ScrollView
         style={{ flex: 1 }}
@@ -206,28 +195,6 @@ export function MasterExperienceScreen({
 // ─── 스타일 ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: BG },
-
-  // 네비바
-  navbar: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    backgroundColor: BG,
-  },
-  navTitle: { fontSize: 17, fontWeight: "700", color: BRAND },
-  notiBadge: {
-    position: "absolute",
-    top: 0,
-    right: 0,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: "#E04848",
-    borderWidth: 1,
-    borderColor: BG,
-  },
 
   scrollContent: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 40 },
 

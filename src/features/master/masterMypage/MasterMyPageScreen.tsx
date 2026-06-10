@@ -10,8 +10,11 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { RootStackParamList } from "@/navigation/RootNavigator";
 import { Ionicons, Feather } from "@expo/vector-icons";
 import { MasterBottomTabs } from "../components/MasterBottomTabs";
+import { MasterHeader } from "../components/MasterHeader";
 
 // ─── 기존 테마 팔레트 재사용 ──────────────────────────────────────────────────
 const BG       = "#F7F4EF";
@@ -41,20 +44,15 @@ const ss = StyleSheet.create({
 
 // ─── 장인(Master) 메인 스크린 ──────────────────────────────────────────────────
 export function MasterMyPageScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   return (
     <SafeAreaView style={ms.safeArea} edges={["top"]}>
-      <ScrollView 
-        style={{ flex: 1 }} 
-        showsVerticalScrollIndicator={false} 
-        contentContainerStyle={ms.scroll}
-      >
-
-        {/* ── 헤더 ── */}
-        <View style={ms.header}>
-          <Text style={ms.headerTitle}>마스터 관리</Text>
-          <View style={ms.headerIcons}>
+      {/* ── 공통 상단바 및 서랍 ── */}
+      <MasterHeader 
+        activeItem="프로필" 
+        rightComponent={
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
             <TouchableOpacity hitSlop={10} style={{ marginRight: 16 }}>
               <Ionicons name="notifications-outline" size={23} color={TEXT} />
             </TouchableOpacity>
@@ -62,7 +60,14 @@ export function MasterMyPageScreen() {
               <Ionicons name="settings-outline" size={23} color={TEXT} />
             </TouchableOpacity>
           </View>
-        </View>
+        }
+      />
+
+      <ScrollView 
+        style={{ flex: 1 }} 
+        showsVerticalScrollIndicator={false} 
+        contentContainerStyle={ms.scroll}
+      >
 
         {/* ── 프로필 카드 (공방 정보) ── */}
         <View style={ms.profileCard}>
@@ -74,7 +79,11 @@ export function MasterMyPageScreen() {
             <View style={{ flex: 1, marginLeft: 14 }}>
               <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 4 }}>
                 <Text style={ms.profileName}>이천 도예 공방</Text>
-                <TouchableOpacity hitSlop={8} style={{ marginLeft: 6 }}>
+                <TouchableOpacity 
+                  hitSlop={8} 
+                  style={{ marginLeft: 6 }}
+                  onPress={() => navigation.navigate("MasterProfile")}
+                >
                   <Feather name="edit-2" size={14} color={TEXT_S} />
                 </TouchableOpacity>
               </View>
@@ -95,11 +104,19 @@ export function MasterMyPageScreen() {
         {/* ── 공방 관리 메뉴 (버튼형) ── */}
         <Text style={ms.sectionTitle}>공방 관리</Text>
         <View style={ms.actionContainer}>
-          <TouchableOpacity style={ms.actionCard} activeOpacity={0.8}>
+          <TouchableOpacity 
+            style={ms.actionCard} 
+            activeOpacity={0.8} 
+            onPress={() => navigation.navigate("MasterBookings")}
+          >
             <Ionicons name="calendar-outline" size={28} color={BRAND} />
             <Text style={ms.actionLabel}>예약 관리</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={ms.actionCard} activeOpacity={0.8}>
+          <TouchableOpacity 
+            style={ms.actionCard} 
+            activeOpacity={0.8}
+            onPress={() => navigation.navigate("MasterExperience")}
+          >
             <Ionicons name="hammer-outline" size={28} color={BRAND} />
             <Text style={ms.actionLabel}>클래스 관리</Text>
           </TouchableOpacity>
@@ -107,7 +124,11 @@ export function MasterMyPageScreen() {
             <Ionicons name="wallet-outline" size={28} color={BRAND} />
             <Text style={ms.actionLabel}>정산 관리</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={ms.actionCard} activeOpacity={0.8}>
+          <TouchableOpacity 
+            style={ms.actionCard} 
+            activeOpacity={0.8}
+            onPress={() => navigation.navigate("MasterReviews")}
+          >
             <Ionicons name="chatbubbles-outline" size={28} color={BRAND} />
             <Text style={ms.actionLabel}>후기 관리</Text>
           </TouchableOpacity>
@@ -116,7 +137,16 @@ export function MasterMyPageScreen() {
         {/* ── 기타 설정 메뉴 ── */}
         <View style={ms.menuSection}>
           {["프로필 수정", "공지사항 관리", "일반 유저 모드로 전환", "로그아웃"].map((item) => (
-            <TouchableOpacity key={item} style={ms.menuItem} activeOpacity={0.7}>
+            <TouchableOpacity 
+              key={item} 
+              style={ms.menuItem} 
+              activeOpacity={0.7}
+              onPress={() => {
+                if (item === "프로필 수정") {
+                  navigation.navigate("MasterProfile");
+                }
+              }}
+            >
               <Text style={[
                 ms.menuItemText,
                 item === "로그아웃" && { color: "#EF4444" },
@@ -141,10 +171,6 @@ const ms = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: BG },
   scroll: { paddingBottom: 48 },
   
-  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingTop: Platform.OS === "ios" ? 6 : 16, paddingBottom: 16 },
-  headerTitle: { fontSize: 20, fontWeight: "800", color: TEXT, fontFamily: Platform.OS === "ios" ? "Georgia" : "serif" },
-  headerIcons: { flexDirection: "row", alignItems: "center" },
-
   profileCard: { backgroundColor: CARD_BG, marginHorizontal: 16, borderRadius: 18, padding: 18, borderWidth: 1, borderColor: BORDER, marginBottom: 20, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 },
   profileRow: { flexDirection: "row", alignItems: "center" },
   avatar: { width: 62, height: 62, borderRadius: 31, backgroundColor: ICON_BG },
