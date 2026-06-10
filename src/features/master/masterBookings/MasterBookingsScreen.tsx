@@ -3,13 +3,18 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   TouchableOpacity,
+  Alert,
   FlatList,
   Platform,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useNavigation } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { RootStackParamList } from "@/navigation/RootNavigator";
 import { Ionicons } from "@expo/vector-icons";
 import { MasterBottomTabs } from "../components/MasterBottomTabs";
+import { MasterHeader } from "../components/MasterHeader";
 
 // ─── 팔레트 ────────────────────────────────────────────────────────────────────
 const BRAND = "#3B2B26";
@@ -63,8 +68,10 @@ const STATUS_TABS = [
 
 export function MasterBookingsScreen() {
   const [activeTab, setActiveTab] = useState("all");
+  const [bookings, setBookings] = useState(MOCK_BOOKINGS);
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
-  const filteredBookings = MOCK_BOOKINGS.filter((b) =>
+  const filteredBookings = bookings.filter((b) =>
     activeTab === "all" ? true : b.status === activeTab
   );
 
@@ -104,15 +111,44 @@ export function MasterBookingsScreen() {
     );
   };
 
+  // 승인 버튼 핸들러
+  const handleApprove = (id: string) => {
+    Alert.alert("예약 승인", "이 예약을 승인하시겠습니까?", [
+      { text: "취소", style: "cancel" },
+      { 
+        text: "승인", 
+        onPress: () => {
+          setBookings((prev) => prev.map((b) => b.id === id ? { ...b, status: "confirmed" } : b));
+        } 
+      }, // TODO: 실제 API 승인 로직 연동
+    ]);
+  };
+
+  // 거절 버튼 핸들러
+  const handleReject = (id: string) => {
+    Alert.alert("예약 거절", "이 예약을 거절하시겠습니까?", [
+      { text: "취소", style: "cancel" },
+      { 
+        text: "거절", 
+        style: "destructive", 
+        onPress: () => {
+          setBookings((prev) => prev.map((b) => b.id === id ? { ...b, status: "cancelled" } : b));
+        } 
+      }, // TODO: 실제 API 거절 로직 연동
+    ]);
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
-      {/* ── 헤더 ── */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>예약 관리</Text>
-        <TouchableOpacity hitSlop={8}>
-          <Ionicons name="search" size={24} color={BRAND} />
-        </TouchableOpacity>
-      </View>
+      {/* ── 공통 상단바 및 서랍 ── */}
+      <MasterHeader 
+        activeItem="예약관리" 
+        rightComponent={
+          <TouchableOpacity hitSlop={8}>
+            <Ionicons name="search" size={24} color={BRAND} />
+          </TouchableOpacity>
+        }
+      />
 
       {/* ── 필터 탭 ── */}
       <View style={styles.tabContainer}>
@@ -143,7 +179,11 @@ export function MasterBookingsScreen() {
           </View>
         }
         renderItem={({ item }) => (
-          <View style={styles.card}>
+          <TouchableOpacity 
+            style={styles.card}
+            activeOpacity={0.8}
+            onPress={() => navigation.navigate("MasterBookingDetail", { booking: item })}
+          >
             <View style={styles.cardHeader}>
               {renderStatusBadge(item.status)}
               <Text style={styles.cardDate}>{item.date} {item.time}</Text>
@@ -163,19 +203,25 @@ export function MasterBookingsScreen() {
             {/* 액션 버튼 (상태에 따라 다르게 노출) */}
             {item.status === "pending" ? (
               <View style={styles.actionRow}>
-                <TouchableOpacity style={[styles.actionBtn, styles.rejectBtn]}>
+                <TouchableOpacity 
+                  style={[styles.actionBtn, styles.rejectBtn]}
+                  onPress={() => handleReject(item.id)}
+                >
                   <Text style={styles.rejectBtnText}>거절</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={[styles.actionBtn, styles.approveBtn]}>
+                <TouchableOpacity 
+                  style={[styles.actionBtn, styles.approveBtn]}
+                  onPress={() => handleApprove(item.id)}
+                >
                   <Text style={styles.approveBtnText}>승인하기</Text>
                 </TouchableOpacity>
               </View>
             ) : (
-              <TouchableOpacity style={styles.detailBtn}>
+              <View style={styles.detailBtn}>
                 <Text style={styles.detailBtnText}>상세 보기</Text>
-              </TouchableOpacity>
+              </View>
             )}
-          </View>
+          </TouchableOpacity>
         )}
       />
 
@@ -188,9 +234,6 @@ export function MasterBookingsScreen() {
 // ─── 스타일 ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: BG },
-
-  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingVertical: 14, backgroundColor: BG, borderBottomWidth: 1, borderBottomColor: BORDER },
-  headerTitle: { fontSize: 18, fontWeight: "800", color: BRAND },
 
   tabContainer: { flexDirection: "row", paddingHorizontal: 20, paddingVertical: 12, backgroundColor: BG, borderBottomWidth: 1, borderBottomColor: BORDER, gap: 8 },
   tabButton: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, backgroundColor: "#EAE6E1" },

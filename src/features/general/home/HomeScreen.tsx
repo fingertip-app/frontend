@@ -1,8 +1,9 @@
 import React, { useState } from "react";
-import { ScrollView, Text, View, StyleSheet, TouchableOpacity, SafeAreaView, Platform } from "react-native";
+import { ScrollView, Text, View, StyleSheet, TouchableOpacity, Platform } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-import { CardNewsCarousel } from "../cardnews/CardNewsCarousel";
-import { ExperienceList } from "../experiences/ExperienceList";
+import { CardNewsCarousel } from "@/features/cardnews/CardNewsCarousel";
+import { ExperienceList } from "@/features/experiences/ExperienceList";
 
 // 다가오는 일정 더미 데이터
 const UPCOMING_SCHEDULE = {
