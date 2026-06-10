@@ -1,52 +1,191 @@
-import React, { useState } from "react";
-import { ScrollView, Text, View, StyleSheet, TouchableOpacity, Platform } from "react-native";
-
+import React, { useState, useRef } from "react";
+import {
+  ScrollView, Text, View, StyleSheet, TouchableOpacity,
+  Image, ImageBackground, FlatList, NativeSyntheticEvent,
+  NativeScrollEvent, Dimensions,
+} from "react-native";
+import { useNavigation } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { RootStackParamList } from "@/navigation/RootNavigator";
 import { CardNewsCarousel } from "../cardnews/CardNewsCarousel";
-import { ExperienceList } from "../experiences/ExperienceList";
 import { MainLayout } from "./MainLayout";
 
-// 다가오는 일정 더미 데이터
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
+const BANNER_WIDTH = SCREEN_WIDTH - 48;
+
 const UPCOMING_SCHEDULE = {
-  id: '1',
-  date: '5월 28일 (목)',
-  time: '오후 2:00',
-  title: '달항아리 물레 체험',
-  location: '이천 도자기 마을',
-  dDay: 'D-4',
+  id: "1",
+  date: "5월 29일 (월)",
+  time: "10:00",
+  title: "이천 도자기 물레 체험",
+  location: "경기 이천시",
+  dDay: "D-4",
+  image: "https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=200&q=80",
 };
 
-// 상단에 보여줄 카드 뉴스(배너) 더미 데이터
 const TOP_BANNERS = [
-  { id: '1', title: '초보자도 쉽게 배우는\n나전칠기 원데이 클래스', tag: '✨ 추천', bgColor: '#EACCA5' },
-  { id: '2', title: '오래된 물건에 새 생명을,\n전통 금박 공예', tag: '🔥 인기', bgColor: '#D4CDC4' },
-  { id: '3', title: '차분한 주말을 위한\n다도와 다식 체험', tag: '🍵 힐링', bgColor: '#EAE6E1' },
+  {
+    id: "1",
+    tag: "오늘 하루,",
+    title: "장인의 시간이\n되어보세요",
+    subtitle: "전통의 가치를 경험하는 특별한 하루를 만나보세요.",
+    image: "https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=800&q=80",
+  },
+  {
+    id: "2",
+    tag: "이번 주 추천,",
+    title: "손끝에서 피어나는\n전통 매듭 공예",
+    subtitle: "조선시대 왕실 기법을 직접 배워보세요.",
+    image: "https://images.unsplash.com/photo-1606722590583-6951b5ea92ad?w=800&q=80",
+  },
 ];
 
-// 인기 체험 더미 데이터
 const POPULAR_EXPERIENCES = [
-  { id: '1', title: '청자 상감 기법 체험', location: '전남 강진', category: '도자기', price: '45,000원' },
-  { id: '2', title: '전통 매듭 팔찌 만들기', location: '서울 북촌', category: '매듭/자수', price: '30,000원' },
-  { id: '3', title: '나만의 목재 트레이 제작', location: '경기 남양주', category: '목공예', price: '55,000원' },
+  {
+    id: "1",
+    title: "도자기 물레 체험",
+    location: "이천",
+    duration: "2시간",
+    category: "도자기",
+    price: "45,000원",
+    rating: 4.9,
+    reviewCount: 128,
+    image: "https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=400&q=80",
+  },
+  {
+    id: "2",
+    title: "한지 등 만들기",
+    location: "전주",
+    duration: "1.5시간",
+    category: "한지공예",
+    price: "38,000원",
+    rating: 4.8,
+    reviewCount: 96,
+    image: "https://images.unsplash.com/photo-1607453998774-d533f65dac99?w=400&q=80",
+  },
+  {
+    id: "3",
+    title: "전통 매듭 팔찌",
+    location: "서울",
+    duration: "1시간",
+    category: "매듭/자수",
+    price: "30,000원",
+    rating: 4.7,
+    reviewCount: 84,
+    image: "https://images.unsplash.com/photo-1606722590583-6951b5ea92ad?w=400&q=80",
+  },
 ];
 
-function PopularExperienceCard({ item }: { item: any }) {
+const NEW_EXPERIENCES = [
+  {
+    id: "4",
+    title: "자개 모빌 만들기",
+    location: "통영",
+    duration: "2시간",
+    category: "나전칠기",
+    price: "55,000원",
+    rating: 5.0,
+    reviewCount: 12,
+    image: "https://images.unsplash.com/photo-1582738411706-bfc8e691d1c2?w=400&q=80",
+  },
+  {
+    id: "5",
+    title: "천연 염색 스카프",
+    location: "나주",
+    duration: "1.5시간",
+    category: "천연염색",
+    price: "40,000원",
+    rating: 4.5,
+    reviewCount: 4,
+    image: "https://images.unsplash.com/photo-1528698827591-e19ccd7bc23d?w=400&q=80",
+  },
+  {
+    id: "6",
+    title: "전통주 빚기",
+    location: "안동",
+    duration: "3시간",
+    category: "전통음식",
+    price: "70,000원",
+    rating: 4.8,
+    reviewCount: 10,
+    image: "https://images.unsplash.com/photo-1563514995963-3b4eb8216fcb?w=400&q=80",
+  },
+];
+
+const WISHED_EXPERIENCES = [
+  {
+    id: "7",
+    title: "이천 도자기 물레 체험",
+    location: "이천",
+    duration: "2시간",
+    category: "도예",
+    price: "35,000원",
+    rating: 4.9,
+    reviewCount: 128,
+    image: "https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=400&q=80",
+  },
+  {
+    id: "8",
+    title: "전주 한지 등 만들기 체험",
+    location: "전주",
+    duration: "1.5시간",
+    category: "한지",
+    price: "28,000원",
+    rating: 4.8,
+    reviewCount: 96,
+    image: "https://images.unsplash.com/photo-1607453998774-d533f65dac99?w=400&q=80",
+  }
+];
+
+const TODAY_ARTISAN = {
+  name: "김영수 장인",
+  badge: "국가무형유산 매듭장",
+  quote: '"매듭에는 사람의 마음을 잇는 힘이 있습니다."',
+  image: "https://images.unsplash.com/photo-1556157382-97eda2d62296?w=800&q=80",
+};
+
+function BannerCard({ item }: { item: typeof TOP_BANNERS[0] }) {
+  return (
+    <TouchableOpacity activeOpacity={0.95} style={{ width: BANNER_WIDTH, marginRight: 16 }}>
+      <ImageBackground
+        source={{ uri: item.image }}
+        style={styles.bannerCard}
+        imageStyle={styles.bannerImage}
+      >
+        <View style={styles.bannerOverlay}>
+          <Text style={styles.bannerTag}>{item.tag}</Text>
+          <Text style={styles.bannerTitle}>{item.title}</Text>
+          <Text style={styles.bannerSubtitle}>{item.subtitle}</Text>
+          <TouchableOpacity style={styles.bannerButton} activeOpacity={0.85}>
+            <Text style={styles.bannerButtonText}>체험 둘러보기</Text>
+          </TouchableOpacity>
+        </View>
+      </ImageBackground>
+    </TouchableOpacity>
+  );
+}
+
+function PopularExperienceCard({ item }: { item: typeof POPULAR_EXPERIENCES[0] }) {
   const [isWished, setIsWished] = useState(false);
-  
   return (
     <TouchableOpacity style={styles.popularCard} activeOpacity={0.9}>
       <View style={styles.popularImageContainer}>
-        <View style={styles.popularImagePlaceholder} />
-        <TouchableOpacity 
-          style={styles.wishButton} 
+        <Image source={{ uri: item.image }} style={styles.popularImage} />
+        <TouchableOpacity
+          style={styles.wishButton}
           onPress={() => setIsWished(!isWished)}
           activeOpacity={0.8}
         >
-          <Text style={styles.wishIcon}>{isWished ? '❤️' : '🤍'}</Text>
+          <Text style={styles.wishIcon}>{isWished ? "❤️" : "🤍"}</Text>
         </TouchableOpacity>
       </View>
       <View style={styles.popularInfo}>
-        <Text style={styles.popularCategory}>{item.location} · {item.category}</Text>
+        <Text style={styles.popularMeta}>{item.location} | {item.duration}</Text>
         <Text style={styles.popularTitle} numberOfLines={1}>{item.title}</Text>
+        <View style={styles.ratingRow}>
+          <Text style={styles.starIcon}>★</Text>
+          <Text style={styles.ratingText}>{item.rating} ({item.reviewCount})</Text>
+        </View>
         <Text style={styles.popularPrice}>{item.price}</Text>
       </View>
     </TouchableOpacity>
@@ -54,199 +193,302 @@ function PopularExperienceCard({ item }: { item: any }) {
 }
 
 export function HomeScreen() {
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const [activeBanner, setActiveBanner] = useState(0);
+
+  const handleBannerScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const index = Math.round(e.nativeEvent.contentOffset.x / (BANNER_WIDTH + 16));
+    setActiveBanner(index);
+  };
+
   return (
     <MainLayout>
-      <ScrollView 
-        contentInsetAdjustmentBehavior="automatic"
+      <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContainer}
       >
-        {/* 헤더 영역 */}
-        <View style={styles.header}>
-          <Text style={styles.title}>장인과 하루</Text>
-          <Text style={styles.subtitle}>K-콘텐츠 속 전통문화를 직접 체험하세요</Text>
-        </View>
 
-        {/* 상단 카드 뉴스 (배너) */}
+        {/* 히어로 배너 */}
         <View style={styles.bannerSection}>
-          <ScrollView 
-            horizontal 
-            showsHorizontalScrollIndicator={false} 
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.bannerScroll}
-            snapToInterval={316} // 카드 너비(300) + 마진(16)
+            snapToInterval={BANNER_WIDTH + 16}
             decelerationRate="fast"
+            onMomentumScrollEnd={handleBannerScroll}
           >
             {TOP_BANNERS.map((banner) => (
-              <TouchableOpacity key={banner.id} style={[styles.bannerCard, { backgroundColor: banner.bgColor }]} activeOpacity={0.9}>
-                <Text style={styles.bannerTag}>{banner.tag}</Text>
-                <Text style={styles.bannerTitle}>{banner.title}</Text>
-              </TouchableOpacity>
+              <BannerCard key={banner.id} item={banner} />
             ))}
           </ScrollView>
+          {/* 페이지 인디케이터 */}
+          <View style={styles.dotRow}>
+            {TOP_BANNERS.map((_, i) => (
+              <View key={i} style={[styles.dot, activeBanner === i && styles.dotActive]} />
+            ))}
+          </View>
         </View>
 
-        {/* 다가오는 일정 영역 */}
-        <View style={styles.scheduleSection}>
-          <Text style={styles.sectionTitle}>📅 다가오는 일정</Text>
-          <TouchableOpacity style={styles.scheduleCard} activeOpacity={0.9}>
-            <View style={styles.scheduleHeader}>
-              <Text style={styles.scheduleDDay}>{UPCOMING_SCHEDULE.dDay}</Text>
-              <Text style={styles.scheduleDateTime}>{UPCOMING_SCHEDULE.date} {UPCOMING_SCHEDULE.time}</Text>
+        {/* 다가오는 일정 */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>다가오는 일정</Text>
+            <TouchableOpacity 
+              activeOpacity={0.7}
+              onPress={() => navigation.navigate("MainTabs", { screen: "Bookings" })}
+            >
+              <Text style={styles.viewAllText}>전체보기 &gt;</Text>
+            </TouchableOpacity>
+          </View>
+          <TouchableOpacity 
+            style={styles.scheduleCard} 
+            activeOpacity={0.9}
+            onPress={() => navigation.navigate("BookingDetail", { 
+              booking: {
+                ...UPCOMING_SCHEDULE,
+                imageUri: UPCOMING_SCHEDULE.image,
+                artisan: "김도예 장인",
+                status: "upcoming",
+              } as any 
+            })}
+          >
+            <Image source={{ uri: UPCOMING_SCHEDULE.image }} style={styles.scheduleThumb} />
+            <View style={styles.scheduleInfo}>
+              <View style={styles.scheduleDateRow}>
+                <Text style={styles.scheduleCalIcon}>📅</Text>
+                <Text style={styles.scheduleDateTime}>
+                  {UPCOMING_SCHEDULE.date} {UPCOMING_SCHEDULE.time}
+                </Text>
+              </View>
+              <Text style={styles.scheduleTitle}>{UPCOMING_SCHEDULE.title}</Text>
+              <View style={styles.scheduleLocationRow}>
+                <Text style={styles.scheduleLocationIcon}>📍</Text>
+                <Text style={styles.scheduleLocation}>{UPCOMING_SCHEDULE.location}</Text>
+              </View>
             </View>
-            <Text style={styles.scheduleTitle}>{UPCOMING_SCHEDULE.title}</Text>
-            <Text style={styles.scheduleLocation}>📍 {UPCOMING_SCHEDULE.location}</Text>
           </TouchableOpacity>
         </View>
 
-        {/* 리스트 영역 */}
-        <View style={styles.listSection}>
-          <ExperienceList title="✨ AI 추천 장인 체험" />
-        </View>
         
-        {/* 인기 체험 영역 */}
-        <View style={styles.popularSection}>
+        {/* 오늘의 장인 */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>오늘의 장인</Text>
+          <TouchableOpacity style={styles.artisanCard} activeOpacity={0.9}>
+            <Image source={{ uri: TODAY_ARTISAN.image }} style={styles.artisanImage} />
+            <View style={styles.artisanInfo}>
+              <View style={styles.artisanBadgeWrap}>
+                <Text style={styles.artisanBadge}>{TODAY_ARTISAN.badge}</Text>
+              </View>
+              <Text style={styles.artisanName}>{TODAY_ARTISAN.name}</Text>
+              <Text style={styles.artisanQuote}>{TODAY_ARTISAN.quote}</Text>
+              <TouchableOpacity
+                style={styles.artisanButton}
+                activeOpacity={0.85}
+                onPress={() => navigation.navigate("ArtisanDetail" as any)}
+              >
+                <Text style={styles.artisanButtonText}>장인 스토리 보기</Text>
+              </TouchableOpacity>
+            </View>
+          </TouchableOpacity>
+        </View>
+
+        {/* 찜한 체험 */}
+        <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitleWithoutMargin}>🔥 인기 체험</Text>
-            <TouchableOpacity activeOpacity={0.7}>
-              <Text style={styles.viewAllText}>전체보기</Text>
+            <Text style={styles.sectionTitle}>❤️ 내가 찜한 체험</Text>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => navigation.navigate("Wishlist" as any)}
+            >
+              <Text style={styles.viewAllText}>더보기 &gt;</Text>
             </TouchableOpacity>
           </View>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.popularScroll}>
-            {POPULAR_EXPERIENCES.map(item => (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.popularScroll}
+          >
+            {WISHED_EXPERIENCES.map((item) => (
               <PopularExperienceCard key={item.id} item={item} />
             ))}
           </ScrollView>
         </View>
 
-        <View style={styles.listSection}>
+        {/* 인기 체험 */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>🔥 인기 체험 Top 10</Text>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => navigation.navigate("MainTabs", { screen: "Explore", params: { filter: "popular" } })}
+            >
+              <Text style={styles.viewAllText}>더보기 &gt;</Text>
+            </TouchableOpacity>
+          </View>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.popularScroll}
+          >
+            {POPULAR_EXPERIENCES.map((item) => (
+              <PopularExperienceCard key={item.id} item={item} />
+            ))}
+          </ScrollView>
+        </View>
+
+        {/* 신규 체험 */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>✨ 새로 나온 체험</Text>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => navigation.navigate("MainTabs", { screen: "Explore", params: { filter: "new" } })}
+            >
+              <Text style={styles.viewAllText}>더보기 &gt;</Text>
+            </TouchableOpacity>
+          </View>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.popularScroll}
+          >
+            {NEW_EXPERIENCES.map((item) => (
+              <PopularExperienceCard key={item.id} item={item} />
+            ))}
+          </ScrollView>
+        </View>
+
+        {/* 카드뉴스 */}
+        <View style={styles.section}>
           <CardNewsCarousel />
         </View>
+
       </ScrollView>
     </MainLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  scrollContainer: {
-    paddingBottom: 40,
-  },
-  header: {
-    paddingHorizontal: 24,
-    paddingTop: 10, // 상단바가 생겼으므로 기존 여백을 줄임
-    marginBottom: 20,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: "#3B2B26",
-    marginBottom: 6,
-  },
-  subtitle: {
-    fontSize: 15,
-    color: "#6E665F",
-  },
-  bannerSection: {
-    marginBottom: 30,
-  },
-  bannerScroll: {
-    paddingHorizontal: 24,
-  },
+  scrollContainer: { paddingBottom: 40 },
+
+  // 배너
+  bannerSection: { marginBottom: 30 },
+  bannerScroll: { paddingHorizontal: 24 },
   bannerCard: {
-    width: 300,
-    height: 160,
+    height: 220,
     borderRadius: 16,
-    padding: 24,
-    marginRight: 16,
-    justifyContent: 'center',
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    overflow: "hidden",
+    justifyContent: "flex-end",
   },
-  bannerTag: {
-    fontSize: 13,
-    fontWeight: 'bold',
-    color: '#3B2B26',
-    marginBottom: 12,
-    backgroundColor: 'rgba(255,255,255,0.4)',
-    alignSelf: 'flex-start',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-    overflow: 'hidden', // iOS에서 배경색과 border-radius 렌더링을 위해 필요
-  },
-  bannerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#3B2B26',
-    lineHeight: 28,
-  },
-  sectionTitle: { fontSize: 18, fontWeight: 'bold', color: '#3B2B26', marginHorizontal: 24, marginBottom: 16 },
-  scheduleSection: { marginBottom: 30 },
-  scheduleCard: {
-    backgroundColor: '#FAF9F6',
-    borderWidth: 1,
-    borderColor: '#D4CDC4',
-    borderRadius: 16,
+  bannerImage: { borderRadius: 16 },
+  bannerOverlay: {
     padding: 20,
-    marginHorizontal: 24,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    paddingTop: 60,
+    backgroundColor: "rgba(0,0,0,0.38)",
+    borderRadius: 16,
   },
-  scheduleHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-  scheduleDDay: { backgroundColor: '#3B2B26', color: '#FFF', fontSize: 12, fontWeight: 'bold', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, overflow: 'hidden', marginRight: 10 },
-  scheduleDateTime: { fontSize: 14, color: '#6E665F', fontWeight: '600' },
-  scheduleTitle: { fontSize: 18, fontWeight: 'bold', color: '#3B2B26', marginBottom: 8 },
-  scheduleLocation: { fontSize: 13, color: '#8A8077' },
-  listSection: { marginBottom: 30, paddingHorizontal: 24 },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginHorizontal: 24,
-    marginBottom: 16,
+  bannerTag: { fontSize: 13, color: "rgba(255,255,255,0.85)", marginBottom: 4 },
+  bannerTitle: { fontSize: 22, fontWeight: "700", color: "#FFF", lineHeight: 30, marginBottom: 6 },
+  bannerSubtitle: { fontSize: 13, color: "rgba(255,255,255,0.75)", lineHeight: 18, marginBottom: 16 },
+  bannerButton: {
+    alignSelf: "flex-start",
+    backgroundColor: "rgba(255,255,255,0.2)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.5)",
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
   },
-  sectionTitleWithoutMargin: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#3B2B26',
+  bannerButtonText: { color: "#FFF", fontSize: 13, fontWeight: "600" },
+  dotRow: { flexDirection: "row", justifyContent: "center", marginTop: 12, gap: 6 },
+  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: "#D4CDC4" },
+  dotActive: { width: 18, backgroundColor: "#3B2B26" },
+
+  // 공통 섹션
+  section: { marginBottom: 30, paddingHorizontal: 24 },
+  sectionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 14 },
+  sectionTitle: { fontSize: 18, fontWeight: "700", color: "#3B2B26" },
+  viewAllText: { fontSize: 13, color: "#8A8077" },
+
+  // 다가오는 일정
+  scheduleCard: {
+    flexDirection: "row",
+    backgroundColor: "#FAF9F6",
+    borderWidth: 1,
+    borderColor: "#D4CDC4",
+    borderRadius: 14,
+    overflow: "hidden",
   },
-  viewAllText: {
-    fontSize: 13,
-    color: '#8A8077',
-    fontWeight: '600',
-  },
-  popularSection: { marginBottom: 30 },
-  popularScroll: { paddingHorizontal: 24 },
-  popularCard: { width: 150, marginRight: 16 },
+  scheduleThumb: { width: 80, height: 80 },
+  scheduleInfo: { flex: 1, padding: 12, justifyContent: "center" },
+  scheduleDateRow: { flexDirection: "row", alignItems: "center", marginBottom: 4 },
+  scheduleCalIcon: { fontSize: 13, marginRight: 4 },
+  scheduleDateTime: { fontSize: 13, color: "#6E665F", fontWeight: "600" },
+  scheduleTitle: { fontSize: 15, fontWeight: "700", color: "#3B2B26", marginBottom: 4 },
+  scheduleLocationRow: { flexDirection: "row", alignItems: "center" },
+  scheduleLocationIcon: { fontSize: 12, marginRight: 3 },
+  scheduleLocation: { fontSize: 12, color: "#8A8077" },
+
+  // 인기 체험
+  popularScroll: { paddingRight: 24 },
+  popularCard: { width: 148, marginRight: 14 },
   popularImageContainer: {
-    width: '100%',
-    height: 150,
+    width: "100%",
+    height: 148,
     borderRadius: 12,
-    backgroundColor: '#EAE6E1',
-    marginBottom: 12,
-    overflow: 'hidden',
+    overflow: "hidden",
+    marginBottom: 10,
   },
-  popularImagePlaceholder: { flex: 1, backgroundColor: '#D4CDC4' },
+  popularImage: { width: "100%", height: "100%" },
   wishButton: {
-    position: 'absolute',
+    position: "absolute",
     top: 8,
     right: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(255,255,255,0.85)",
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    justifyContent: "center",
+    alignItems: "center",
   },
-  wishIcon: { fontSize: 13 },
-  popularInfo: { paddingHorizontal: 4 },
-  popularCategory: { fontSize: 11, color: '#8A8077', marginBottom: 4, fontWeight: '500' },
-  popularTitle: { fontSize: 14, fontWeight: 'bold', color: '#3B2B26', marginBottom: 4 },
-  popularPrice: { fontSize: 14, fontWeight: '600', color: '#3B2B26' },
+  wishIcon: { fontSize: 14 },
+  popularInfo: {},
+  popularMeta: { fontSize: 11, color: "#8A8077", marginBottom: 3 },
+  popularTitle: { fontSize: 14, fontWeight: "700", color: "#3B2B26", marginBottom: 4 },
+  ratingRow: { flexDirection: "row", alignItems: "center", gap: 3, marginBottom: 3 },
+  starIcon: { fontSize: 12, color: "#D4A97A" },
+  ratingText: { fontSize: 11, color: "#8A8077" },
+  popularPrice: { fontSize: 14, fontWeight: "600", color: "#3B2B26" },
+
+  // 오늘의 장인
+  artisanCard: {
+    borderRadius: 16,
+    overflow: "hidden",
+    backgroundColor: "#FAF9F6",
+    borderWidth: 1,
+    borderColor: "#D4CDC4",
+  },
+  artisanImage: { width: "100%", height: 200 },
+  artisanInfo: { padding: 20, alignItems: "center" },
+  artisanBadgeWrap: { marginBottom: 10 },
+  artisanBadge: {
+    fontSize: 12,
+    color: "#8B6F5E",
+    backgroundColor: "#F5EFE8",
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
+    overflow: "hidden",
+  },
+  artisanName: { fontSize: 20, fontWeight: "700", color: "#3B2B26", marginBottom: 10 },
+  artisanQuote: { fontSize: 14, color: "#6E665F", textAlign: "center", lineHeight: 22, marginBottom: 16 },
+  artisanButton: {
+    borderWidth: 1,
+    borderColor: "#3B2B26",
+    borderRadius: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+  },
+  artisanButtonText: { fontSize: 13, fontWeight: "600", color: "#3B2B26" },
 });
-   
