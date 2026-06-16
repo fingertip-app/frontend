@@ -31,6 +31,11 @@
   - [ ] Spring Swagger 기준 DTO 확인
   - [ ] 수동 타입 작성 또는 자동 생성 여부 결정
   - [ ] [결정필요] API base URL과 환경별 env 관리 방식 확정
+- [ ] [공통] 장인 파트너 신청 API 계약 확장
+  - [x] MVP 임시 연결: Spring `ArtisanRequest`에 맞춰 `name`, 첫 번째 `heritageCategory`, 통합 `bio`만 전송
+  - [ ] 다중 카테고리, 활동 지역, 주요 경력, SNS, 포트폴리오 이미지, 자격 증빙 파일 저장 계약 확정
+  - [ ] 파일 업로드 API/S3 또는 Supabase Storage 저장 경로 확정 후 프론트 업로드 연결
+  - [ ] 이메일 인증으로 가입 직후 세션이 없을 때 장인 신청을 재개하는 UX/API 흐름 확정
 
 완료 기준: 주요 화면 목록, navigation 구조, 디자인 기준, API 타입 관리 방식이 합의된다.
 
