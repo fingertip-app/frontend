@@ -10,10 +10,10 @@ import {
   TextInput,
   KeyboardAvoidingView,
   Animated,
-  ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { MainLayout } from "@/features/home/MainLayout";
+import { apiPost } from "@/services/api";
 
 // ─── 팔레트 (기존 유지) ────────────────────────────────────────────────────────
 const BG        = "#F5F0EA";
@@ -105,6 +105,10 @@ const MOCK_RECOMMENDATIONS = [
 ];
 
 // ─── 타입 ──────────────────────────────────────────────────────────────────────
+type CompanionType = "ALONE" | "FRIEND" | "FAMILY" | "COUPLE" | "KIDS" | "FOREIGN_GUEST" | "OTHER";
+type ConversationRole = "USER" | "ASSISTANT";
+type TimePreference = "MORNING" | "AFTERNOON" | "EVENING" | "WEEKDAY" | "WEEKEND" | "ANYTIME";
+
 interface Message {
   id: string;
   role: "ai" | "user";
@@ -112,10 +116,173 @@ interface Message {
   chips?: string[];
   showResults?: boolean;
   isFallback?: boolean;
+  recommendations?: RecommendationCard[];
+  resultGuide?: string;
 }
 
+interface RecommendationCard {
+  id: string;
+  title: string;
+  category: string;
+  location: string;
+  rating: number;
+  reviewCount: number;
+  price: number;
+  imageUri: string;
+  reason: string;
+}
+
+interface AiRecommendationRequest {
+  freeText: string;
+  companionType: CompanionType;
+  headCount: number;
+  interests: string[];
+  region?: string;
+  timePreference: TimePreference;
+  conversationHistory: {
+    role: ConversationRole;
+    content: string;
+  }[];
+  locale: string;
+}
+
+interface AiRecommendationResponse {
+  answer: string;
+  matchingKeywords: string[];
+  recommendedTags: string[];
+  recommendedExperiences: {
+    id: number;
+    title: string;
+    location: string;
+    price: number | string;
+    durationMinutes?: number;
+    tags?: string[];
+    matchReason?: string;
+  }[];
+  fallback: boolean;
+  message?: string | null;
+}
+
+const FALLBACK_RESULT_GUIDE = "AI 추천이 원활하지 않아 인기 체험을 보여드려요.";
+
+const getFallbackRecommendations = (): RecommendationCard[] => MOCK_RECOMMENDATIONS;
+
+const parsePrice = (price: number | string): number => {
+  if (typeof price === "number") {
+    return price;
+  }
+
+  const parsed = Number(price);
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const inferCompanion = (text: string): { companionType: CompanionType; headCount: number } => {
+  if (text.includes("혼자")) {
+    return { companionType: "ALONE", headCount: 1 };
+  }
+  if (text.includes("연인")) {
+    return { companionType: "COUPLE", headCount: 2 };
+  }
+  if (text.includes("친구")) {
+    return { companionType: "FRIEND", headCount: 2 };
+  }
+  if (text.includes("가족")) {
+    return { companionType: "FAMILY", headCount: 4 };
+  }
+  if (text.includes("아이")) {
+    return { companionType: "KIDS", headCount: 2 };
+  }
+  return { companionType: "OTHER", headCount: 2 };
+};
+
+const inferInterests = (answers: string[]): string[] => {
+  const combined = answers.join(" ");
+  const interests = new Set<string>();
+
+  if (/도자기|도예|물레|만들/.test(combined)) {
+    interests.add("도예");
+  }
+  if (/매듭|공예|손/.test(combined)) {
+    interests.add("공예");
+  }
+  if (/한지|문화|색다른/.test(combined)) {
+    interests.add("전통문화");
+  }
+  if (/조용|쉬고/.test(combined)) {
+    interests.add("힐링");
+  }
+  if (/가볍|즐기/.test(combined)) {
+    interests.add("원데이클래스");
+  }
+
+  if (interests.size === 0) {
+    interests.add("공예");
+  }
+
+  return Array.from(interests).slice(0, 5);
+};
+
+const inferTimePreference = (answers: string[]): TimePreference => {
+  const combined = answers.join(" ");
+  if (/주말/.test(combined)) {
+    return "WEEKEND";
+  }
+  if (/평일/.test(combined)) {
+    return "WEEKDAY";
+  }
+  if (/오전|아침/.test(combined)) {
+    return "MORNING";
+  }
+  if (/오후|낮/.test(combined)) {
+    return "AFTERNOON";
+  }
+  if (/저녁|밤/.test(combined)) {
+    return "EVENING";
+  }
+  return "ANYTIME";
+};
+
+const buildRecommendationRequest = (messages: Message[]): AiRecommendationRequest => {
+  const userAnswers = messages.filter((m) => m.role === "user").map((m) => m.text);
+  const companion = inferCompanion(userAnswers[0] ?? "");
+  const history = [
+    ...messages.map((m) => ({
+      role: m.role === "user" ? "USER" as const : "ASSISTANT" as const,
+      content: m.text,
+    })),
+  ].slice(-10);
+
+  return {
+    freeText: userAnswers.join(" / ").slice(0, 500),
+    companionType: companion.companionType,
+    headCount: companion.headCount,
+    interests: inferInterests(userAnswers),
+    timePreference: inferTimePreference(userAnswers),
+    conversationHistory: history,
+    locale: "ko",
+  };
+};
+
+const mapRecommendationResponse = (response: AiRecommendationResponse): RecommendationCard[] => {
+  if (!response.recommendedExperiences?.length) {
+    return getFallbackRecommendations();
+  }
+
+  return response.recommendedExperiences.map((item, index) => ({
+    id: String(item.id),
+    title: item.title,
+    category: item.tags?.[0] ?? response.recommendedTags?.[0] ?? "전통 체험",
+    location: item.location,
+    rating: 4.8,
+    reviewCount: 0,
+    price: parsePrice(item.price),
+    imageUri: `https://picsum.photos/seed/experience-${item.id || index}/300/200`,
+    reason: item.matchReason ?? response.matchingKeywords?.join(", ") ?? "선택하신 취향과 잘 맞는 체험이에요.",
+  }));
+};
+
 // ─── 결과 카드 ─────────────────────────────────────────────────────────────────
-function ResultCard({ item }: { item: typeof MOCK_RECOMMENDATIONS[0] }) {
+function ResultCard({ item }: { item: RecommendationCard }) {
   const [liked, setLiked] = useState(false);
   return (
     <TouchableOpacity style={s.resultCard} activeOpacity={0.9}>
@@ -221,8 +388,42 @@ export function AIrecommendationScreen() {
     setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
   };
 
-  const sendMessage = (text: string) => {
-    if (!text.trim() || isTyping) return;
+  const fetchRecommendations = async (updatedMessages: Message[]): Promise<Message> => {
+    const request = buildRecommendationRequest(updatedMessages);
+
+    try {
+      const response = await apiPost<AiRecommendationRequest, AiRecommendationResponse>(
+        "/v1/ai/recommendations",
+        request,
+      );
+
+      return {
+        id: (Date.now() + 1).toString(),
+        role: "ai",
+        text: response.answer || FLOW.done.aiText,
+        showResults: true,
+        isFallback: response.fallback,
+        resultGuide: response.fallback
+          ? response.message ?? FALLBACK_RESULT_GUIDE
+          : "선택하신 취향을 바탕으로 가장 적합한 체험을 찾았어요.",
+        recommendations: mapRecommendationResponse(response),
+      };
+    } catch {
+      return {
+        id: (Date.now() + 1).toString(),
+        role: "ai",
+        text: "현재 AI 서버와의 연결이 원활하지 않아요. 우선 인기 체험을 보여드릴게요.",
+        showResults: true,
+        isFallback: true,
+        resultGuide: FALLBACK_RESULT_GUIDE,
+        recommendations: getFallbackRecommendations(),
+      };
+    }
+  };
+
+  const sendMessage = async (text: string) => {
+    const trimmed = text.trim();
+    if (!trimmed || isTyping) return;
 
     // 현재 단계의 칩 비활성화
     setChipsDisabled(true);
@@ -230,31 +431,32 @@ export function AIrecommendationScreen() {
     const userMsg: Message = {
       id: Date.now().toString(),
       role: "user",
-      text: text.trim(),
+      text: trimmed,
     };
 
-    setMessages((prev) => {
-      // 마지막 AI 메시지의 칩 제거 (선택 완료)
-      const updated = prev.map((m, i) =>
-        i === prev.length - 1 && m.role === "ai" ? { ...m, chips: undefined } : m
-      );
-      return [...updated, userMsg];
-    });
+    // 마지막 AI 메시지의 칩 제거 (선택 완료)
+    const updatedMessages = messages.map((m, i) =>
+      i === messages.length - 1 && m.role === "ai" ? { ...m, chips: undefined } : m
+    );
+    const nextMessages = [...updatedMessages, userMsg];
+    setMessages(nextMessages);
 
     setInputText("");
     setIsTyping(true);
     scrollToBottom();
 
     // [추가] 서버 오류 시뮬레이션 (API 연동 전 테스트용)
-    if (text.trim() === "에러" || text.trim() === "오류") {
+    if (trimmed === "에러" || trimmed === "오류") {
       setTimeout(() => {
         setIsTyping(false);
         const errorMsg: Message = {
           id: (Date.now() + 1).toString(),
           role: "ai",
-          text: "현재 AI 서버와의 연결이 원활하지 않아요 🥲",
+          text: "현재 AI 서버와의 연결이 원활하지 않아요. 우선 인기 체험을 보여드릴게요.",
           showResults: true,
           isFallback: true,
+          resultGuide: FALLBACK_RESULT_GUIDE,
+          recommendations: getFallbackRecommendations(),
         };
         setMessages((prev) => [...prev, errorMsg]);
         setCurrentStep("done");
@@ -267,8 +469,6 @@ export function AIrecommendationScreen() {
     const nextStep = FLOW[currentStep]?.nextStep;
 
     setTimeout(() => {
-      setIsTyping(false);
-
       if (nextStep && nextStep !== "done") {
         const node = FLOW[nextStep];
         const aiMsg: Message = {
@@ -279,17 +479,16 @@ export function AIrecommendationScreen() {
         };
         setMessages((prev) => [...prev, aiMsg]);
         setCurrentStep(nextStep);
+        setIsTyping(false);
         setChipsDisabled(false);
       } else {
-        // 결과 표시
-        const finalMsg: Message = {
-          id: (Date.now() + 1).toString(),
-          role: "ai",
-          text: FLOW.done.aiText,
-          showResults: true,
-        };
-        setMessages((prev) => [...prev, finalMsg]);
-        setCurrentStep("done");
+        fetchRecommendations(nextMessages).then((finalMsg) => {
+          setMessages((prev) => [...prev, finalMsg]);
+          setCurrentStep("done");
+          setIsTyping(false);
+          setChipsDisabled(false);
+          scrollToBottom();
+        });
       }
       scrollToBottom();
     }, 1200);
@@ -310,7 +509,7 @@ export function AIrecommendationScreen() {
     setChipsDisabled(false);
   };
 
-  const renderMessage = ({ item, index }: { item: Message; index: number }) => {
+  const renderMessage = ({ item }: { item: Message }) => {
     if (item.role === "user") {
       return (
         <View style={[s.messageRow, s.userRow]}>
@@ -333,11 +532,13 @@ export function AIrecommendationScreen() {
             {item.showResults && (
               <View style={{ marginTop: 14 }}>
                 <Text style={[s.resultGuideText, item.isFallback && s.fallbackGuideText]}>
-                  {item.isFallback 
-                    ? "💡 AI 추천이 원활하지 않아 인기 체험을 보여드려요." 
-                    : "선택하신 취향을 바탕으로 가장 적합한 체험을 찾았어요."}
+                  {item.resultGuide ?? (
+                    item.isFallback
+                      ? FALLBACK_RESULT_GUIDE
+                      : "선택하신 취향을 바탕으로 가장 적합한 체험을 찾았어요."
+                  )}
                 </Text>
-                {MOCK_RECOMMENDATIONS.map((rec) => (
+                {(item.recommendations ?? getFallbackRecommendations()).map((rec) => (
                   <ResultCard key={rec.id} item={rec} />
                 ))}
                 <TouchableOpacity style={s.resetButton} onPress={handleReset} activeOpacity={0.8}>
@@ -410,7 +611,7 @@ export function AIrecommendationScreen() {
             maxLength={200}
             returnKeyType="send"
             onSubmitEditing={() => sendMessage(inputText)}
-            editable={!isTyping && currentStep !== "done"}
+            editable={!isTyping}
           />
           <TouchableOpacity
             style={[s.sendBtn, (!inputText.trim() || isTyping) && s.sendBtnDisabled]}
