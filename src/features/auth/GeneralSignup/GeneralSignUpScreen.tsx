@@ -1,12 +1,16 @@
 import React, { useState } from "react";
-import { ScrollView, Text, TextInput, View, TouchableOpacity, StyleSheet, SafeAreaView, Platform, Alert } from "react-native";
+import { ScrollView, Text, TextInput, View, TouchableOpacity, StyleSheet, SafeAreaView, Platform, Alert, ActivityIndicator } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "@/navigation/RootNavigator";
-import Svg, { Path, G, Circle } from "react-native-svg";
+import Svg, { Path, Circle } from "react-native-svg";
+import { signUp, checkEmailAvailable, checkNicknameAvailable } from "@/features/auth/api/authApi";
 
 export function GeneralSignUpScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const [isLoading, setIsLoading] = useState(false);
+  const [isNicknameChecked, setIsNicknameChecked] = useState(false);
+  const [isEmailChecked, setIsEmailChecked] = useState(false);
   const [name, setName] = useState("");
   const [nickname, setNickname] = useState("");
   const [phone, setPhone] = useState("");
@@ -39,38 +43,38 @@ export function GeneralSignUpScreen() {
     setPhone(formatted);
   };
 
-  const handleCheckNicknameDuplicate = () => {
-    if (!nickname) {
-      Alert.alert("알림", "닉네임을 먼저 입력해주세요.");
-      return;
-    }
-    if (nickname.length < 2) {
-      Alert.alert("알림", "닉네임은 2자 이상 입력해주세요.");
-      return;
-    }
-    // TODO: 백엔드 API 연동 위치
-    if (nickname === "test") {
-      Alert.alert("중복확인", "이미 사용 중인 닉네임입니다.\n다른 닉네임을 사용해주세요.");
-    } else {
-      Alert.alert("중복확인", "사용 가능한 닉네임입니다.");
+  const handleCheckNicknameDuplicate = async () => {
+    if (!nickname) return Alert.alert("알림", "닉네임을 먼저 입력해주세요.");
+    if (nickname.length < 2) return Alert.alert("알림", "닉네임은 2자 이상 입력해주세요.");
+    try {
+      const available = await checkNicknameAvailable(nickname);
+      if (available) {
+        setIsNicknameChecked(true);
+        Alert.alert("중복확인", "사용 가능한 닉네임입니다.");
+      } else {
+        setIsNicknameChecked(false);
+        Alert.alert("중복확인", "이미 사용 중인 닉네임입니다.\n다른 닉네임을 사용해주세요.");
+      }
+    } catch {
+      Alert.alert("오류", "닉네임 확인에 실패했습니다. 다시 시도해주세요.");
     }
   };
 
-  const handleCheckEmailDuplicate = () => {
-    if (!email) {
-      Alert.alert("알림", "이메일을 먼저 입력해주세요.");
-      return;
-    }
+  const handleCheckEmailDuplicate = async () => {
+    if (!email) return Alert.alert("알림", "이메일을 먼저 입력해주세요.");
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      Alert.alert("알림", "올바른 이메일 형식을 입력해주세요.");
-      return;
-    }
-    // TODO: 백엔드 API 연동 위치
-    if (email === "test@email.com") {
-      Alert.alert("중복확인", "이미 가입된 이메일입니다.\n다른 이메일을 사용해주세요.");
-    } else {
-      Alert.alert("중복확인", "사용 가능한 이메일입니다.");
+    if (!emailRegex.test(email)) return Alert.alert("알림", "올바른 이메일 형식을 입력해주세요.");
+    try {
+      const available = await checkEmailAvailable(email);
+      if (available) {
+        setIsEmailChecked(true);
+        Alert.alert("중복확인", "사용 가능한 이메일입니다.");
+      } else {
+        setIsEmailChecked(false);
+        Alert.alert("중복확인", "이미 가입된 이메일입니다.\n다른 이메일을 사용해주세요.");
+      }
+    } catch {
+      Alert.alert("오류", "이메일 확인에 실패했습니다. 다시 시도해주세요.");
     }
   };
 
@@ -107,7 +111,7 @@ export function GeneralSignUpScreen() {
               placeholder="사용하실 닉네임을 입력해주세요"
               placeholderTextColor="#A39B92"
               value={nickname}
-              onChangeText={setNickname}
+              onChangeText={(v) => { setNickname(v); setIsNicknameChecked(false); }}
             />
             <TouchableOpacity style={styles.duplicateCheckBtn} onPress={handleCheckNicknameDuplicate} activeOpacity={0.7}>
               <Text style={styles.duplicateCheckBtnText}>중복확인</Text>
@@ -137,7 +141,7 @@ export function GeneralSignUpScreen() {
               placeholder="example@email.com"
               placeholderTextColor="#A39B92"
               value={email}
-              onChangeText={setEmail}
+              onChangeText={(v) => { setEmail(v); setIsEmailChecked(false); }}
               keyboardType="email-address"
               autoCapitalize="none"
             />
@@ -250,15 +254,18 @@ export function GeneralSignUpScreen() {
         </View>
 
         {/* 회원가입 버튼 */}
-        <TouchableOpacity 
-          style={styles.signupButton} 
+        <TouchableOpacity
+          style={[styles.signupButton, isLoading && { opacity: 0.6 }]}
           activeOpacity={0.8}
-          onPress={() => {
+          disabled={isLoading}
+          onPress={async () => {
             if (!name) return Alert.alert("알림", "이름을 입력해주세요.");
             if (!nickname) return Alert.alert("알림", "닉네임을 입력해주세요.");
+            if (!isNicknameChecked) return Alert.alert("알림", "닉네임 중복확인을 해주세요.");
             if (!phone) return Alert.alert("알림", "휴대폰 번호를 입력해주세요.");
             if (phone.length < 12) return Alert.alert("알림", "올바른 휴대폰 번호를 입력해주세요.");
             if (!email) return Alert.alert("알림", "아이디(이메일)를 입력해주세요.");
+            if (!isEmailChecked) return Alert.alert("알림", "이메일 중복확인을 해주세요.");
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             if (!emailRegex.test(email)) return Alert.alert("알림", "올바른 이메일 형식을 입력해주세요.");
             if (!password) return Alert.alert("알림", "비밀번호를 입력해주세요.");
@@ -266,10 +273,30 @@ export function GeneralSignUpScreen() {
             if (!passwordRegex.test(password)) return Alert.alert("알림", "비밀번호는 영문, 숫자, 특수문자를 포함하여 8자 이상이어야 합니다.");
             if (password !== passwordConfirm) return Alert.alert("알림", "비밀번호가 일치하지 않습니다.");
             if (!isTermsAgreed || !isPrivacyAgreed) return Alert.alert("알림", "필수 약관에 동의해주세요.");
-            navigation.navigate("SignUpComplete");
+
+            setIsLoading(true);
+            try {
+              const { needsEmailVerification } = await signUp(email, password, nickname, name);
+              if (needsEmailVerification) {
+                Alert.alert(
+                  "이메일 인증 필요",
+                  "가입하신 이메일로 인증 메일을 발송했습니다.\n인증 후 로그인해주세요.",
+                  [{ text: "확인", onPress: () => navigation.navigate("SignUpComplete") }]
+                );
+              } else {
+                navigation.navigate("SignUpComplete");
+              }
+            } catch (e) {
+              Alert.alert("회원가입 실패", e instanceof Error ? e.message : "회원가입에 실패했습니다.");
+            } finally {
+              setIsLoading(false);
+            }
           }}
         >
-          <Text style={styles.signupButtonText}>가입완료</Text>
+          {isLoading
+            ? <ActivityIndicator color="#FFF" />
+            : <Text style={styles.signupButtonText}>가입완료</Text>
+          }
         </TouchableOpacity>
 
       </ScrollView>

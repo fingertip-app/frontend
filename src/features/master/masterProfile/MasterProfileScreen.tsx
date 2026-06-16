@@ -24,6 +24,12 @@ const ACCENT_LIGHT = "#F2EBE8";
 const GREEN = "#2D7D5A";
 const GREEN_BG = "#E8F5EF";
 
+const ACCOUNT_MENU_ITEMS: { icon: keyof typeof Ionicons.glyphMap; label: string }[] = [
+  { icon: "lock-closed-outline", label: "비밀번호 변경" },
+  { icon: "notifications-outline", label: "알림 설정" },
+  { icon: "help-circle-outline", label: "고객센터 문의" },
+];
+
 // ── 섹션 헤더 ──────────────────────────────────────────
 interface SectionHeaderProps {
   icon: any;
@@ -396,11 +402,7 @@ export function MasterProfileScreen() {
         {/* ── 계정 관리 ── */}
         <View style={s.card}>
           <SectionHeader icon="shield-outline" title="계정" />
-          {[
-            { icon: "lock-closed-outline", label: "비밀번호 변경" },
-            { icon: "notifications-outline", label: "알림 설정" },
-            { icon: "help-circle-outline", label: "고객센터 문의" },
-          ].map((item, i, arr) => (
+          {ACCOUNT_MENU_ITEMS.map((item, i, arr) => (
             <View key={item.label}>
               <TouchableOpacity style={s.menuRow} activeOpacity={0.6}>
                 <View style={s.menuIcon}>

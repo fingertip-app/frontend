@@ -1,8 +1,10 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { View, ActivityIndicator } from "react-native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
 import { NavigatorScreenParams } from "@react-navigation/native";
+import { getCurrentProfile } from "@/features/auth/api/authApi";
 
 import { LoginScreen } from "@/features/auth/LoginScreen";
 import { GeneralSignUpScreen } from "@/features/auth/GeneralSignup/GeneralSignUpScreen";
@@ -138,8 +140,28 @@ function MainTabs() {
 }
 
 export function RootNavigator() {
+  const [initialRoute, setInitialRoute] = useState<keyof RootStackParamList>("Login");
+  const [isReady, setIsReady] = useState(false);
+
+  useEffect(() => {
+    getCurrentProfile().then((profile) => {
+      if (profile) {
+        setInitialRoute(profile.role === "ARTISAN" ? "MasterHome" : "MainTabs");
+      }
+      setIsReady(true);
+    });
+  }, []);
+
+  if (!isReady) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#F5F4F0" }}>
+        <ActivityIndicator size="large" color="#3B2B26" />
+      </View>
+    );
+  }
+
   return (
-    <Stack.Navigator initialRouteName="Login" screenOptions={{ headerShown: false }}>
+    <Stack.Navigator initialRouteName={initialRoute} screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="GeneralSignUp" component={GeneralSignUpScreen} />
       <Stack.Screen name="MasterSignUp" component={MasterSignUpScreen} />

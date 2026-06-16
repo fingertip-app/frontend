@@ -1,23 +1,46 @@
 import React, { useState } from "react";
-import { ScrollView, Text, TextInput, View, TouchableOpacity, StyleSheet, Platform } from "react-native";
+import { ScrollView, Text, TextInput, View, TouchableOpacity, StyleSheet, Platform, Alert, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "@/navigation/RootNavigator";
-import Svg, { Path, G, Circle } from "react-native-svg";
+import Svg, { Path, Circle } from "react-native-svg";
+import { login } from "@/features/auth/api/authApi";
 
 export function LoginScreen() {
-  const [isGeneralMember, setIsGeneralMember] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+
+  const handleLogin = async () => {
+    setErrorMessage("");
+    if (!email || !password) {
+      setErrorMessage("이메일과 비밀번호를 입력해주세요.");
+      return;
+    }
+    setIsLoading(true);
+    try {
+      const { profile } = await login(email, password);
+      if (profile.role === "ARTISAN") {
+        navigation.reset({ index: 0, routes: [{ name: "MasterHome" }] });
+      } else {
+        navigation.reset({ index: 0, routes: [{ name: "MainTabs" }] });
+      }
+    } catch (e) {
+      setErrorMessage(e instanceof Error ? e.message : "로그인에 실패했습니다.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-        
-        {/* TODO: 테스트 완료 후 삭제 (홈 화면 바로가기) */}
+
+        {/* DEV 전용: 테스트 완료 후 삭제 */}
         {__DEV__ && (
           <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 8, marginBottom: 10 }}>
             <TouchableOpacity
@@ -51,25 +74,7 @@ export function LoginScreen() {
           <Text style={styles.welcomeDesc}>로그인하고 다양한 전통 공예 체험을 만나보세요.</Text>
         </View>
 
-        {/* 회원 타입 탭(토글) */}
-        <View style={styles.tabContainer}>
-          <View style={styles.tabBackground}>
-            <TouchableOpacity
-              style={[styles.tabButton, isGeneralMember && styles.activeTab]}
-              onPress={() => setIsGeneralMember(true)}
-              activeOpacity={0.8}
-            >
-              <Text style={[styles.tabText, isGeneralMember && styles.activeTabText]}>일반 회원</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.tabButton, !isGeneralMember && styles.activeTab]}
-              onPress={() => setIsGeneralMember(false)}
-              activeOpacity={0.8}
-            >
-              <Text style={[styles.tabText, !isGeneralMember && styles.activeTabText]}>장인 회원</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+        {/* 회원 타입 탭 제거됨: role은 백엔드에서 자동 판별 */}
 
         {/* 입력 폼 영역 */}
         <View style={styles.formSection}>
@@ -114,19 +119,22 @@ export function LoginScreen() {
                       </TouchableOpacity>
           </View>
 
-          {/* 로그인 버튼 (선택된 탭에 따라 이동 분기) */}
-          <TouchableOpacity 
-            style={styles.loginButton}
+          {/* 에러 메시지 */}
+          {errorMessage ? (
+            <Text style={styles.errorText}>{errorMessage}</Text>
+          ) : null}
+
+          {/* 로그인 버튼 */}
+          <TouchableOpacity
+            style={[styles.loginButton, isLoading && styles.loginButtonDisabled]}
             activeOpacity={0.8}
-            onPress={() => {
-              if (isGeneralMember) {
-                navigation.reset({ index: 0, routes: [{ name: "MainTabs" }] });
-              } else {
-                navigation.reset({ index: 0, routes: [{ name: "MasterHome" }] });
-              }
-            }}
+            onPress={handleLogin}
+            disabled={isLoading}
           >
-            <Text style={styles.loginButtonText}>로그인</Text>
+            {isLoading
+              ? <ActivityIndicator color="#FFF" />
+              : <Text style={styles.loginButtonText}>로그인</Text>
+            }
           </TouchableOpacity>
 
           {/* 아이디/비밀번호 찾기 */}
@@ -325,6 +333,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 10,
     marginBottom: 20,
+  },
+  loginButtonDisabled: {
+    opacity: 0.6,
+  },
+  errorText: {
+    color: '#D04040',
+    fontSize: 13,
+    textAlign: 'center',
+    marginBottom: 8,
   },
   loginButtonText: {
     color: '#FFF',

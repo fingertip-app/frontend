@@ -51,8 +51,8 @@ export function MasterExperienceCreateScreen() {
         {/* 대표 이미지 업로드 */}
         <View style={styles.inputGroup}>
           <Text style={styles.label}>대표 이미지</Text>
-          <TouchableOpacity 
-            style={[styles.imageUploadBox, mainImage && styles.imageUploadBoxDone]} 
+          <TouchableOpacity
+            style={[styles.imageUploadBox, !!mainImage && styles.imageUploadBoxDone]}
             onPress={handleAddImage}
             activeOpacity={0.8}
           >

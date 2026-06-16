@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import { Ionicons, Feather } from "@expo/vector-icons";
 import { useRoute, RouteProp, useNavigation } from "@react-navigation/native";
+import { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
 import { DetailBottomSheet } from "./DetailBottomSheet";
 import { MainLayout } from "@/features/home/MainLayout";
 import { MainTabParamList } from "@/navigation/RootNavigator";
@@ -654,7 +655,7 @@ type DropdownKey = "region" | "date" | "time" | "level" | "sort" | null;
 
 export function SearchScreen() {
   const route = useRoute<RouteProp<MainTabParamList, "Explore">>();
-  const navigation = useNavigation();
+  const navigation = useNavigation<BottomTabNavigationProp<MainTabParamList, "Explore">>();
 
   const [query, setQuery]               = useState("");
   const [activeCategory, setCategory]   = useState("all");

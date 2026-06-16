@@ -7,12 +7,14 @@ import {
   ScrollView,
   Image,
   Platform,
+  Alert,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "@/navigation/RootNavigator";
 import { Ionicons, Feather } from "@expo/vector-icons";
 import { MainLayout } from "@/features/home/MainLayout";
+import { logout } from "@/features/auth/api/authApi";
 
 // ─── 팔레트 ────────────────────────────────────────────────────────────────────
 const BG       = "#F7F4EF";   // 크림 배경
@@ -128,6 +130,15 @@ export function MyPageScreen() {
   const interests = ["도예", "한지", "힐링체험", "전통음식"];
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+    } catch {
+      Alert.alert('오류', '로그아웃에 실패했습니다.');
+    }
+  };
+
   return (
     <MainLayout>
       <ScrollView
@@ -186,7 +197,12 @@ export function MyPageScreen() {
         {/* ── 기타 메뉴 리스트 ── */}
         <View style={ms.menuSection}>
           {["공지사항", "자주 묻는 질문", "이용약관", "로그아웃"].map((item) => (
-            <TouchableOpacity key={item} style={ms.menuItem} activeOpacity={0.7}>
+            <TouchableOpacity
+              key={item}
+              style={ms.menuItem}
+              activeOpacity={0.7}
+              onPress={item === "로그아웃" ? handleLogout : undefined}
+            >
               <Text style={[ms.menuItemText, item === "로그아웃" && { color: "#EF4444" }]}>
                 {item}
               </Text>
