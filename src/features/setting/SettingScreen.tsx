@@ -6,9 +6,13 @@ import {
   SafeAreaView,
   TouchableOpacity,
   ScrollView,
+  Alert,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
+import { logout } from "@/features/auth/api/authApi";
+import { RootStackParamList } from "@/navigation/RootNavigator";
 
 const BG = "#F7F4EF";
 const TEXT = "#1C1410";
@@ -53,7 +57,25 @@ function Row({ icon, label, value, onPress, danger }: RowProps) {
 }
 
 export function SettingScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+
+  const handleLogout = () => {
+    Alert.alert("로그아웃", "정말 로그아웃 하시겠어요?", [
+      { text: "취소", style: "cancel" },
+      {
+        text: "로그아웃",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await logout();
+            navigation.reset({ index: 0, routes: [{ name: "Login" }] });
+          } catch {
+            Alert.alert("오류", "로그아웃에 실패했습니다.");
+          }
+        },
+      },
+    ]);
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -104,6 +126,7 @@ export function SettingScreen() {
           <Row
             icon={<Ionicons name="log-out-outline" size={18} color={TEXT_S} />}
             label="로그아웃"
+            onPress={handleLogout}
           />
           <View style={styles.separator} />
           <Row

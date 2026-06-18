@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ScrollView, Text, View, TouchableOpacity, StyleSheet, SafeAreaView, Platform, Alert } from "react-native";
+import { ActivityIndicator, ScrollView, Text, View, TouchableOpacity, StyleSheet, SafeAreaView, Platform, Alert } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "@/navigation/RootNavigator";
@@ -8,10 +8,12 @@ import { Step2Category } from "./Step2Category";
 import { Step3Region } from "./Step3Region";
 import { Step4Portfolio } from "./Step4Portfolio";
 import { Step5Terms } from "./Step5Terms";
+import { applyArtisan, signUp } from "@/features/auth/api/authApi";
 
 export function MasterSignUpScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [currentStep, setCurrentStep] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
   const [masterName, setMasterName] = useState("");
   const [nickname, setNickname] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -29,6 +31,74 @@ export function MasterSignUpScreen() {
   const [isMarketingAgreed, setIsMarketingAgreed] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<{ name: string; uri: string } | null>(null);
   const [bio, setBio] = useState("");
+
+  const buildApplicationBio = () => {
+    const lines = [
+      shortIntro.trim(),
+      "",
+      "[전문 분야]",
+      selectedCategories.join(", "),
+      "",
+      "[활동 지역]",
+      selectedRegions.join(", "),
+      "",
+      "[주요 이력 및 경력]",
+      careerHistory.trim() || "미입력",
+      "",
+      "[약력 및 주요 활동]",
+      bio.trim() || "미입력",
+      "",
+      "[SNS/웹사이트]",
+      snsLink.trim() || "미입력",
+      "",
+      "[대표 작품 사진]",
+      portfolioImages.length > 0
+        ? `${portfolioImages.length}장 선택됨 - 파일 업로드 API 연동 후 별도 저장 필요`
+        : "미첨부",
+      "",
+      "[자격 증명 서류]",
+      uploadedFile?.name
+        ? `${uploadedFile.name} - 파일 업로드 API 연동 후 별도 저장 필요`
+        : "미첨부",
+    ];
+
+    return lines.join("\n").trim();
+  };
+
+  const submitMasterApplication = async () => {
+    if (!uploadedFile) return Alert.alert("알림", "자격 증명 서류(파일)를 첨부해주세요.");
+    if (!isTermsAgreed || !isPrivacyAgreed) return Alert.alert("알림", "필수 약관에 동의해주세요.");
+
+    setIsLoading(true);
+    try {
+      const { needsEmailVerification, accessToken } = await signUp(email, password, nickname, masterName);
+
+      if (needsEmailVerification) {
+        Alert.alert(
+          "이메일 인증 필요",
+          "가입하신 이메일로 인증 메일을 발송했습니다.\n인증 후 로그인하면 장인 신청을 이어서 제출해야 합니다.",
+          [{ text: "확인", onPress: () => navigation.navigate("SignUpComplete") }]
+        );
+        return;
+      }
+
+      if (!accessToken) {
+        throw new Error("가입 세션을 확인할 수 없어 장인 신청을 제출하지 못했습니다. 로그인 후 다시 시도해주세요.");
+      }
+
+      await applyArtisan({
+        name: masterName.trim(),
+        heritageCategory: selectedCategories[0],
+        bio: buildApplicationBio(),
+      }, accessToken);
+
+      navigation.navigate("SignUpComplete");
+    } catch (e) {
+      Alert.alert("파트너 신청 실패", e instanceof Error ? e.message : "파트너 신청에 실패했습니다.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -112,9 +182,10 @@ export function MasterSignUpScreen() {
 
         {/* 회원가입 버튼 */}
         <TouchableOpacity 
-          style={styles.signupButton} 
+          style={[styles.signupButton, isLoading && { opacity: 0.6 }]} 
           activeOpacity={0.8}
-          onPress={() => {
+          disabled={isLoading}
+          onPress={async () => {
             if (currentStep === 1) {
               if (!masterName) return Alert.alert("알림", "대표자(장인) 이름을 입력해주세요.");
               if (!nickname) return Alert.alert("알림", "닉네임을 입력해주세요.");
@@ -142,15 +213,18 @@ export function MasterSignUpScreen() {
             }
             if (currentStep < 5) setCurrentStep(currentStep + 1);
             else {
-              if (!uploadedFile) return Alert.alert("알림", "자격 증명 서류(파일)를 첨부해주세요.");
-              if (!isTermsAgreed || !isPrivacyAgreed) return Alert.alert("알림", "필수 약관에 동의해주세요.");
-              navigation.navigate("SignUpComplete");
+              await submitMasterApplication();
             }
           }}
         >
-          <Text style={styles.signupButtonText}>
-            {currentStep < 5 ? "다음 단계" : "가입완료 및 파트너 신청"}
-          </Text>
+          {isLoading
+            ? <ActivityIndicator color="#FFF" />
+            : (
+              <Text style={styles.signupButtonText}>
+                {currentStep < 5 ? "다음 단계" : "가입완료 및 파트너 신청"}
+              </Text>
+            )
+          }
         </TouchableOpacity>
 
       </ScrollView>
