@@ -1,17 +1,49 @@
 import React, { useState } from "react";
-import { ScrollView, Text, TextInput, View, TouchableOpacity, StyleSheet, Platform } from "react-native";
+import { ScrollView, Text, TextInput, View, TouchableOpacity, StyleSheet, Platform, Alert, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "@/navigation/RootNavigator";
 import Svg, { Path, G, Circle } from "react-native-svg";
+import { loginEmailAPI } from "../../service/auth";
+import { saveTokens } from "../../service/api";
 
 export function LoginScreen() {
   const [isGeneralMember, setIsGeneralMember] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+
+  const handleLogin = async () => {
+    if (!email || !password) {
+      Alert.alert("알림", "아이디와 비밀번호를 모두 입력해주세요.");
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      
+      // role(일반/장인 구분)은 추후 Spring Boot 백엔드 연동 시 활용 가능합니다.
+      
+      // API 호출
+      const response = await loginEmailAPI(email, password);
+      
+      // 발급된 토큰을 SecureStore에 저장
+      await saveTokens(response.access_token, response.refresh_token);
+
+      if (isGeneralMember) {
+        navigation.reset({ index: 0, routes: [{ name: "MainTabs" }] });
+      } else {
+        navigation.reset({ index: 0, routes: [{ name: "MasterHome" }] });
+      }
+    } catch (error: any) {
+      Alert.alert("로그인 실패", error.message || "로그인 중 오류가 발생했습니다.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -118,15 +150,10 @@ export function LoginScreen() {
           <TouchableOpacity 
             style={styles.loginButton}
             activeOpacity={0.8}
-            onPress={() => {
-              if (isGeneralMember) {
-                navigation.reset({ index: 0, routes: [{ name: "MainTabs" }] });
-              } else {
-                navigation.reset({ index: 0, routes: [{ name: "MasterHome" }] });
-              }
-            }}
+            onPress={handleLogin}
+            disabled={isLoading}
           >
-            <Text style={styles.loginButtonText}>로그인</Text>
+            {isLoading ? <ActivityIndicator color="#FFF" /> : <Text style={styles.loginButtonText}>로그인</Text>}
           </TouchableOpacity>
 
           {/* 아이디/비밀번호 찾기 */}

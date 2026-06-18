@@ -6,16 +6,13 @@ import {
   TouchableOpacity,
   Animated,
   Modal,
-  Dimensions,
   ScrollView,
+  useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation, NavigationProp } from "@react-navigation/native";
 import { RootStackParamList, MainTabParamList } from "@/navigation/RootNavigator";
-
-const { width: SCREEN_WIDTH } = Dimensions.get("window");
-const DRAWER_WIDTH = SCREEN_WIDTH * 0.75;
 
 interface CustomDrawerProps {
   isOpen: boolean;
@@ -61,13 +58,29 @@ export function CustomDrawer({
   onItemPress,
   isMaster = false,
 }: CustomDrawerProps) {
+  const { width: SCREEN_WIDTH } = useWindowDimensions();
+  // 피드백 반영: 화면의 80%, 최대 320px 제한
+  const DRAWER_WIDTH = Math.min(SCREEN_WIDTH * 0.8, 320);
+
   const slideAnim = useRef(new Animated.Value(-DRAWER_WIDTH)).current;
   const [isModalVisible, setIsModalVisible] = useState(false);
   const navigation = useNavigation<DrawerNavigationProp>();
 
+  // 브라우저 리사이즈 시 닫혀있는 메뉴의 오프셋을 동적으로 보정
+  useEffect(() => {
+    if (!isOpen) {
+      slideAnim.setValue(-DRAWER_WIDTH);
+    }
+  }, [DRAWER_WIDTH, isOpen, slideAnim]);
+
   useEffect(() => {
     if (isOpen) {
       setIsModalVisible(true);
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
     } else {
       Animated.timing(slideAnim, {
         toValue: -DRAWER_WIDTH,
@@ -75,17 +88,7 @@ export function CustomDrawer({
         useNativeDriver: true,
       }).start(() => setIsModalVisible(false));
     }
-  }, [isOpen]);
-
-  useEffect(() => {
-    if (isOpen && isModalVisible) {
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
-    }
-  }, [isOpen, isModalVisible]);
+  }, [isOpen, DRAWER_WIDTH, slideAnim]);
 
   const handlePress = (key: string, route?: string) => {
     onItemPress?.(key);
@@ -110,7 +113,7 @@ export function CustomDrawer({
         />
 
         <Animated.View
-          style={[styles.drawer, { transform: [{ translateX: slideAnim }] }]}
+          style={[styles.drawer, { width: DRAWER_WIDTH, transform: [{ translateX: slideAnim }] }]}
         >
           <SafeAreaView style={styles.safeArea}>
             {/* ── 헤더 ── */}
@@ -196,13 +199,16 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     flexDirection: "row",
+    width: "100%",
+    height: "100%",
   },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: "rgba(0,0,0,0.45)",
+    width: "100%",
+    height: "100%",
   },
   drawer: {
-    width: DRAWER_WIDTH,
     height: "100%",
     backgroundColor: "#F5F3EF",
     shadowColor: "#000",

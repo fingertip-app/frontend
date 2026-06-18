@@ -1,9 +1,10 @@
 import React, { useState } from "react";
-import { ScrollView, Text, TextInput, View, TouchableOpacity, StyleSheet, SafeAreaView, Platform, Alert } from "react-native";
+import { ScrollView, Text, TextInput, View, TouchableOpacity, StyleSheet, SafeAreaView, Platform, Alert, ActivityIndicator } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "@/navigation/RootNavigator";
 import Svg, { Path, G, Circle } from "react-native-svg";
+import { signupAPI } from "@/service/auth";
 
 export function GeneralSignUpScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -18,6 +19,7 @@ export function GeneralSignUpScreen() {
   const [isTermsAgreed, setIsTermsAgreed] = useState(false);
   const [isPrivacyAgreed, setIsPrivacyAgreed] = useState(false);
   const [isMarketingAgreed, setIsMarketingAgreed] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const isAllAgreed = isTermsAgreed && isPrivacyAgreed && isMarketingAgreed;
 
@@ -253,7 +255,8 @@ export function GeneralSignUpScreen() {
         <TouchableOpacity 
           style={styles.signupButton} 
           activeOpacity={0.8}
-          onPress={() => {
+          disabled={isLoading}
+          onPress={async () => {
             if (!name) return Alert.alert("알림", "이름을 입력해주세요.");
             if (!nickname) return Alert.alert("알림", "닉네임을 입력해주세요.");
             if (!phone) return Alert.alert("알림", "휴대폰 번호를 입력해주세요.");
@@ -266,10 +269,23 @@ export function GeneralSignUpScreen() {
             if (!passwordRegex.test(password)) return Alert.alert("알림", "비밀번호는 영문, 숫자, 특수문자를 포함하여 8자 이상이어야 합니다.");
             if (password !== passwordConfirm) return Alert.alert("알림", "비밀번호가 일치하지 않습니다.");
             if (!isTermsAgreed || !isPrivacyAgreed) return Alert.alert("알림", "필수 약관에 동의해주세요.");
-            navigation.navigate("SignUpComplete");
+            
+            try {
+              setIsLoading(true);
+              // Supabase 회원가입 API 호출
+              await signupAPI(email, password);
+              
+              // TODO: 닉네임, 이름, 전화번호 등 추가 정보는 추후 Spring Boot 백엔드 API로 전송
+              
+              navigation.navigate("SignUpComplete" as any);
+            } catch (error: any) {
+              Alert.alert("회원가입 실패", error.message || "가입 처리 중 오류가 발생했습니다.");
+            } finally {
+              setIsLoading(false);
+            }
           }}
         >
-          <Text style={styles.signupButtonText}>가입완료</Text>
+          {isLoading ? <ActivityIndicator color="#FFF" /> : <Text style={styles.signupButtonText}>가입완료</Text>}
         </TouchableOpacity>
 
       </ScrollView>
