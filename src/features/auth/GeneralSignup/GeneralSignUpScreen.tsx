@@ -22,7 +22,6 @@ export function GeneralSignUpScreen() {
   const [isTermsAgreed, setIsTermsAgreed] = useState(false);
   const [isPrivacyAgreed, setIsPrivacyAgreed] = useState(false);
   const [isMarketingAgreed, setIsMarketingAgreed] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
 
   const isAllAgreed = isTermsAgreed && isPrivacyAgreed && isMarketingAgreed;
 

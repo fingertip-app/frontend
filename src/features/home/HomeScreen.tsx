@@ -9,7 +9,7 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "@/navigation/RootNavigator";
 import { CardNewsCarousel } from "../cardnews/CardNewsCarousel";
 import { MainLayout } from "./MainLayout";
-import { apiClient } from "@/service/api";
+import { apiGet } from "@/services/api";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const BANNER_WIDTH = SCREEN_WIDTH - 48;
@@ -211,8 +211,8 @@ export function HomeScreen() {
         setIsLoading(true);
         setError(null);
         // 백엔드의 활성 체험 목록 API 호출
-        const response = await apiClient("/experiences/active");
-        setPopularExperiences(response.data || []);
+        const response = await apiGet<any[]>("/experiences/active");
+        setPopularExperiences(response || []);
       } catch (e: any) {
         console.error("체험 목록을 불러오는데 실패했습니다:", e);
         setError("체험 목록을 불러오는데 실패했습니다.");

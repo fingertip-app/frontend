@@ -42,7 +42,7 @@ import { CardNewsListScreen } from "@/features/cardnews/CardNewsListScreen";
 import { CardNewsDetailScreen } from "@/features/cardnews/CardNewsDetailScreen";
 import { AIChatScreen } from "@/features/AI/AIChatScreen";
 import { ArtisanDetailScreen } from "@/features/home/ArtisanDetailScreen";
-import { MasterTodayStatusScreen } from "@/features/master/today-status/MasterTodayStatusScreen";
+import { MasterTodayStatusScreen } from "@/features/master/todayStatus/MasterTodayStatusScreen";
 import { MasterProfileScreen } from "@/features/master/masterProfile/MasterProfileScreen";
 
 export type CardNews = {
