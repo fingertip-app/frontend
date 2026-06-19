@@ -1,14 +1,15 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   ScrollView, Text, View, StyleSheet, TouchableOpacity,
   Image, ImageBackground, FlatList, NativeSyntheticEvent,
-  NativeScrollEvent, Dimensions,
+  NativeScrollEvent, Dimensions, ActivityIndicator,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "@/navigation/RootNavigator";
 import { CardNewsCarousel } from "../cardnews/CardNewsCarousel";
 import { MainLayout } from "./MainLayout";
+import { apiClient } from "@/service/api";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const BANNER_WIDTH = SCREEN_WIDTH - 48;
@@ -194,11 +195,53 @@ function PopularExperienceCard({ item }: { item: typeof POPULAR_EXPERIENCES[0] }
 
 export function HomeScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const [popularExperiences, setPopularExperiences] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [activeBanner, setActiveBanner] = useState(0);
 
   const handleBannerScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const index = Math.round(e.nativeEvent.contentOffset.x / (BANNER_WIDTH + 16));
     setActiveBanner(index);
+  };
+
+  useEffect(() => {
+    const fetchExperiences = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        // 백엔드의 활성 체험 목록 API 호출
+        const response = await apiClient("/experiences/active");
+        setPopularExperiences(response.data || []);
+      } catch (e: any) {
+        console.error("체험 목록을 불러오는데 실패했습니다:", e);
+        setError("체험 목록을 불러오는데 실패했습니다.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchExperiences();
+  }, []);
+
+  const renderPopularExperiences = () => {
+    if (isLoading) {
+      return <ActivityIndicator size="large" color="#3B2B26" style={{ height: 250 }} />;
+    }
+    if (error) {
+      return <Text style={styles.errorText}>{error}</Text>;
+    }
+    return (
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.popularScroll}
+      >
+        {popularExperiences.map((item) => (
+          <PopularExperienceCard key={item.id} item={item} />
+        ))}
+      </ScrollView>
+    );
   };
 
   return (
@@ -326,15 +369,7 @@ export function HomeScreen() {
               <Text style={styles.viewAllText}>더보기 &gt;</Text>
             </TouchableOpacity>
           </View>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.popularScroll}
-          >
-            {POPULAR_EXPERIENCES.map((item) => (
-              <PopularExperienceCard key={item.id} item={item} />
-            ))}
-          </ScrollView>
+          {renderPopularExperiences()}
         </View>
 
         {/* 신규 체험 */}
@@ -491,4 +526,11 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   artisanButtonText: { fontSize: 13, fontWeight: "600", color: "#3B2B26" },
+
+  // 에러 텍스트
+  errorText: {
+    textAlign: 'center',
+    color: '#D9534F',
+    paddingVertical: 20,
+  }
 });
