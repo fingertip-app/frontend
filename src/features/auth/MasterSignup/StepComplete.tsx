@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, Platform } from "react-native
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { RootStackParamList } from "../../../navigation/RootNavigator";
+import { RootStackParamList } from "@/navigation/RootNavigator";
 
 export function StepCompleteScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
