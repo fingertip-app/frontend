@@ -13,7 +13,7 @@ import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "@/navigation/RootNavigator";
 import { Ionicons, Feather } from "@expo/vector-icons";
-import { MainLayout } from "@/features/home/MainLayout";
+import { MainLayout } from "@/features/general/home/MainLayout";
 import { logout } from "@/features/auth/api/authApi";
 
 // ─── 팔레트 ────────────────────────────────────────────────────────────────────

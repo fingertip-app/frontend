@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { View, StyleSheet, TouchableOpacity, Text } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { CustomDrawer } from "@/features/home/CustomDrawer";
+import { CustomDrawer } from "@/features/general/home/CustomDrawer";
 
 interface MainLayoutProps {
   children: React.ReactNode;

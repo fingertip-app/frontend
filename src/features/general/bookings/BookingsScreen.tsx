@@ -12,7 +12,7 @@ import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
 import { RootStackParamList } from "@/navigation/RootNavigator";
-import { MainLayout } from "@/features/home/MainLayout";
+import { MainLayout } from "@/features/general/home/MainLayout";
 
 // ─── 타입 및 더미 데이터 ─────────────────────────────────────────────────────────
 

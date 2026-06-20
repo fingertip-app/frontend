@@ -15,7 +15,7 @@ import { Ionicons, Feather } from "@expo/vector-icons";
 import { useRoute, RouteProp, useNavigation } from "@react-navigation/native";
 import { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
 import { DetailBottomSheet } from "./DetailBottomSheet";
-import { MainLayout } from "@/features/home/MainLayout";
+import { MainLayout } from "@/features/general/home/MainLayout";
 import { MainTabParamList } from "@/navigation/RootNavigator";
 
 // ─── 타입 ────────────────────────────────────────────────────────────────────

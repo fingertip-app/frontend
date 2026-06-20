@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Platform } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { CustomDrawer } from "@/features/home/CustomDrawer";
+import { CustomDrawer } from "@/features/general/home/CustomDrawer";
 import { useNavigation } from "@react-navigation/native";
 
 const BRAND = "#3B2B26";

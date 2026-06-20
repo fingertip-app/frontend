@@ -13,7 +13,7 @@ import {
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { RootStackParamList } from "@/navigation/RootNavigator";
-import { MainLayout } from "@/features/home/MainLayout";
+import { MainLayout } from "@/features/general/home/MainLayout";
 
 const BRAND = "#3D1F0D";
 const GRAY = "#8A8077";

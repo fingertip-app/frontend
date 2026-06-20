@@ -12,7 +12,7 @@ import {
   Animated,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { MainLayout } from "@/features/home/MainLayout";
+import { MainLayout } from "@/features/general/home/MainLayout";
 import { apiPost } from "@/services/api";
 
 // ─── 팔레트 (기존 유지) ────────────────────────────────────────────────────────
