@@ -118,6 +118,14 @@ interface Message {
   isFallback?: boolean;
   recommendations?: RecommendationCard[];
   resultGuide?: string;
+  sources?: AiRecommendationSource[];
+}
+
+interface AiRecommendationSource {
+  id: number;
+  name: string;
+  source: string;
+  category: string;
 }
 
 interface RecommendationCard {
@@ -148,6 +156,7 @@ interface AiRecommendationRequest {
 
 interface AiRecommendationResponse {
   answer: string;
+  sources?: AiRecommendationSource[];
   matchingKeywords: string[];
   recommendedTags: string[];
   recommendedExperiences: {
@@ -407,6 +416,7 @@ export function AIrecommendationScreen() {
           ? response.message ?? FALLBACK_RESULT_GUIDE
           : "선택하신 취향을 바탕으로 가장 적합한 체험을 찾았어요.",
         recommendations: mapRecommendationResponse(response),
+        sources: response.sources,
       };
     } catch {
       return {
@@ -541,6 +551,16 @@ export function AIrecommendationScreen() {
                 {(item.recommendations ?? getFallbackRecommendations()).map((rec) => (
                   <ResultCard key={rec.id} item={rec} />
                 ))}
+                {!!item.sources?.length && (
+                  <View style={s.sourcesBox}>
+                    <Text style={s.sourcesTitle}>출처</Text>
+                    {item.sources.map((src) => (
+                      <Text key={src.id} style={s.sourceText}>
+                        · {src.name} ({src.category}) — {src.source}
+                      </Text>
+                    ))}
+                  </View>
+                )}
                 <TouchableOpacity style={s.resetButton} onPress={handleReset} activeOpacity={0.8}>
                   <Ionicons name="refresh" size={15} color={TEXT_MAIN} />
                   <Text style={s.resetButtonText}>다시 추천받기</Text>
@@ -866,6 +886,25 @@ const s = StyleSheet.create({
     color: BRAND_MID,
     marginTop: 8,
     textAlign: "right",
+  },
+
+  // 출처 목록
+  sourcesBox: {
+    backgroundColor: "#EFEAE2",
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 14,
+  },
+  sourcesTitle: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: TEXT_SUB,
+    marginBottom: 4,
+  },
+  sourceText: {
+    fontSize: 12,
+    color: TEXT_SUB,
+    lineHeight: 18,
   },
 
   // 다시 추천
