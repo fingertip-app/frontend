@@ -135,17 +135,19 @@ export function BookingsScreen() {
     const badge = getStatusBadge(item);
     return (
     <View style={styles.card}>
-      {/* 상단 (날짜, 시간, 상태) */}
+      {/* 상단 (상태 배지 + 날짜, 시간) */}
       <View style={styles.cardHeader}>
+        <View style={styles.statusRow}>
+          <View style={[styles.statusBadge, { backgroundColor: badge.bg }]}>
+            <Text style={[styles.statusBadgeText, { color: badge.color }]}>
+              {badge.label}
+            </Text>
+          </View>
+        </View>
         <View style={styles.dateContainer}>
           <Ionicons name="calendar-outline" size={16} color="#3B2B26" />
-          <Text style={styles.dateText} numberOfLines={1}>
+          <Text style={styles.dateText}>
             {item.date} · {item.time}
-          </Text>
-        </View>
-        <View style={[styles.statusBadge, { backgroundColor: badge.bg }]}>
-          <Text style={[styles.statusBadgeText, { color: badge.color }]} numberOfLines={1}>
-            {badge.label}
           </Text>
         </View>
       </View>
@@ -260,11 +262,11 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 2,
   },
-  cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: "#F5F4F0" },
-  dateContainer: { flexDirection: "row", alignItems: "center", flex: 1, marginRight: 8 },
-  dateText: { fontSize: 14, fontWeight: "700", color: "#3B2B26", marginLeft: 6, flexShrink: 1 },
+  cardHeader: { marginBottom: 12, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: "#F5F4F0" },
+  statusRow: { flexDirection: "row", justifyContent: "flex-end", marginBottom: 8 },
+  dateContainer: { flexDirection: "row", alignItems: "center" },
+  dateText: { fontSize: 14, fontWeight: "700", color: "#3B2B26", marginLeft: 6 },
   statusBadge: {
-    flexShrink: 0,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 10,
