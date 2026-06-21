@@ -1,5 +1,7 @@
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
+  ActivityIndicator,
+  Alert,
   View,
   Text,
   TouchableOpacity,
@@ -12,6 +14,8 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
 import { Experience } from "./SearchScreen";
 import { RootStackParamList } from "@/navigation/RootNavigator";
+import { getExperience } from "@/features/experiences/api/experiencesApi";
+import type { Experience as BackendExperience } from "@/types/api";
 
 const BRAND = "#3D1F0D";
 const BRAND_BUTTON = "#3D1F0D";
@@ -75,7 +79,62 @@ function IncludeItem({ icon, label }: { icon: React.ReactNode; label: string }) 
 
 export function DetailBottomSheet({ exp, onClose }: Props) {
   const [expanded, setExpanded] = useState(false);
+  const [fullExperience, setFullExperience] = useState<BackendExperience | null>(null);
+  const [isLoadingExperience, setIsLoadingExperience] = useState(true);
+  const [experienceError, setExperienceError] = useState<string | null>(null);
+  const requestIdRef = useRef(0);
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+
+  const loadExperience = useCallback(async () => {
+    const requestId = requestIdRef.current + 1;
+    requestIdRef.current = requestId;
+    const experienceId = Number(exp.id);
+
+    if (!Number.isFinite(experienceId)) {
+      setFullExperience(null);
+      setExperienceError("체험 정보를 불러올 수 없습니다.");
+      setIsLoadingExperience(false);
+      return;
+    }
+
+    setIsLoadingExperience(true);
+    setExperienceError(null);
+
+    try {
+      const experience = await getExperience(experienceId);
+      if (requestIdRef.current === requestId) {
+        setFullExperience(experience);
+      }
+    } catch {
+      if (requestIdRef.current === requestId) {
+        setFullExperience(null);
+        setExperienceError("예약 가능한 일정을 불러오지 못했습니다.");
+      }
+    } finally {
+      if (requestIdRef.current === requestId) {
+        setIsLoadingExperience(false);
+      }
+    }
+  }, [exp.id]);
+
+  useEffect(() => {
+    loadExperience();
+
+    return () => {
+      requestIdRef.current += 1;
+    };
+  }, [loadExperience]);
+
+  const hasSchedules = !!fullExperience?.schedules?.some(
+    (schedule) => schedule.isActive && schedule.remainingSlots > 0
+  );
+  const bookingButtonLabel = isLoadingExperience
+    ? "일정 확인 중..."
+    : experienceError
+      ? "다시 시도"
+      : hasSchedules
+        ? "날짜 선택하기"
+        : "예약 가능한 일정 없음";
 
   const shortDesc =
     "흙을 만지고, 나만의 그릇을 만들어보는 시간. 장인의 친절한 지도로 누구나 쉽게 즐길 수 있습니다. 이천의 고요한 공방에서 전통 물레의 리듬을 느끼며 일상의 복잡함을 잊어보세요.";
@@ -442,24 +501,37 @@ export function DetailBottomSheet({ exp, onClose }: Props) {
             </View>
             <TouchableOpacity
               onPress={() => {
+                if (experienceError) {
+                  loadExperience();
+                  return;
+                }
+                if (!fullExperience || !hasSchedules) {
+                  // 일정 없음 상태는 disabled이므로 이 분기 도달 불가
+                  return;
+                }
                 onClose(); // 팝업 닫기
-                // 예약 화면으로 이동하며 데이터 전달 (RootNavigator에 스크린 등록 필요)
-                navigation.navigate("BookingCreate", { exp });
+                navigation.navigate("BookingCreate", { exp, experience: fullExperience });
               }}
+              disabled={isLoadingExperience || (!experienceError && !hasSchedules)}
               activeOpacity={0.85}
               style={{
                 flex: 1,
-                backgroundColor: BRAND_BUTTON,
+                backgroundColor: hasSchedules || experienceError ? BRAND_BUTTON : "#C8BDB4",
                 borderRadius: 50,
                 paddingVertical: 16,
                 alignItems: "center",
+                opacity: isLoadingExperience ? 0.75 : 1,
               }}
             >
-              <Text
-                style={{ color: "#FFFFFF", fontSize: 16, fontWeight: "700" }}
-              >
-                날짜 선택하기
-              </Text>
+              {isLoadingExperience ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <Text
+                  style={{ color: "#FFFFFF", fontSize: 16, fontWeight: "700" }}
+                >
+                  {bookingButtonLabel}
+                </Text>
+              )}
             </TouchableOpacity>
           </View>
         </View>
