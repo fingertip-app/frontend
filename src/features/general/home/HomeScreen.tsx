@@ -78,6 +78,30 @@ const POPULAR_EXPERIENCES = [
   },
 ];
 
+type PopularExperience = typeof POPULAR_EXPERIENCES[number];
+
+type ApiExperience = {
+  id?: string | number;
+  title?: string;
+  name?: string;
+  location?: string;
+  region?: string;
+  address?: string;
+  duration?: string | number;
+  durationMinutes?: number;
+  category?: string;
+  heritageCategory?: string;
+  price?: number;
+  minPrice?: number;
+  rating?: number;
+  averageRating?: number;
+  reviewCount?: number;
+  image?: string;
+  imageUri?: string;
+  imageUrl?: string;
+  thumbnailUrl?: string;
+};
+
 const NEW_EXPERIENCES = [
   {
     id: "4",
@@ -145,6 +169,35 @@ const TODAY_ARTISAN = {
   quote: '"매듭에는 사람의 마음을 잇는 힘이 있습니다."',
   image: "https://images.unsplash.com/photo-1556157382-97eda2d62296?w=800&q=80",
 };
+
+function formatDuration(item: ApiExperience): string {
+  if (typeof item.duration === "string") return item.duration;
+  if (typeof item.duration === "number") return `${item.duration}시간`;
+  if (typeof item.durationMinutes === "number") {
+    const hours = item.durationMinutes / 60;
+    return Number.isInteger(hours) ? `${hours}시간` : `${hours.toFixed(1)}시간`;
+  }
+  return "";
+}
+
+function formatPrice(item: ApiExperience): string {
+  const price = item.minPrice ?? item.price;
+  return typeof price === "number" ? `${price.toLocaleString()}원` : "";
+}
+
+function mapApiPopularExperience(item: ApiExperience, index: number): PopularExperience {
+  return {
+    id: String(item.id ?? `api-${index}`),
+    title: item.title ?? item.name ?? "이름 없는 체험",
+    location: item.location ?? item.region ?? item.address ?? "지역 정보 없음",
+    duration: formatDuration(item),
+    category: item.category ?? item.heritageCategory ?? "기타",
+    price: formatPrice(item),
+    rating: item.averageRating ?? item.rating ?? 0,
+    reviewCount: item.reviewCount ?? 0,
+    image: item.image ?? item.imageUri ?? item.imageUrl ?? item.thumbnailUrl ?? "https://picsum.photos/seed/experience/400/300",
+  };
+}
 
 // 장인 작업실 위치 (실제로는 백엔드 Experience.locationLat/Lng 기준이어야 하나,
 // 현재 /experiences/active 응답에 장인명이 포함되지 않아 좌표만 목업으로 둔다)
@@ -262,7 +315,7 @@ function NearbyArtisanCard({
 
 export function HomeScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const [popularExperiences, setPopularExperiences] = useState<any[]>([]);
+  const [popularExperiences, setPopularExperiences] = useState<PopularExperience[]>(POPULAR_EXPERIENCES);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeBanner, setActiveBanner] = useState(0);
@@ -304,11 +357,12 @@ export function HomeScreen() {
         setIsLoading(true);
         setError(null);
         // 백엔드의 활성 체험 목록 API 호출
-        const response = await apiGet<any[]>("/experiences/active");
-        setPopularExperiences(response || []);
+        const response = await apiGet<ApiExperience[]>("/experiences/active");
+        setPopularExperiences(response.length > 0 ? response.map(mapApiPopularExperience) : POPULAR_EXPERIENCES);
       } catch (e: any) {
         console.error("체험 목록을 불러오는데 실패했습니다:", e);
-        setError("체험 목록을 불러오는데 실패했습니다.");
+        setPopularExperiences(POPULAR_EXPERIENCES);
+        setError("백엔드 연결이 원활하지 않아 예시 체험을 보여드리고 있어요.");
       } finally {
         setIsLoading(false);
       }
@@ -321,19 +375,19 @@ export function HomeScreen() {
     if (isLoading) {
       return <ActivityIndicator size="large" color="#3B2B26" style={{ height: 250 }} />;
     }
-    if (error) {
-      return <Text style={styles.errorText}>{error}</Text>;
-    }
     return (
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.popularScroll}
-      >
-        {popularExperiences.map((item) => (
-          <PopularExperienceCard key={item.id} item={item} />
-        ))}
-      </ScrollView>
+      <>
+        {error && <Text style={styles.errorText}>{error}</Text>}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.popularScroll}
+        >
+          {popularExperiences.map((item) => (
+            <PopularExperienceCard key={item.id} item={item} />
+          ))}
+        </ScrollView>
+      </>
     );
   };
 

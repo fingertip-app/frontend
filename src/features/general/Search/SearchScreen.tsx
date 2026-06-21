@@ -10,6 +10,7 @@ import {
   StatusBar,
   Platform,
   Animated,
+  ActivityIndicator,
 } from "react-native";
 import { Ionicons, Feather } from "@expo/vector-icons";
 import { useRoute, RouteProp, useNavigation } from "@react-navigation/native";
@@ -17,6 +18,7 @@ import { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
 import { DetailBottomSheet } from "./DetailBottomSheet";
 import { MainLayout } from "@/features/general/home/MainLayout";
 import { MainTabParamList } from "@/navigation/RootNavigator";
+import { apiGet } from "@/services/api";
 
 // ─── 타입 ────────────────────────────────────────────────────────────────────
 
@@ -52,6 +54,34 @@ export type Experience = {
   familyOk?: boolean;
   highlight?: string;
   highlightColor?: string;
+};
+
+type ApiExperience = {
+  id?: string | number;
+  title?: string;
+  name?: string;
+  category?: string;
+  heritageCategory?: string;
+  location?: string;
+  address?: string;
+  region?: string;
+  artisan?: string;
+  artisanName?: string;
+  masterName?: string;
+  rating?: number;
+  averageRating?: number;
+  reviewCount?: number;
+  duration?: string | number;
+  durationMinutes?: number;
+  price?: number;
+  minPrice?: number;
+  tags?: string[];
+  imageUri?: string;
+  imageUrl?: string;
+  thumbnailUrl?: string;
+  todayBooking?: boolean;
+  foreignOk?: boolean;
+  familyOk?: boolean;
 };
 
 // ─── 상수 / 데이터 ────────────────────────────────────────────────────────────
@@ -217,6 +247,40 @@ const ALL_EXPERIENCES: Experience[] = [
 
 function categoryToId(label: string): string {
   return CATEGORIES.find((c) => c.label === label)?.id ?? "etc";
+}
+
+function formatDuration(item: ApiExperience): string {
+  if (typeof item.duration === "string") return item.duration;
+  if (typeof item.duration === "number") return `${item.duration}시간`;
+  if (typeof item.durationMinutes === "number") {
+    const hours = item.durationMinutes / 60;
+    return Number.isInteger(hours) ? `${hours}시간` : `${hours.toFixed(1)}시간`;
+  }
+  return "";
+}
+
+function mapApiExperience(item: ApiExperience, index: number): Experience {
+  const tags = Array.isArray(item.tags) ? item.tags : [];
+
+  return {
+    id: String(item.id ?? `api-${index}`),
+    title: item.title ?? item.name ?? "이름 없는 체험",
+    category: item.category ?? item.heritageCategory ?? "기타",
+    location: item.location ?? item.region ?? item.address ?? "지역 정보 없음",
+    artisan: item.artisan ?? item.artisanName ?? item.masterName ?? "장인 정보 없음",
+    rating: item.averageRating ?? item.rating ?? 0,
+    reviewCount: item.reviewCount ?? 0,
+    duration: formatDuration(item),
+    price: item.minPrice ?? item.price ?? 0,
+    tags,
+    imageUri: item.imageUri ?? item.imageUrl ?? item.thumbnailUrl ?? "https://picsum.photos/seed/experience/300/200",
+    badge: index === 0 ? "BEST" : undefined,
+    todayBooking: item.todayBooking,
+    foreignOk: item.foreignOk ?? tags.includes("외국어 가능"),
+    familyOk: item.familyOk ?? tags.includes("가족 추천"),
+    highlight: item.todayBooking ? "오늘 예약 가능" : undefined,
+    highlightColor: item.todayBooking ? "#E87B35" : undefined,
+  };
 }
 
 // ─── 서브 컴포넌트 ─────────────────────────────────────────────────────────────
@@ -662,6 +726,9 @@ export function SearchScreen() {
   const [activeFilter, setFilter]       = useState(route.params?.filter ?? "popular");
   const [openDropdown, setDropdown]     = useState<DropdownKey>(null);
   const [selectedExp, setSelectedExp]   = useState<Experience | null>(route.params?.exp ?? null);
+  const [experiences, setExperiences]   = useState<Experience[]>(ALL_EXPERIENCES);
+  const [isLoading, setIsLoading]       = useState(true);
+  const [apiError, setApiError]         = useState<string | null>(null);
 
   // 드롭다운 선택값
   const [region, setRegion] = useState("지역");
@@ -687,6 +754,32 @@ export function SearchScreen() {
     }
   }, [route.params?.exp, navigation]);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchExperiences = async () => {
+      try {
+        setIsLoading(true);
+        setApiError(null);
+        const response = await apiGet<ApiExperience[]>("/experiences/active");
+        if (!isMounted) return;
+        setExperiences(response.map(mapApiExperience));
+      } catch {
+        if (!isMounted) return;
+        setExperiences(ALL_EXPERIENCES);
+        setApiError("백엔드 연결이 원활하지 않아 예시 체험을 보여드리고 있어요.");
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
+    };
+
+    fetchExperiences();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   // 드롭다운 설정 맵
   const dropdownConfig: Record<
     Exclude<DropdownKey, null>,
@@ -701,7 +794,7 @@ export function SearchScreen() {
 
   // 필터링 + 정렬
   const results = useMemo(() => {
-    let list = ALL_EXPERIENCES.filter((exp) => {
+    let list = experiences.filter((exp) => {
       // 카테고리
       if (activeCategory !== "all") {
         const catLabel = CATEGORIES.find((c) => c.id === activeCategory)?.label;
@@ -727,7 +820,7 @@ export function SearchScreen() {
     if (sort === "리뷰 많은순")   list = [...list].sort((a, b) => b.reviewCount - a.reviewCount);
 
     return list;
-  }, [query, activeCategory, activeFilter, sort]);
+  }, [experiences, query, activeCategory, activeFilter, sort]);
 
   const currentDropdown = openDropdown ? dropdownConfig[openDropdown] : null;
 
@@ -771,6 +864,7 @@ export function SearchScreen() {
               <Text style={{ fontSize: 15, fontWeight: "800", color: BRAND }}>{results.length}</Text>
               <Text style={{ fontSize: 15, fontWeight: "800", color: "#111827" }}>개의 체험</Text>
               <View style={{ flex: 1 }} />
+              {isLoading && <ActivityIndicator size="small" color={BRAND} style={{ marginRight: 8 }} />}
               <TouchableOpacity
                 onPress={() => setDropdown("sort")}
                 style={{ flexDirection: "row", alignItems: "center", gap: 3 }}
@@ -779,6 +873,22 @@ export function SearchScreen() {
                 <Text style={{ fontSize: 12, color: "#6B7280", fontWeight: "500" }}>{sort}</Text>
               </TouchableOpacity>
             </View>
+            {apiError && (
+              <View
+                style={{
+                  marginHorizontal: 16,
+                  marginBottom: 10,
+                  paddingHorizontal: 12,
+                  paddingVertical: 8,
+                  borderRadius: 10,
+                  backgroundColor: "#FFF7ED",
+                }}
+              >
+                <Text style={{ color: "#9A3412", fontSize: 12, fontWeight: "600" }}>
+                  {apiError}
+                </Text>
+              </View>
+            )}
           </>
         }
       />
