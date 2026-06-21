@@ -125,6 +125,11 @@ export function BookingsScreen() {
             {item.date} · {item.time}
           </Text>
         </View>
+        {item.paymentRequired && (
+          <View style={styles.paymentBadge}>
+            <Text style={styles.paymentBadgeText}>결제 필요</Text>
+          </View>
+        )}
       </View>
 
       {/* 본문 (정보) */}
@@ -239,6 +244,13 @@ const styles = StyleSheet.create({
   cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: "#F5F4F0" },
   dateContainer: { flexDirection: "row", alignItems: "center" },
   dateText: { fontSize: 14, fontWeight: "700", color: "#3B2B26", marginLeft: 6 },
+  paymentBadge: {
+    backgroundColor: "#FFF3E0",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 10,
+  },
+  paymentBadgeText: { fontSize: 12, fontWeight: "700", color: "#E65100" },
   
   cardBody: { marginBottom: 16 },
   cardTitle: { fontSize: 18, fontWeight: "bold", color: "#3B2B26", marginBottom: 12 },
