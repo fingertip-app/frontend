@@ -145,6 +145,33 @@ const TODAY_ARTISAN = {
   image: "https://images.unsplash.com/photo-1556157382-97eda2d62296?w=800&q=80",
 };
 
+const NEARBY_ARTISANS = [
+  {
+    id: "1",
+    name: "김도예 장인",
+    category: "도자기",
+    distance: "1.2km",
+    location: "경기 이천시",
+    image: "https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=300&q=80",
+  },
+  {
+    id: "2",
+    name: "한지마을",
+    category: "한지공예",
+    distance: "3.5km",
+    location: "전북 전주시",
+    image: "https://images.unsplash.com/photo-1607453998774-d533f65dac99?w=300&q=80",
+  },
+  {
+    id: "3",
+    name: "이영희 장인",
+    category: "나전칠기",
+    distance: "5.8km",
+    location: "서울 종로구",
+    image: "https://images.unsplash.com/photo-1582738411706-bfc8e691d1c2?w=300&q=80",
+  },
+];
+
 function BannerCard({ item }: { item: typeof TOP_BANNERS[0] }) {
   return (
     <TouchableOpacity activeOpacity={0.95} style={{ width: BANNER_WIDTH, marginRight: 16 }}>
@@ -188,6 +215,22 @@ function PopularExperienceCard({ item }: { item: typeof POPULAR_EXPERIENCES[0] }
           <Text style={styles.ratingText}>{item.rating} ({item.reviewCount})</Text>
         </View>
         <Text style={styles.popularPrice}>{item.price}</Text>
+      </View>
+    </TouchableOpacity>
+  );
+}
+
+function NearbyArtisanCard({ item, onPress }: { item: typeof NEARBY_ARTISANS[0]; onPress: () => void }) {
+  return (
+    <TouchableOpacity style={styles.nearbyCard} activeOpacity={0.9} onPress={onPress}>
+      <Image source={{ uri: item.image }} style={styles.nearbyImage} />
+      <View style={styles.nearbyInfo}>
+        <Text style={styles.nearbyName} numberOfLines={1}>{item.name}</Text>
+        <Text style={styles.nearbyMeta}>{item.category} · {item.location}</Text>
+        <View style={styles.nearbyDistanceRow}>
+          <Text style={styles.nearbyDistanceIcon}>📍</Text>
+          <Text style={styles.nearbyDistance}>{item.distance}</Text>
+        </View>
       </View>
     </TouchableOpacity>
   );
@@ -334,6 +377,26 @@ export function HomeScreen() {
               </TouchableOpacity>
             </View>
           </TouchableOpacity>
+        </View>
+
+        {/* 내 주변 장인 */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>📍 내 주변 장인</Text>
+          </View>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.popularScroll}
+          >
+            {NEARBY_ARTISANS.map((item) => (
+              <NearbyArtisanCard
+                key={item.id}
+                item={item}
+                onPress={() => navigation.navigate("ArtisanDetail" as any)}
+              />
+            ))}
+          </ScrollView>
         </View>
 
         {/* 찜한 체험 */}
@@ -495,6 +558,16 @@ const styles = StyleSheet.create({
   starIcon: { fontSize: 12, color: "#D4A97A" },
   ratingText: { fontSize: 11, color: "#8A8077" },
   popularPrice: { fontSize: 14, fontWeight: "600", color: "#3B2B26" },
+
+  // 내 주변 장인
+  nearbyCard: { width: 168, marginRight: 14 },
+  nearbyImage: { width: "100%", height: 110, borderRadius: 12, marginBottom: 10 },
+  nearbyInfo: {},
+  nearbyName: { fontSize: 14, fontWeight: "700", color: "#3B2B26", marginBottom: 4 },
+  nearbyMeta: { fontSize: 11, color: "#8A8077", marginBottom: 4 },
+  nearbyDistanceRow: { flexDirection: "row", alignItems: "center", gap: 3 },
+  nearbyDistanceIcon: { fontSize: 11 },
+  nearbyDistance: { fontSize: 12, color: "#6E665F", fontWeight: "600" },
 
   // 오늘의 장인
   artisanCard: {
