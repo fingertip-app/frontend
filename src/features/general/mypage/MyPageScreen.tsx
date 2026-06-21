@@ -190,6 +190,11 @@ export function MyPageScreen() {
 
         {/* ── 활동 카드 ── */}
         <View style={ms.grid}>
+          <ActivityCard
+            icon="calendar-outline"
+            label="예약 내역"
+            onPress={() => navigation.navigate("MainTabs", { screen: "Bookings" })}
+          />
           <ActivityCard icon="heart-outline" label="찜한 체험" onPress={() => navigation.navigate("Wishlist")} />
           <ActivityCard icon="create-outline"        label="후기 작성" onPress={() => navigation.navigate("MyReviews")} />
         </View>

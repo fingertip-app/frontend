@@ -661,7 +661,7 @@ export function SearchScreen() {
   const [activeCategory, setCategory]   = useState("all");
   const [activeFilter, setFilter]       = useState(route.params?.filter ?? "popular");
   const [openDropdown, setDropdown]     = useState<DropdownKey>(null);
-  const [selectedExp, setSelectedExp]   = useState<Experience | null>(null);
+  const [selectedExp, setSelectedExp]   = useState<Experience | null>(route.params?.exp ?? null);
 
   // 드롭다운 선택값
   const [region, setRegion] = useState("지역");
@@ -678,6 +678,14 @@ export function SearchScreen() {
       navigation.setParams({ filter: undefined });
     }
   }, [route.params?.filter, navigation]);
+
+  // 다른 화면(AI 추천 등)에서 특정 체험의 상세를 바로 열도록 넘겨준 경우
+  useEffect(() => {
+    if (route.params?.exp) {
+      setSelectedExp(route.params.exp);
+      navigation.setParams({ exp: undefined });
+    }
+  }, [route.params?.exp, navigation]);
 
   // 드롭다운 설정 맵
   const dropdownConfig: Record<

@@ -177,7 +177,56 @@ export function BookingDetailScreen() {
 
       {/* ── 하단 버튼 영역 ── */}
       <View style={styles.footer}>
-        {(booking.status === "upcoming" || booking.status === "pending") ? (
+        {booking.status === "upcoming" && booking.paymentRequired ? (
+          <View style={styles.footerRow}>
+            <TouchableOpacity style={styles.cancelBtn} activeOpacity={0.8}>
+              <Text style={styles.cancelBtnText}>예약 취소</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.chatBtn}
+              activeOpacity={0.85}
+              onPress={() =>
+                navigation.navigate("Payment", {
+                  exp: {
+                    id: booking.id,
+                    title: booking.title,
+                    category: "",
+                    location: booking.location,
+                    artisan: booking.artisan,
+                    rating: 0,
+                    reviewCount: 0,
+                    duration: "",
+                    price: booking.totalPrice ?? 0,
+                    tags: [],
+                    imageUri: booking.imageUri ?? "",
+                  },
+                  dateLabel: booking.date,
+                  time: booking.time,
+                  headcount: booking.guests,
+                  totalPrice: booking.totalPrice ?? 0,
+                })
+              }
+            >
+              <Ionicons name="card-outline" size={17} color="#FFFFFF" style={{ marginRight: 6 }} />
+              <Text style={styles.chatBtnText}>결제하기</Text>
+            </TouchableOpacity>
+          </View>
+        ) : booking.status === "upcoming" && !booking.paymentRequired ? (
+          <View style={styles.footerRow}>
+            <TouchableOpacity
+              style={styles.cancelBtn}
+              activeOpacity={0.8}
+              onPress={() => navigation.navigate("QRConfirmation", { booking })}
+            >
+              <Ionicons name="qr-code-outline" size={17} color="#1C1107" style={{ marginRight: 6 }} />
+              <Text style={styles.cancelBtnText}>QR 확인서</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.chatBtn} activeOpacity={0.85}>
+              <Ionicons name="chatbubble-ellipses-outline" size={17} color="#FFFFFF" style={{ marginRight: 6 }} />
+              <Text style={styles.chatBtnText}>장인에게 메시지 보내기</Text>
+            </TouchableOpacity>
+          </View>
+        ) : booking.status === "pending" ? (
           <View style={styles.footerRow}>
             <TouchableOpacity style={styles.cancelBtn} activeOpacity={0.8}>
               <Text style={styles.cancelBtnText}>예약 취소</Text>
