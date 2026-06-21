@@ -103,6 +103,22 @@ const MOCK_BOOKINGS: Booking[] = [
   },
 ];
 
+// 예약 상태 배지 (탭 상태 + 결제 여부를 합쳐 하나의 배지로 표시)
+function getStatusBadge(item: Booking): { label: string; bg: string; color: string } {
+  if (item.status === "upcoming") {
+    return item.paymentRequired
+      ? { label: "결제 필요", bg: "#FFF3E0", color: "#E65100" }
+      : { label: "결제 완료", bg: "#E8F5E9", color: "#2E7D32" };
+  }
+  if (item.status === "pending") {
+    return { label: "승인 대기", bg: "#FFF3E0", color: "#E65100" };
+  }
+  if (item.status === "cancelled") {
+    return { label: "취소", bg: "#FFEBEE", color: "#C62828" };
+  }
+  return { label: "지난 체험", bg: "#EAE6E1", color: "#6E665F" };
+}
+
 // ─── 메인 컴포넌트 ─────────────────────────────────────────────────────────────
 
 export function BookingsScreen() {
@@ -115,21 +131,23 @@ export function BookingsScreen() {
   );
 
   // 예약 카드 렌더링 함수
-  const renderBookingCard = ({ item }: { item: Booking }) => (
+  const renderBookingCard = ({ item }: { item: Booking }) => {
+    const badge = getStatusBadge(item);
+    return (
     <View style={styles.card}>
       {/* 상단 (날짜, 시간, 상태) */}
       <View style={styles.cardHeader}>
         <View style={styles.dateContainer}>
           <Ionicons name="calendar-outline" size={16} color="#3B2B26" />
-          <Text style={styles.dateText}>
+          <Text style={styles.dateText} numberOfLines={1}>
             {item.date} · {item.time}
           </Text>
         </View>
-        {item.paymentRequired && (
-          <View style={styles.paymentBadge}>
-            <Text style={styles.paymentBadgeText}>결제 필요</Text>
-          </View>
-        )}
+        <View style={[styles.statusBadge, { backgroundColor: badge.bg }]}>
+          <Text style={[styles.statusBadgeText, { color: badge.color }]} numberOfLines={1}>
+            {badge.label}
+          </Text>
+        </View>
       </View>
 
       {/* 본문 (정보) */}
@@ -163,7 +181,8 @@ export function BookingsScreen() {
         </TouchableOpacity>
       </View>
     </View>
-  );
+    );
+  };
 
   return (
     <MainLayout>
@@ -242,16 +261,16 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: "#F5F4F0" },
-  dateContainer: { flexDirection: "row", alignItems: "center" },
-  dateText: { fontSize: 14, fontWeight: "700", color: "#3B2B26", marginLeft: 6 },
-  paymentBadge: {
-    backgroundColor: "#FFF3E0",
+  dateContainer: { flexDirection: "row", alignItems: "center", flex: 1, marginRight: 8 },
+  dateText: { fontSize: 14, fontWeight: "700", color: "#3B2B26", marginLeft: 6, flexShrink: 1 },
+  statusBadge: {
+    flexShrink: 0,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 10,
   },
-  paymentBadgeText: { fontSize: 12, fontWeight: "700", color: "#E65100" },
-  
+  statusBadgeText: { fontSize: 12, fontWeight: "700" },
+
   cardBody: { marginBottom: 16 },
   cardTitle: { fontSize: 18, fontWeight: "bold", color: "#3B2B26", marginBottom: 12 },
   infoRow: { flexDirection: "row", alignItems: "center", marginBottom: 6 },
