@@ -32,6 +32,8 @@ export interface Booking {
   paidAt?: string;
   payMethod?: string;
   totalPrice?: number;
+  // 장인 승인은 끝났지만 아직 결제 전인 예약 (결제는 승인 후에만 가능)
+  paymentRequired?: boolean;
 }
 
 const TABS: { id: TabType; label: string }[] = [
@@ -63,6 +65,8 @@ const MOCK_BOOKINGS: Booking[] = [
     guests: 4,
     location: "전북 전주시 완산구 한지길 24",
     imageUri: "https://picsum.photos/seed/hanji/300/200",
+    paymentRequired: true,
+    totalPrice: 112000,
   },
   {
     id: "3",

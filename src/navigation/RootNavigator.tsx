@@ -23,6 +23,7 @@ import { BookingCreateScreen } from "@/features/general/bookings/BookingCreateSc
 import { Experience } from "@/features/general/Search/SearchScreen";
 import { BookingDetailScreen } from "@/features/general/bookings/BookingDetailScreen";
 import { PaymentScreen } from "@/features/general/bookings/PaymentScreen";
+import { BookingRequestCompleteScreen } from "@/features/general/bookings/BookingRequestCompleteScreen";
 import { Booking } from "@/features/general/bookings/BookingsScreen";
 import { WishlistScreen } from "@/features/general/mypage/WishlistScreen";
 import { ReviewScreen } from "@/features/general/review/ReviewScreen";
@@ -76,6 +77,14 @@ export type RootStackParamList = {
   BookingCreate: { exp: Experience };
   BookingDetail: { booking: Booking };
   Payment: { exp: Experience; dateLabel: string; time: string; headcount: number; totalPrice: number };
+  BookingRequestComplete: {
+    exp: Experience;
+    dateLabel: string;
+    time: string;
+    headcount: number;
+    totalPrice: number;
+    requestMessage: string;
+  };
   Wishlist: undefined;
   Review: { booking: Booking };
   MyReviews: undefined;
@@ -183,6 +192,7 @@ export function RootNavigator() {
       <Stack.Screen name="BookingCreate" component={BookingCreateScreen} />
       <Stack.Screen name="BookingDetail" component={BookingDetailScreen} />
       <Stack.Screen name="Payment" component={PaymentScreen} />
+      <Stack.Screen name="BookingRequestComplete" component={BookingRequestCompleteScreen} />
       <Stack.Screen name="Wishlist" component={WishlistScreen} />
       <Stack.Screen name="Review" component={ReviewScreen} />
       <Stack.Screen name="MyReviews" component={MyReviewsScreen} />
