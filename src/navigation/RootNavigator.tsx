@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { View, ActivityIndicator } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
 import { NavigatorScreenParams } from "@react-navigation/native";
 import { getCurrentProfile } from "@/features/auth/api/authApi";
 
+import { OnboardingScreen, ONBOARDING_SEEN_KEY } from "@/features/onboarding/OnboardingScreen";
 import { LoginScreen } from "@/features/auth/LoginScreen";
 import { GeneralSignUpScreen } from "@/features/auth/GeneralSignup/GeneralSignUpScreen";
 import { MasterSignUpScreen } from "@/features/auth/MasterSignup/MasterSignUpScreen";
@@ -63,6 +65,7 @@ export type MainTabParamList = {
 };
 
 export type RootStackParamList = {
+  Onboarding: undefined;
   Login: undefined;
   GeneralSignUp: undefined;
   MasterSignUp: undefined;
@@ -146,9 +149,14 @@ export function RootNavigator() {
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    getCurrentProfile().then((profile) => {
+    getCurrentProfile().then(async (profile) => {
       if (profile) {
         setInitialRoute(profile.role === "ARTISAN" ? "MasterHome" : "MainTabs");
+      } else {
+        const onboardingSeen = await AsyncStorage.getItem(ONBOARDING_SEEN_KEY);
+        if (!onboardingSeen) {
+          setInitialRoute("Onboarding");
+        }
       }
       setIsReady(true);
     });
@@ -164,6 +172,7 @@ export function RootNavigator() {
 
   return (
     <Stack.Navigator initialRouteName={initialRoute} screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="Onboarding" component={OnboardingScreen} />
       <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="GeneralSignUp" component={GeneralSignUpScreen} />
       <Stack.Screen name="MasterSignUp" component={MasterSignUpScreen} />
