@@ -20,6 +20,7 @@ import { MyPageScreen } from "@/features/general/mypage/MyPageScreen";
 import { BookingCreateScreen } from "@/features/general/bookings/BookingCreateScreen";
 import { Experience } from "@/features/general/Search/SearchScreen";
 import { BookingDetailScreen } from "@/features/general/bookings/BookingDetailScreen";
+import { PaymentScreen } from "@/features/general/bookings/PaymentScreen";
 import { Booking } from "@/features/general/bookings/BookingsScreen";
 import { WishlistScreen } from "@/features/general/mypage/WishlistScreen";
 import { ReviewScreen } from "@/features/general/review/ReviewScreen";
@@ -71,6 +72,7 @@ export type RootStackParamList = {
   MainTabs: NavigatorScreenParams<MainTabParamList>;
   BookingCreate: { exp: Experience };
   BookingDetail: { booking: Booking };
+  Payment: { exp: Experience; dateLabel: string; time: string; headcount: number; totalPrice: number };
   Wishlist: undefined;
   Review: { booking: Booking };
   MyReviews: undefined;
@@ -171,6 +173,7 @@ export function RootNavigator() {
       <Stack.Screen name="MainTabs" component={MainTabs} />
       <Stack.Screen name="BookingCreate" component={BookingCreateScreen} />
       <Stack.Screen name="BookingDetail" component={BookingDetailScreen} />
+      <Stack.Screen name="Payment" component={PaymentScreen} />
       <Stack.Screen name="Wishlist" component={WishlistScreen} />
       <Stack.Screen name="Review" component={ReviewScreen} />
       <Stack.Screen name="MyReviews" component={MyReviewsScreen} />

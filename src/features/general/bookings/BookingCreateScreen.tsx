@@ -86,6 +86,17 @@ export function BookingCreateScreen() {
 
   const isUnavailable = (slot: string) => slot === "13:00";
 
+  const handleBook = () => {
+    if (!selectedDate) return;
+    navigation.navigate("Payment", {
+      exp,
+      dateLabel: `${viewYear}년 ${viewMonth + 1}월 ${selectedDate}일`,
+      time: selectedTime,
+      headcount,
+      totalPrice: total,
+    });
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       {/* 헤더 */}
@@ -284,7 +295,7 @@ export function BookingCreateScreen() {
 
       {/* 하단 고정 예약 버튼 */}
       <View style={styles.footer}>
-        <TouchableOpacity style={styles.bookBtn} activeOpacity={0.85}>
+        <TouchableOpacity style={styles.bookBtn} activeOpacity={0.85} onPress={handleBook}>
           <Text style={styles.bookBtnText}>예약하기</Text>
         </TouchableOpacity>
       </View>
