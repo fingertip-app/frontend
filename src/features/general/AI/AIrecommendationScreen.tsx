@@ -12,8 +12,12 @@ import {
   Animated,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useNavigation } from "@react-navigation/native";
+import { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
 import { MainLayout } from "@/features/general/home/MainLayout";
 import { apiPost } from "@/services/api";
+import { MainTabParamList } from "@/navigation/RootNavigator";
+import { Experience } from "@/features/general/Search/SearchScreen";
 
 // ─── 팔레트 (기존 유지) ────────────────────────────────────────────────────────
 const BG        = "#F5F0EA";
@@ -291,10 +295,10 @@ const mapRecommendationResponse = (response: AiRecommendationResponse): Recommen
 };
 
 // ─── 결과 카드 ─────────────────────────────────────────────────────────────────
-function ResultCard({ item }: { item: RecommendationCard }) {
+function ResultCard({ item, onPress }: { item: RecommendationCard; onPress: () => void }) {
   const [liked, setLiked] = useState(false);
   return (
-    <TouchableOpacity style={s.resultCard} activeOpacity={0.9}>
+    <TouchableOpacity style={s.resultCard} activeOpacity={0.9} onPress={onPress}>
       <Image source={{ uri: item.imageUri }} style={s.resultImage} resizeMode="cover" />
       <View style={s.reasonBadge}>
         <Text style={s.reasonText}>✨ {item.reason}</Text>
@@ -376,8 +380,23 @@ function TypingIndicator() {
   );
 }
 
+const toExperience = (item: RecommendationCard): Experience => ({
+  id: item.id,
+  title: item.title,
+  category: item.category,
+  location: item.location,
+  artisan: "",
+  rating: item.rating,
+  reviewCount: item.reviewCount,
+  duration: "",
+  price: item.price,
+  tags: [item.category],
+  imageUri: item.imageUri,
+});
+
 // ─── 메인 스크린 ───────────────────────────────────────────────────────────────
 export function AIrecommendationScreen() {
+  const navigation = useNavigation<BottomTabNavigationProp<MainTabParamList, "AIRecommend">>();
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "init",
@@ -549,7 +568,11 @@ export function AIrecommendationScreen() {
                   )}
                 </Text>
                 {(item.recommendations ?? getFallbackRecommendations()).map((rec) => (
-                  <ResultCard key={rec.id} item={rec} />
+                  <ResultCard
+                    key={rec.id}
+                    item={rec}
+                    onPress={() => navigation.navigate("Explore", { exp: toExperience(rec) })}
+                  />
                 ))}
                 {!!item.sources?.length && (
                   <View style={s.sourcesBox}>

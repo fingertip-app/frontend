@@ -58,7 +58,7 @@ export type CardNews = {
 
 export type MainTabParamList = {
   Home: undefined;
-  Explore: { filter?: string } | undefined;
+  Explore: { filter?: string; exp?: Experience } | undefined;
   AIRecommend: undefined;
   Bookings: undefined;
   MyPage: undefined;
