@@ -1,5 +1,7 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
+  ActivityIndicator,
+  Alert,
   View,
   Text,
   StyleSheet,
@@ -10,10 +12,14 @@ import {
   Platform,
   TextInput,
 } from "react-native";
-import { useNavigation, useRoute } from "@react-navigation/native";
+import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "@/navigation/RootNavigator";
 import { Ionicons } from "@expo/vector-icons";
+import { getCurrentProfile } from "@/features/auth/api/authApi";
+import { createReservation } from "@/features/reservations/api/reservationsApi";
+import { ApiError } from "@/services/api";
+import type { ExperienceSchedule } from "@/types/api";
 
 const BRAND = "#3D1F0D";
 const BRAND_LIGHT = "#F5F0EB";
@@ -22,7 +28,6 @@ const BORDER = "#EDE8E2";
 const BG = "#FAFAF8";
 
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
-const TIME_SLOTS = ["10:00", "11:00", "13:00", "14:00", "15:00"];
 
 function getDaysInMonth(year: number, month: number) {
   return new Date(year, month + 1, 0).getDate();
@@ -31,21 +36,81 @@ function getFirstDayOfWeek(year: number, month: number) {
   return new Date(year, month, 1).getDay();
 }
 
+function getScheduleDate(schedule: ExperienceSchedule) {
+  const date = new Date(schedule.scheduledAt);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function formatScheduleTime(schedule: ExperienceSchedule) {
+  const date = new Date(schedule.scheduledAt);
+  return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+}
+
+function formatDateLabel(dateKey: string) {
+  const [year, month, day] = dateKey.split("-").map(Number);
+  return `${year}년 ${month}월 ${day}일`;
+}
+
+function groupSchedulesByDate(schedules: ExperienceSchedule[]) {
+  return schedules.reduce<Record<string, ExperienceSchedule[]>>((acc, schedule) => {
+    if (!schedule.isActive || schedule.remainingSlots <= 0) return acc;
+
+    const dateKey = getScheduleDate(schedule);
+    acc[dateKey] = [...(acc[dateKey] ?? []), schedule].sort(
+      (a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime()
+    );
+    return acc;
+  }, {});
+}
+
 export function BookingCreateScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const route = useRoute<any>();
-  const exp = route.params?.exp;
+  const route = useRoute<RouteProp<RootStackParamList, "BookingCreate">>();
+  const { exp, experience } = route.params;
 
-  const today = new Date();
-  const [viewYear, setViewYear] = useState(today.getFullYear());
-  const [viewMonth, setViewMonth] = useState(today.getMonth());
-  const [selectedDate, setSelectedDate] = useState<number | null>(29);
-  const [selectedTime, setSelectedTime] = useState("10:00");
-  const [headcount, setHeadcount] = useState(2);
+  const schedulesByDate = useMemo(
+    () => groupSchedulesByDate(experience.schedules ?? []),
+    [experience.schedules]
+  );
+  const availableDateKeys = useMemo(
+    () => Object.keys(schedulesByDate).sort(),
+    [schedulesByDate]
+  );
+  const firstAvailableDate = availableDateKeys[0] ?? null;
+  const firstAvailableDateValue = firstAvailableDate
+    ? new Date(`${firstAvailableDate}T00:00:00`)
+    : new Date();
+
+  const firstSchedule = firstAvailableDate ? schedulesByDate[firstAvailableDate]?.[0] : null;
+  const initialHeadcount = Math.min(2, Math.max(1, firstSchedule?.remainingSlots ?? 2));
+
+  const [viewYear, setViewYear] = useState(firstAvailableDateValue.getFullYear());
+  const [viewMonth, setViewMonth] = useState(firstAvailableDateValue.getMonth());
+  const [selectedDateKey, setSelectedDateKey] = useState<string | null>(firstAvailableDate);
+  const [selectedSchedule, setSelectedSchedule] = useState<ExperienceSchedule | null>(firstSchedule);
+  const [headcount, setHeadcount] = useState(initialHeadcount);
   const [requestMessage, setRequestMessage] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const pricePerPerson = 35000;
+  useEffect(() => {
+    if (!selectedDateKey && firstAvailableDate) {
+      setSelectedDateKey(firstAvailableDate);
+      setSelectedSchedule(schedulesByDate[firstAvailableDate]?.[0] ?? null);
+    }
+  }, [firstAvailableDate, schedulesByDate, selectedDateKey]);
+
+  useEffect(() => {
+    if (!selectedSchedule) return;
+    setHeadcount((current) => Math.min(current, Math.max(1, selectedSchedule.remainingSlots)));
+  }, [selectedSchedule]);
+
+  const pricePerPerson = experience.price;
   const total = pricePerPerson * headcount;
+  const selectedDateSchedules = selectedDateKey ? schedulesByDate[selectedDateKey] ?? [] : [];
+  const maxHeadcount = Math.max(1, selectedSchedule?.remainingSlots ?? experience.maxParticipants);
 
   const daysInMonth = getDaysInMonth(viewYear, viewMonth);
   const firstDow = getFirstDayOfWeek(viewYear, viewMonth);
@@ -59,12 +124,10 @@ export function BookingCreateScreen() {
   const prevMonth = () => {
     if (viewMonth === 0) { setViewMonth(11); setViewYear(y => y - 1); }
     else setViewMonth(m => m - 1);
-    setSelectedDate(null);
   };
   const nextMonth = () => {
     if (viewMonth === 11) { setViewMonth(0); setViewYear(y => y + 1); }
     else setViewMonth(m => m + 1);
-    setSelectedDate(null);
   };
 
   // 셀 배열 생성 (이전달 / 현재달 / 다음달)
@@ -86,18 +149,73 @@ export function BookingCreateScreen() {
     weeks.push(cells.slice(i, i + 7));
   }
 
-  const isUnavailable = (slot: string) => slot === "13:00";
+  const handleSelectDate = (day: number) => {
+    const dateKey = `${viewYear}-${String(viewMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    const schedules = schedulesByDate[dateKey] ?? [];
+    if (schedules.length === 0) return;
 
-  const handleBook = () => {
-    if (!selectedDate) return;
-    navigation.navigate("BookingRequestComplete", {
-      exp,
-      dateLabel: `${viewYear}년 ${viewMonth + 1}월 ${selectedDate}일`,
-      time: selectedTime,
-      headcount,
-      totalPrice: total,
-      requestMessage,
-    });
+    setSelectedDateKey(dateKey);
+    setSelectedSchedule(schedules[0]);
+    setHeadcount((current) => Math.min(current, Math.max(1, schedules[0].remainingSlots)));
+  };
+
+  const handleSelectSchedule = (schedule: ExperienceSchedule) => {
+    setSelectedSchedule(schedule);
+    setHeadcount((current) => Math.min(current, Math.max(1, schedule.remainingSlots)));
+  };
+
+  const handleBook = async () => {
+    if (!selectedSchedule || !selectedDateKey) {
+      Alert.alert("알림", "예약할 날짜와 시간을 선택해주세요.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const profile = await getCurrentProfile();
+      if (!profile) {
+        Alert.alert("로그인 필요", "예약하려면 로그인이 필요합니다.");
+        navigation.navigate("Login");
+        return;
+      }
+
+      const reservation = await createReservation(profile.id, {
+        experienceId: experience.id,
+        scheduleId: selectedSchedule.id,
+        numberOfParticipants: headcount,
+        requestMessage: requestMessage.trim() || undefined,
+      });
+
+      navigation.navigate("BookingRequestComplete", {
+        reservationId: reservation.id,
+        exp,
+        dateLabel: formatDateLabel(selectedDateKey),
+        time: formatScheduleTime(selectedSchedule),
+        headcount,
+        totalPrice: reservation.totalPrice ?? total,
+        requestMessage,
+      });
+    } catch (error) {
+      let errorMsg = "예약 신청에 실패했습니다.";
+
+      if (error instanceof ApiError) {
+        if (error.status === 401) {
+          errorMsg = "로그인이 필요합니다. 다시 로그인해주세요.";
+        } else if (error.status === 409) {
+          errorMsg = "이미 예약된 일정입니다. 다른 시간을 선택해주세요.";
+        } else if (error.status === 400) {
+          errorMsg = error.message || "요청 정보가 올바르지 않습니다.";
+        } else {
+          errorMsg = error.message;
+        }
+      } else if (error instanceof Error) {
+        errorMsg = error.message;
+      }
+
+      Alert.alert("예약 실패", errorMsg);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -131,7 +249,7 @@ export function BookingCreateScreen() {
             </Text>
             <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 6 }}>
               <Text style={styles.expPrice}>
-                35,000<Text style={{ fontSize: 13, fontWeight: "500" }}>원~</Text>
+                {pricePerPerson.toLocaleString()}<Text style={{ fontSize: 13, fontWeight: "500" }}>원~</Text>
               </Text>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
                 <Ionicons name="time-outline" size={13} color={GRAY} />
@@ -181,23 +299,29 @@ export function BookingCreateScreen() {
           {weeks.map((week, wi) => (
             <View key={wi} style={styles.weekRow}>
               {week.map((cell, ci) => {
-                const isSelected = cell.type === "cur" && cell.day === selectedDate;
+                const dateKey = `${viewYear}-${String(viewMonth + 1).padStart(2, "0")}-${String(cell.day).padStart(2, "0")}`;
+                const isAvailable = cell.type === "cur" && !!schedulesByDate[dateKey]?.length;
+                const isSelected = cell.type === "cur" && dateKey === selectedDateKey;
                 const isSun = ci === 0;
                 const isSat = ci === 6;
                 const isOther = cell.type !== "cur";
                 return (
                   <TouchableOpacity
                     key={ci}
-                    style={[styles.dayCell, isSelected && styles.dayCellSelected]}
-                    onPress={() => !isOther && setSelectedDate(cell.day)}
-                    activeOpacity={isOther ? 1 : 0.7}
+                    style={[
+                      styles.dayCell,
+                      isAvailable && styles.dayCellAvailable,
+                      isSelected && styles.dayCellSelected,
+                    ]}
+                    onPress={() => isAvailable && handleSelectDate(cell.day)}
+                    activeOpacity={isAvailable ? 0.7 : 1}
                   >
                     <Text
                       style={[
                         styles.dayText,
-                        isOther && { color: "#C8BDB4" },
-                        !isOther && isSun && { color: "#D97B6C" },
-                        !isOther && isSat && { color: "#6B9BD2" },
+                        (isOther || !isAvailable) && { color: "#C8BDB4" },
+                        !isOther && isAvailable && isSun && { color: "#D97B6C" },
+                        !isOther && isAvailable && isSat && { color: "#6B9BD2" },
                         isSelected && { color: "#FFFFFF", fontWeight: "700" },
                       ]}
                     >
@@ -216,28 +340,30 @@ export function BookingCreateScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>시간 선택</Text>
           <View style={styles.timeGrid}>
-            {TIME_SLOTS.map((slot) => {
-              const unavail = isUnavailable(slot);
-              const active = selectedTime === slot && !unavail;
+            {selectedDateSchedules.length === 0 ? (
+              <Text style={styles.emptyText}>예약 가능한 날짜를 선택해주세요.</Text>
+            ) : selectedDateSchedules.map((schedule) => {
+              const active = selectedSchedule?.id === schedule.id;
               return (
                 <TouchableOpacity
-                  key={slot}
+                  key={schedule.id}
                   style={[
                     styles.timeChip,
                     active && styles.timeChipActive,
-                    unavail && styles.timeChipUnavail,
                   ]}
-                  onPress={() => !unavail && setSelectedTime(slot)}
-                  activeOpacity={unavail ? 1 : 0.75}
+                  onPress={() => handleSelectSchedule(schedule)}
+                  activeOpacity={0.75}
                 >
                   <Text
                     style={[
                       styles.timeText,
                       active && { color: "#FFFFFF", fontWeight: "700" },
-                      unavail && { color: "#C8BDB4" },
                     ]}
                   >
-                    {slot}
+                    {formatScheduleTime(schedule)}
+                  </Text>
+                  <Text style={[styles.remainingText, active && { color: "#F5F0EB" }]}>
+                    {schedule.remainingSlots}자리
                   </Text>
                 </TouchableOpacity>
               );
@@ -251,7 +377,7 @@ export function BookingCreateScreen() {
         <View style={[styles.section, { flexDirection: "row", alignItems: "center", justifyContent: "space-between" }]}>
           <View>
             <Text style={styles.sectionTitle}>인원 선택</Text>
-            <Text style={{ fontSize: 12, color: GRAY, marginTop: 2 }}>최대 6명</Text>
+            <Text style={{ fontSize: 12, color: GRAY, marginTop: 2 }}>최대 {maxHeadcount}명</Text>
           </View>
           <View style={styles.stepper}>
             <TouchableOpacity
@@ -263,7 +389,8 @@ export function BookingCreateScreen() {
             <Text style={styles.stepValue}>{headcount}</Text>
             <TouchableOpacity
               style={styles.stepBtn}
-              onPress={() => setHeadcount(h => Math.min(6, h + 1))}
+              onPress={() => setHeadcount(h => Math.min(maxHeadcount, h + 1))}
+              disabled={headcount >= maxHeadcount}
             >
               <Ionicons name="add" size={18} color="#1C1107" />
             </TouchableOpacity>
@@ -317,8 +444,20 @@ export function BookingCreateScreen() {
 
       {/* 하단 고정 예약 버튼 */}
       <View style={styles.footer}>
-        <TouchableOpacity style={styles.bookBtn} activeOpacity={0.85} onPress={handleBook}>
-          <Text style={styles.bookBtnText}>예약하기</Text>
+        <TouchableOpacity
+          style={[
+            styles.bookBtn,
+            (!selectedSchedule || isSubmitting) && styles.bookBtnDisabled,
+          ]}
+          activeOpacity={0.85}
+          onPress={handleBook}
+          disabled={!selectedSchedule || isSubmitting}
+        >
+          {isSubmitting ? (
+            <ActivityIndicator color="#FFFFFF" />
+          ) : (
+            <Text style={styles.bookBtnText}>예약하기</Text>
+          )}
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -395,6 +534,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderRadius: 20,
   },
+  dayCellAvailable: { backgroundColor: "#F5F0EB" },
   dayCellSelected: { backgroundColor: BRAND },
   dayText: { fontSize: 14, color: "#1C1107" },
 
@@ -421,6 +561,8 @@ const styles = StyleSheet.create({
     borderColor: BORDER,
   },
   timeText: { fontSize: 14, color: "#1C1107", fontWeight: "500" },
+  remainingText: { fontSize: 11, color: GRAY, marginTop: 2, textAlign: "center" },
+  emptyText: { fontSize: 13, color: GRAY },
 
   // Stepper
   stepper: {
@@ -482,5 +624,6 @@ const styles = StyleSheet.create({
     paddingVertical: 17,
     alignItems: "center",
   },
+  bookBtnDisabled: { backgroundColor: "#C8BDB4" },
   bookBtnText: { color: "#FFFFFF", fontSize: 16, fontWeight: "700" },
 });

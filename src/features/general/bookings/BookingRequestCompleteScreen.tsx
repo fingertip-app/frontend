@@ -14,7 +14,7 @@ const CARD = "#FFFFFF";
 export function BookingRequestCompleteScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const route = useRoute<RouteProp<RootStackParamList, "BookingRequestComplete">>();
-  const { exp, dateLabel, time, headcount, totalPrice, requestMessage } = route.params;
+  const { reservationId, exp, dateLabel, time, headcount, totalPrice, requestMessage } = route.params;
 
   const goToBookings = () => {
     navigation.reset({
@@ -35,22 +35,32 @@ export function BookingRequestCompleteScreen() {
         </Text>
 
         <View style={styles.card}>
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>예약 번호</Text>
+            <Text style={styles.infoValue}>#{reservationId ?? '—'}</Text>
+          </View>
+          <View style={styles.divider} />
           <Text style={styles.expTitle} numberOfLines={1}>
             {exp?.title ?? "체험"}
           </Text>
-          <View style={styles.divider} />
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>날짜</Text>
-            <Text style={styles.infoValue}>{dateLabel}</Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>시간</Text>
-            <Text style={styles.infoValue}>{time}</Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>인원</Text>
-            <Text style={styles.infoValue}>{headcount}명</Text>
-          </View>
+          {!!dateLabel && (
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>날짜</Text>
+              <Text style={styles.infoValue}>{dateLabel}</Text>
+            </View>
+          )}
+          {!!time && (
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>시간</Text>
+              <Text style={styles.infoValue}>{time}</Text>
+            </View>
+          )}
+          {headcount !== undefined && (
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>인원</Text>
+              <Text style={styles.infoValue}>{headcount}명</Text>
+            </View>
+          )}
           {!!requestMessage && (
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>요청 메시지</Text>
@@ -59,11 +69,15 @@ export function BookingRequestCompleteScreen() {
               </Text>
             </View>
           )}
-          <View style={styles.divider} />
-          <View style={styles.infoRow}>
-            <Text style={[styles.infoLabel, { fontWeight: "600", color: "#1C1107" }]}>예상 결제 금액</Text>
-            <Text style={styles.totalText}>{totalPrice.toLocaleString()}원</Text>
-          </View>
+          {totalPrice !== undefined && (
+            <>
+              <View style={styles.divider} />
+              <View style={styles.infoRow}>
+                <Text style={[styles.infoLabel, { fontWeight: "600", color: "#1C1107" }]}>예상 결제 금액</Text>
+                <Text style={styles.totalText}>{totalPrice.toLocaleString()}원</Text>
+              </View>
+            </>
+          )}
         </View>
       </View>
 

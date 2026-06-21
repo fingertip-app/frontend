@@ -20,7 +20,8 @@ import { AIrecommendationScreen } from "@/features/general/AI/AIrecommendationSc
 import { BookingsScreen } from "@/features/general/bookings/BookingsScreen";
 import { MyPageScreen } from "@/features/general/mypage/MyPageScreen";
 import { BookingCreateScreen } from "@/features/general/bookings/BookingCreateScreen";
-import { Experience } from "@/features/general/Search/SearchScreen";
+import type { Experience as BackendExperience } from "@/types/api";
+import type { Experience as ExperienceViewModel } from "@/features/general/Search/SearchScreen";
 import { BookingDetailScreen } from "@/features/general/bookings/BookingDetailScreen";
 import { PaymentScreen } from "@/features/general/bookings/PaymentScreen";
 import { BookingRequestCompleteScreen } from "@/features/general/bookings/BookingRequestCompleteScreen";
@@ -60,7 +61,7 @@ export type CardNews = {
 
 export type MainTabParamList = {
   Home: undefined;
-  Explore: { filter?: string; exp?: Experience } | undefined;
+  Explore: { filter?: string; exp?: ExperienceViewModel } | undefined;
   AIRecommend: undefined;
   Bookings: undefined;
   MyPage: undefined;
@@ -75,16 +76,17 @@ export type RootStackParamList = {
   FindId: undefined;
   FindPassword: undefined;
   MainTabs: NavigatorScreenParams<MainTabParamList>;
-  BookingCreate: { exp: Experience };
+  BookingCreate: { exp: ExperienceViewModel; experience: BackendExperience };
   BookingDetail: { booking: Booking };
-  Payment: { exp: Experience; dateLabel: string; time: string; headcount: number; totalPrice: number };
+  Payment: { exp: ExperienceViewModel; dateLabel: string; time: string; headcount: number; totalPrice: number };
   BookingRequestComplete: {
-    exp: Experience;
-    dateLabel: string;
-    time: string;
-    headcount: number;
-    totalPrice: number;
-    requestMessage: string;
+    reservationId: number;
+    exp?: ExperienceViewModel;
+    dateLabel?: string;
+    time?: string;
+    headcount?: number;
+    totalPrice?: number;
+    requestMessage?: string;
   };
   QRConfirmation: { booking: Booking };
   Wishlist: undefined;

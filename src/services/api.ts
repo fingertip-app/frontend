@@ -11,6 +11,13 @@ interface ApiResponse<T> {
   data: T
 }
 
+export class ApiError extends Error {
+  constructor(public status: number, message: string) {
+    super(message);
+    this.name = 'ApiError';
+  }
+}
+
 async function getAuthHeader(): Promise<Record<string, string>> {
   const { data } = await supabase.auth.getSession()
   const token = data.session?.access_token
@@ -23,12 +30,13 @@ export async function apiGet<T>(path: string): Promise<T> {
     headers: { ...authHeader },
   })
   if (!response.ok) {
-    throw new Error(`API request failed: ${response.status}`)
+    const payload = await response.json().catch(() => ({})) as ApiResponse<T>
+    throw new ApiError(response.status, payload.message ?? `API request failed: ${response.status}`)
   }
 
   const payload = (await response.json()) as ApiResponse<T>
   if (!payload.success) {
-    throw new Error(payload.message ?? 'API request failed')
+    throw new ApiError(response.status, payload.message ?? 'API request failed')
   }
 
   return payload.data
@@ -76,12 +84,13 @@ export async function apiPost<TRequest, TResponse>(
   })
 
   if (!response.ok) {
-    throw new Error(`API request failed: ${response.status}`)
+    const payload = await response.json().catch(() => ({})) as ApiResponse<TResponse>
+    throw new ApiError(response.status, payload.message ?? `API request failed: ${response.status}`)
   }
 
   const payload = (await response.json()) as ApiResponse<TResponse>
   if (!payload.success) {
-    throw new Error(payload.message ?? 'API request failed')
+    throw new ApiError(response.status, payload.message ?? 'API request failed')
   }
 
   return payload.data
