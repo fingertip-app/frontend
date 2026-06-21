@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { View, ActivityIndicator } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
 import { NavigatorScreenParams } from "@react-navigation/native";
 import { getCurrentProfile } from "@/features/auth/api/authApi";
 
+import { OnboardingScreen, ONBOARDING_SEEN_KEY } from "@/features/onboarding/OnboardingScreen";
 import { LoginScreen } from "@/features/auth/LoginScreen";
 import { GeneralSignUpScreen } from "@/features/auth/GeneralSignup/GeneralSignUpScreen";
 import { MasterSignUpScreen } from "@/features/auth/MasterSignup/MasterSignUpScreen";
@@ -21,6 +23,8 @@ import { BookingCreateScreen } from "@/features/general/bookings/BookingCreateSc
 import { Experience } from "@/features/general/Search/SearchScreen";
 import { BookingDetailScreen } from "@/features/general/bookings/BookingDetailScreen";
 import { PaymentScreen } from "@/features/general/bookings/PaymentScreen";
+import { BookingRequestCompleteScreen } from "@/features/general/bookings/BookingRequestCompleteScreen";
+import { QRConfirmationScreen } from "@/features/general/bookings/QRConfirmationScreen";
 import { Booking } from "@/features/general/bookings/BookingsScreen";
 import { WishlistScreen } from "@/features/general/mypage/WishlistScreen";
 import { ReviewScreen } from "@/features/general/review/ReviewScreen";
@@ -56,13 +60,14 @@ export type CardNews = {
 
 export type MainTabParamList = {
   Home: undefined;
-  Explore: { filter?: string } | undefined;
+  Explore: { filter?: string; exp?: Experience } | undefined;
   AIRecommend: undefined;
   Bookings: undefined;
   MyPage: undefined;
 };
 
 export type RootStackParamList = {
+  Onboarding: undefined;
   Login: undefined;
   GeneralSignUp: undefined;
   MasterSignUp: undefined;
@@ -73,6 +78,15 @@ export type RootStackParamList = {
   BookingCreate: { exp: Experience };
   BookingDetail: { booking: Booking };
   Payment: { exp: Experience; dateLabel: string; time: string; headcount: number; totalPrice: number };
+  BookingRequestComplete: {
+    exp: Experience;
+    dateLabel: string;
+    time: string;
+    headcount: number;
+    totalPrice: number;
+    requestMessage: string;
+  };
+  QRConfirmation: { booking: Booking };
   Wishlist: undefined;
   Review: { booking: Booking };
   MyReviews: undefined;
@@ -146,9 +160,14 @@ export function RootNavigator() {
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    getCurrentProfile().then((profile) => {
+    getCurrentProfile().then(async (profile) => {
       if (profile) {
         setInitialRoute(profile.role === "ARTISAN" ? "MasterHome" : "MainTabs");
+      } else {
+        const onboardingSeen = await AsyncStorage.getItem(ONBOARDING_SEEN_KEY);
+        if (!onboardingSeen) {
+          setInitialRoute("Onboarding");
+        }
       }
       setIsReady(true);
     });
@@ -164,6 +183,7 @@ export function RootNavigator() {
 
   return (
     <Stack.Navigator initialRouteName={initialRoute} screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="Onboarding" component={OnboardingScreen} />
       <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="GeneralSignUp" component={GeneralSignUpScreen} />
       <Stack.Screen name="MasterSignUp" component={MasterSignUpScreen} />
@@ -174,6 +194,8 @@ export function RootNavigator() {
       <Stack.Screen name="BookingCreate" component={BookingCreateScreen} />
       <Stack.Screen name="BookingDetail" component={BookingDetailScreen} />
       <Stack.Screen name="Payment" component={PaymentScreen} />
+      <Stack.Screen name="BookingRequestComplete" component={BookingRequestCompleteScreen} />
+      <Stack.Screen name="QRConfirmation" component={QRConfirmationScreen} />
       <Stack.Screen name="Wishlist" component={WishlistScreen} />
       <Stack.Screen name="Review" component={ReviewScreen} />
       <Stack.Screen name="MyReviews" component={MyReviewsScreen} />

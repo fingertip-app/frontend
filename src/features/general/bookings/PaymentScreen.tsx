@@ -46,7 +46,7 @@ export function PaymentScreen() {
     setProcessing(true);
     setTimeout(() => {
       setProcessing(false);
-      Alert.alert("결제 완료", "예약이 신청되었어요. 장인의 승인을 기다려주세요.", [
+      Alert.alert("결제 완료", "결제가 완료됐어요. 예약이 확정됐습니다.", [
         {
           text: "확인",
           onPress: () =>

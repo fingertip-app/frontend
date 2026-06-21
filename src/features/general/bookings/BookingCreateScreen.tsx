@@ -8,6 +8,7 @@ import {
   ScrollView,
   Image,
   Platform,
+  TextInput,
 } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -41,6 +42,7 @@ export function BookingCreateScreen() {
   const [selectedDate, setSelectedDate] = useState<number | null>(29);
   const [selectedTime, setSelectedTime] = useState("10:00");
   const [headcount, setHeadcount] = useState(2);
+  const [requestMessage, setRequestMessage] = useState("");
 
   const pricePerPerson = 35000;
   const total = pricePerPerson * headcount;
@@ -88,12 +90,13 @@ export function BookingCreateScreen() {
 
   const handleBook = () => {
     if (!selectedDate) return;
-    navigation.navigate("Payment", {
+    navigation.navigate("BookingRequestComplete", {
       exp,
       dateLabel: `${viewYear}년 ${viewMonth + 1}월 ${selectedDate}일`,
       time: selectedTime,
       headcount,
       totalPrice: total,
+      requestMessage,
     });
   };
 
@@ -269,6 +272,25 @@ export function BookingCreateScreen() {
 
         <View style={styles.divider} />
 
+        {/* ── 요청 메시지 ── */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>요청 메시지</Text>
+          <Text style={{ fontSize: 12, color: GRAY, marginTop: -10, marginBottom: 14 }}>
+            장인에게 전달할 내용이 있다면 입력해주세요. (선택)
+          </Text>
+          <TextInput
+            style={styles.messageInput}
+            placeholder="예: 알레르기가 있어요, 초보자입니다 등"
+            placeholderTextColor="#C8BDB4"
+            value={requestMessage}
+            onChangeText={setRequestMessage}
+            multiline
+            maxLength={300}
+          />
+        </View>
+
+        <View style={styles.divider} />
+
         {/* ── 요약 ── */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>요약</Text>
@@ -418,6 +440,20 @@ const styles = StyleSheet.create({
     color: "#1C1107",
     minWidth: 28,
     textAlign: "center",
+  },
+
+  // 요청 메시지
+  messageInput: {
+    borderWidth: 1,
+    borderColor: BORDER,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    minHeight: 80,
+    fontSize: 14,
+    color: "#1C1107",
+    backgroundColor: "#FFFFFF",
+    textAlignVertical: "top",
   },
 
   // Summary

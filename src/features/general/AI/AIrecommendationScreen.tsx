@@ -12,8 +12,12 @@ import {
   Animated,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useNavigation } from "@react-navigation/native";
+import { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
 import { MainLayout } from "@/features/general/home/MainLayout";
 import { apiPost } from "@/services/api";
+import { MainTabParamList } from "@/navigation/RootNavigator";
+import { Experience } from "@/features/general/Search/SearchScreen";
 
 // ─── 팔레트 (기존 유지) ────────────────────────────────────────────────────────
 const BG        = "#F5F0EA";
@@ -118,6 +122,14 @@ interface Message {
   isFallback?: boolean;
   recommendations?: RecommendationCard[];
   resultGuide?: string;
+  sources?: AiRecommendationSource[];
+}
+
+interface AiRecommendationSource {
+  id: number;
+  name: string;
+  source: string;
+  category: string;
 }
 
 interface RecommendationCard {
@@ -148,6 +160,7 @@ interface AiRecommendationRequest {
 
 interface AiRecommendationResponse {
   answer: string;
+  sources?: AiRecommendationSource[];
   matchingKeywords: string[];
   recommendedTags: string[];
   recommendedExperiences: {
@@ -282,10 +295,10 @@ const mapRecommendationResponse = (response: AiRecommendationResponse): Recommen
 };
 
 // ─── 결과 카드 ─────────────────────────────────────────────────────────────────
-function ResultCard({ item }: { item: RecommendationCard }) {
+function ResultCard({ item, onPress }: { item: RecommendationCard; onPress: () => void }) {
   const [liked, setLiked] = useState(false);
   return (
-    <TouchableOpacity style={s.resultCard} activeOpacity={0.9}>
+    <TouchableOpacity style={s.resultCard} activeOpacity={0.9} onPress={onPress}>
       <Image source={{ uri: item.imageUri }} style={s.resultImage} resizeMode="cover" />
       <View style={s.reasonBadge}>
         <Text style={s.reasonText}>✨ {item.reason}</Text>
@@ -367,8 +380,23 @@ function TypingIndicator() {
   );
 }
 
+const toExperience = (item: RecommendationCard): Experience => ({
+  id: item.id,
+  title: item.title,
+  category: item.category,
+  location: item.location,
+  artisan: "",
+  rating: item.rating,
+  reviewCount: item.reviewCount,
+  duration: "",
+  price: item.price,
+  tags: [item.category],
+  imageUri: item.imageUri,
+});
+
 // ─── 메인 스크린 ───────────────────────────────────────────────────────────────
 export function AIrecommendationScreen() {
+  const navigation = useNavigation<BottomTabNavigationProp<MainTabParamList, "AIRecommend">>();
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "init",
@@ -407,6 +435,7 @@ export function AIrecommendationScreen() {
           ? response.message ?? FALLBACK_RESULT_GUIDE
           : "선택하신 취향을 바탕으로 가장 적합한 체험을 찾았어요.",
         recommendations: mapRecommendationResponse(response),
+        sources: response.sources,
       };
     } catch {
       return {
@@ -539,8 +568,22 @@ export function AIrecommendationScreen() {
                   )}
                 </Text>
                 {(item.recommendations ?? getFallbackRecommendations()).map((rec) => (
-                  <ResultCard key={rec.id} item={rec} />
+                  <ResultCard
+                    key={rec.id}
+                    item={rec}
+                    onPress={() => navigation.navigate("Explore", { exp: toExperience(rec) })}
+                  />
                 ))}
+                {!!item.sources?.length && (
+                  <View style={s.sourcesBox}>
+                    <Text style={s.sourcesTitle}>출처</Text>
+                    {item.sources.map((src) => (
+                      <Text key={src.id} style={s.sourceText}>
+                        · {src.name} ({src.category}) — {src.source}
+                      </Text>
+                    ))}
+                  </View>
+                )}
                 <TouchableOpacity style={s.resetButton} onPress={handleReset} activeOpacity={0.8}>
                   <Ionicons name="refresh" size={15} color={TEXT_MAIN} />
                   <Text style={s.resetButtonText}>다시 추천받기</Text>
@@ -866,6 +909,25 @@ const s = StyleSheet.create({
     color: BRAND_MID,
     marginTop: 8,
     textAlign: "right",
+  },
+
+  // 출처 목록
+  sourcesBox: {
+    backgroundColor: "#EFEAE2",
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 14,
+  },
+  sourcesTitle: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: TEXT_SUB,
+    marginBottom: 4,
+  },
+  sourceText: {
+    fontSize: 12,
+    color: TEXT_SUB,
+    lineHeight: 18,
   },
 
   // 다시 추천

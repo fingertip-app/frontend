@@ -32,6 +32,8 @@ export interface Booking {
   paidAt?: string;
   payMethod?: string;
   totalPrice?: number;
+  // 장인 승인은 끝났지만 아직 결제 전인 예약 (결제는 승인 후에만 가능)
+  paymentRequired?: boolean;
 }
 
 const TABS: { id: TabType; label: string }[] = [
@@ -63,6 +65,8 @@ const MOCK_BOOKINGS: Booking[] = [
     guests: 4,
     location: "전북 전주시 완산구 한지길 24",
     imageUri: "https://picsum.photos/seed/hanji/300/200",
+    paymentRequired: true,
+    totalPrice: 112000,
   },
   {
     id: "3",
@@ -99,6 +103,22 @@ const MOCK_BOOKINGS: Booking[] = [
   },
 ];
 
+// 예약 상태 배지 (탭 상태 + 결제 여부를 합쳐 하나의 배지로 표시)
+function getStatusBadge(item: Booking): { label: string; bg: string; color: string } {
+  if (item.status === "upcoming") {
+    return item.paymentRequired
+      ? { label: "결제 필요", bg: "#FFF3E0", color: "#E65100" }
+      : { label: "결제 완료", bg: "#E8F5E9", color: "#2E7D32" };
+  }
+  if (item.status === "pending") {
+    return { label: "승인 대기", bg: "#FFF3E0", color: "#E65100" };
+  }
+  if (item.status === "cancelled") {
+    return { label: "취소", bg: "#FFEBEE", color: "#C62828" };
+  }
+  return { label: "지난 체험", bg: "#EAE6E1", color: "#6E665F" };
+}
+
 // ─── 메인 컴포넌트 ─────────────────────────────────────────────────────────────
 
 export function BookingsScreen() {
@@ -111,10 +131,19 @@ export function BookingsScreen() {
   );
 
   // 예약 카드 렌더링 함수
-  const renderBookingCard = ({ item }: { item: Booking }) => (
+  const renderBookingCard = ({ item }: { item: Booking }) => {
+    const badge = getStatusBadge(item);
+    return (
     <View style={styles.card}>
-      {/* 상단 (날짜, 시간, 상태) */}
+      {/* 상단 (상태 배지 + 날짜, 시간) */}
       <View style={styles.cardHeader}>
+        <View style={styles.statusRow}>
+          <View style={[styles.statusBadge, { backgroundColor: badge.bg }]}>
+            <Text style={[styles.statusBadgeText, { color: badge.color }]}>
+              {badge.label}
+            </Text>
+          </View>
+        </View>
         <View style={styles.dateContainer}>
           <Ionicons name="calendar-outline" size={16} color="#3B2B26" />
           <Text style={styles.dateText}>
@@ -154,7 +183,8 @@ export function BookingsScreen() {
         </TouchableOpacity>
       </View>
     </View>
-  );
+    );
+  };
 
   return (
     <MainLayout>
@@ -232,10 +262,17 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 2,
   },
-  cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: "#F5F4F0" },
+  cardHeader: { marginBottom: 12, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: "#F5F4F0" },
+  statusRow: { flexDirection: "row", justifyContent: "flex-end", marginBottom: 8 },
   dateContainer: { flexDirection: "row", alignItems: "center" },
   dateText: { fontSize: 14, fontWeight: "700", color: "#3B2B26", marginLeft: 6 },
-  
+  statusBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 10,
+  },
+  statusBadgeText: { fontSize: 12, fontWeight: "700" },
+
   cardBody: { marginBottom: 16 },
   cardTitle: { fontSize: 18, fontWeight: "bold", color: "#3B2B26", marginBottom: 12 },
   infoRow: { flexDirection: "row", alignItems: "center", marginBottom: 6 },
