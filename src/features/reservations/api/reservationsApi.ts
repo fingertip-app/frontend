@@ -9,7 +9,7 @@ export interface CreateReservationRequest {
   experienceId: number
   scheduleId: number
   numberOfParticipants: number
-  reservedDateTime?: string // ISO 8601, optional
+  reservedDateTime?: string // Backend DTO 호환용 - scheduleId로 일정 지정하므로 현재 미사용
   requestMessage?: string // ⚠️ 'message'가 아님!
 }
 

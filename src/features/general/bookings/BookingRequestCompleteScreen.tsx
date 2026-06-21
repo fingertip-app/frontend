@@ -37,7 +37,7 @@ export function BookingRequestCompleteScreen() {
         <View style={styles.card}>
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>예약 번호</Text>
-            <Text style={styles.infoValue}>#{reservationId}</Text>
+            <Text style={styles.infoValue}>#{reservationId ?? '—'}</Text>
           </View>
           <View style={styles.divider} />
           <Text style={styles.expTitle} numberOfLines={1}>

@@ -18,6 +18,7 @@ import { RootStackParamList } from "@/navigation/RootNavigator";
 import { Ionicons } from "@expo/vector-icons";
 import { getCurrentProfile } from "@/features/auth/api/authApi";
 import { createReservation } from "@/features/reservations/api/reservationsApi";
+import { ApiError } from "@/services/api";
 import type { ExperienceSchedule } from "@/types/api";
 
 const BRAND = "#3D1F0D";
@@ -195,10 +196,23 @@ export function BookingCreateScreen() {
         requestMessage,
       });
     } catch (error) {
-      Alert.alert(
-        "예약 실패",
-        error instanceof Error ? error.message : "예약 신청에 실패했습니다."
-      );
+      let errorMsg = "예약 신청에 실패했습니다.";
+
+      if (error instanceof ApiError) {
+        if (error.status === 401) {
+          errorMsg = "로그인이 필요합니다. 다시 로그인해주세요.";
+        } else if (error.status === 409) {
+          errorMsg = "이미 예약된 일정입니다. 다른 시간을 선택해주세요.";
+        } else if (error.status === 400) {
+          errorMsg = error.message || "요청 정보가 올바르지 않습니다.";
+        } else {
+          errorMsg = error.message;
+        }
+      } else if (error instanceof Error) {
+        errorMsg = error.message;
+      }
+
+      Alert.alert("예약 실패", errorMsg);
     } finally {
       setIsSubmitting(false);
     }
