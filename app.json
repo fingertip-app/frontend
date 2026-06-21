@@ -7,16 +7,26 @@
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "app.fingertip.mobile"
+      "bundleIdentifier": "app.fingertip.mobile",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "내 주변 장인을 찾기 위해 위치 정보가 필요해요."
+      }
     },
     "android": {
-      "package": "app.fingertip.mobile"
+      "package": "app.fingertip.mobile",
+      "permissions": ["ACCESS_COARSE_LOCATION", "ACCESS_FINE_LOCATION"]
     },
     "extra": {
       "apiBaseUrl": "http://localhost:8000"
     },
     "plugins": [
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "내 주변 장인을 찾기 위해 위치 정보가 필요해요."
+        }
+      ]
     ]
   }
 }

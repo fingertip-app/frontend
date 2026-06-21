@@ -6,6 +6,7 @@ import {
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import * as Location from "expo-location";
 import { RootStackParamList } from "@/navigation/RootNavigator";
 import { CardNewsCarousel } from "../cardnews/CardNewsCarousel";
 import { MainLayout } from "./MainLayout";
@@ -145,32 +146,47 @@ const TODAY_ARTISAN = {
   image: "https://images.unsplash.com/photo-1556157382-97eda2d62296?w=800&q=80",
 };
 
+// 장인 작업실 위치 (실제로는 백엔드 Experience.locationLat/Lng 기준이어야 하나,
+// 현재 /experiences/active 응답에 장인명이 포함되지 않아 좌표만 목업으로 둔다)
 const NEARBY_ARTISANS = [
   {
     id: "1",
     name: "김도예 장인",
     category: "도자기",
-    distance: "1.2km",
     location: "경기 이천시",
+    lat: 37.2725,
+    lng: 127.4348,
     image: "https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=300&q=80",
   },
   {
     id: "2",
     name: "한지마을",
     category: "한지공예",
-    distance: "3.5km",
     location: "전북 전주시",
+    lat: 35.8242,
+    lng: 127.1480,
     image: "https://images.unsplash.com/photo-1607453998774-d533f65dac99?w=300&q=80",
   },
   {
     id: "3",
     name: "이영희 장인",
     category: "나전칠기",
-    distance: "5.8km",
     location: "서울 종로구",
+    lat: 37.5735,
+    lng: 126.9788,
     image: "https://images.unsplash.com/photo-1582738411706-bfc8e691d1c2?w=300&q=80",
   },
 ];
+
+function getDistanceKm(lat1: number, lng1: number, lat2: number, lng2: number) {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLng = ((lng2 - lng1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
 
 function BannerCard({ item }: { item: typeof TOP_BANNERS[0] }) {
   return (
@@ -220,7 +236,15 @@ function PopularExperienceCard({ item }: { item: typeof POPULAR_EXPERIENCES[0] }
   );
 }
 
-function NearbyArtisanCard({ item, onPress }: { item: typeof NEARBY_ARTISANS[0]; onPress: () => void }) {
+function NearbyArtisanCard({
+  item,
+  distanceLabel,
+  onPress,
+}: {
+  item: typeof NEARBY_ARTISANS[0];
+  distanceLabel: string;
+  onPress: () => void;
+}) {
   return (
     <TouchableOpacity style={styles.nearbyCard} activeOpacity={0.9} onPress={onPress}>
       <Image source={{ uri: item.image }} style={styles.nearbyImage} />
@@ -229,7 +253,7 @@ function NearbyArtisanCard({ item, onPress }: { item: typeof NEARBY_ARTISANS[0];
         <Text style={styles.nearbyMeta}>{item.category} · {item.location}</Text>
         <View style={styles.nearbyDistanceRow}>
           <Text style={styles.nearbyDistanceIcon}>📍</Text>
-          <Text style={styles.nearbyDistance}>{item.distance}</Text>
+          <Text style={styles.nearbyDistance}>{distanceLabel}</Text>
         </View>
       </View>
     </TouchableOpacity>
@@ -242,11 +266,37 @@ export function HomeScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeBanner, setActiveBanner] = useState(0);
+  const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
 
   const handleBannerScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const index = Math.round(e.nativeEvent.contentOffset.x / (BANNER_WIDTH + 16));
     setActiveBanner(index);
   };
+
+  useEffect(() => {
+    const fetchLocation = async () => {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== "granted") return;
+        const position = await Location.getCurrentPositionAsync({});
+        setUserCoords({ lat: position.coords.latitude, lng: position.coords.longitude });
+      } catch (e) {
+        console.warn("위치 정보를 가져오지 못했습니다:", e);
+      }
+    };
+    fetchLocation();
+  }, []);
+
+  const nearbyArtisans = userCoords
+    ? [...NEARBY_ARTISANS].sort(
+        (a, b) =>
+          getDistanceKm(userCoords.lat, userCoords.lng, a.lat, a.lng) -
+          getDistanceKm(userCoords.lat, userCoords.lng, b.lat, b.lng)
+      )
+    : NEARBY_ARTISANS;
+
+  const getDistanceLabel = (item: typeof NEARBY_ARTISANS[0]) =>
+    userCoords ? `${getDistanceKm(userCoords.lat, userCoords.lng, item.lat, item.lng).toFixed(1)}km` : "거리 정보 없음";
 
   useEffect(() => {
     const fetchExperiences = async () => {
@@ -389,10 +439,11 @@ export function HomeScreen() {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.popularScroll}
           >
-            {NEARBY_ARTISANS.map((item) => (
+            {nearbyArtisans.map((item) => (
               <NearbyArtisanCard
                 key={item.id}
                 item={item}
+                distanceLabel={getDistanceLabel(item)}
                 onPress={() => navigation.navigate("ArtisanDetail" as any)}
               />
             ))}
