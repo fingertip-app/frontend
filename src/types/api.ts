@@ -96,3 +96,37 @@ export interface Review {
   keywords: string[] | null
   createdAt: string
 }
+
+// ========== AI Explain ==========
+
+export interface ExplainSource {
+  id: number
+  name: string
+  source: string
+  category: string
+}
+
+export interface RelatedExperience {
+  id: number
+  title: string
+  location: string
+  price: number
+  durationMinutes: number
+  tags: string[]
+}
+
+export interface ExplainRequest {
+  query: string
+  locale?: string
+}
+
+export interface ExplainResponse {
+  answer: string
+  sources: ExplainSource[]
+  matchingKeywords: string[]
+  recommendedCategories: string[]
+  recommendedTags: string[]
+  relatedExperiences: RelatedExperience[]
+  fallback: boolean
+  message: string | null
+}
