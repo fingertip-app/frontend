@@ -55,8 +55,16 @@ function formatDateLabel(dateKey: string) {
 }
 
 function groupSchedulesByDate(schedules: ExperienceSchedule[]) {
+  // 예약 마감 시간 버퍼 (30분 전까지만 예약 가능)
+  const bufferMinutes = 30;
+  const now = new Date();
+  now.setMinutes(now.getMinutes() + bufferMinutes);
+
   return schedules.reduce<Record<string, ExperienceSchedule[]>>((acc, schedule) => {
-    if (!schedule.isActive || schedule.remainingSlots <= 0) return acc;
+    const scheduleDate = new Date(schedule.scheduledAt);
+
+    // 과거 날짜, 비활성, 남은 좌석 없음 필터링
+    if (!schedule.isActive || schedule.remainingSlots <= 0 || scheduleDate < now) return acc;
 
     const dateKey = getScheduleDate(schedule);
     acc[dateKey] = [...(acc[dateKey] ?? []), schedule].sort(
