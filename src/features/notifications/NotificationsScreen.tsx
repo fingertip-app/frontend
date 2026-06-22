@@ -55,11 +55,13 @@ export function NotificationsScreen() {
     if (!notification.isRead) {
       try {
         await markNotificationAsRead(notification.id);
+        // API 성공 후 UI 업데이트
         setNotifications(prev =>
           prev.map(n => (n.id === notification.id ? { ...n, isRead: true } : n))
         );
       } catch (error) {
         console.error("Failed to mark as read:", error);
+        Alert.alert("오류", "알림 읽음 처리에 실패했습니다.");
       }
     }
   };
@@ -73,8 +75,8 @@ export function NotificationsScreen() {
 
     try {
       await markAllNotificationsAsRead(userId);
+      // API 성공 후 UI 업데이트
       setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
-      Alert.alert("완료", "모든 알림을 읽음 처리했습니다.");
     } catch (error) {
       console.error("Failed to mark all as read:", error);
       Alert.alert("오류", "알림 읽음 처리에 실패했습니다.");
