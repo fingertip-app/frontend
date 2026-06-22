@@ -122,6 +122,33 @@ export async function apiPatch<TRequest, TResponse>(
   return payload.data
 }
 
+export async function apiPut<TRequest, TResponse>(
+  path: string,
+  body?: TRequest,
+): Promise<TResponse> {
+  const authHeader = await getAuthHeader()
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      ...authHeader,
+    },
+    body: body !== undefined ? JSON.stringify(body) : undefined,
+  })
+
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({})) as ApiResponse<TResponse>
+    throw new ApiError(response.status, payload.message ?? `API request failed: ${response.status}`)
+  }
+
+  const payload = (await response.json()) as ApiResponse<TResponse>
+  if (!payload.success) {
+    throw new ApiError(response.status, payload.message ?? 'API request failed')
+  }
+
+  return payload.data
+}
+
 export async function apiDelete(path: string): Promise<void> {
   const authHeader = await getAuthHeader()
   const response = await fetch(`${API_BASE_URL}${path}`, {

@@ -27,7 +27,8 @@ export function AIChatScreen() {
   useEffect(() => {
     const initQuestion = `${news.title}에 대해 알려주세요`;
     handleAskQuestion(initQuestion, true);
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // news는 route params로 불변, handleAskQuestion은 재생성되므로 의도적으로 빈 배열
 
   const handleAskQuestion = async (question: string, isInitial: boolean = false) => {
     if (!isInitial && question.trim().length === 0) return;
@@ -109,7 +110,7 @@ export function AIChatScreen() {
               {item.sender === 'ai' && item.sources && item.sources.length > 0 && (
                 <View style={styles.sourcesContainer}>
                   <Text style={styles.sourcesLabel}>📚 출처</Text>
-                  {item.sources.map((source, idx) => (
+                  {item.sources.map((source: { name: string; source: string }, idx: number) => (
                     <Text key={idx} style={styles.sourceText}>
                       • {source.name}
                     </Text>

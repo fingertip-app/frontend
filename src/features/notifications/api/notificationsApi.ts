@@ -1,4 +1,4 @@
-import { apiGet, apiPatch, apiDelete } from '@/services/api'
+import { apiGet, apiPut, apiDelete } from '@/services/api'
 import type { Notification } from '@/types/api'
 
 /**
@@ -30,7 +30,7 @@ export async function getUnreadNotificationCount(userId: number): Promise<number
  * PUT /notifications/{notificationId}/read
  */
 export async function markNotificationAsRead(notificationId: number): Promise<Notification> {
-  return apiPatch<void, Notification>(`/notifications/${notificationId}/read`)
+  return apiPut<void, Notification>(`/notifications/${notificationId}/read`)
 }
 
 /**
@@ -38,7 +38,7 @@ export async function markNotificationAsRead(notificationId: number): Promise<No
  * PUT /notifications/user/{userId}/read-all
  */
 export async function markAllNotificationsAsRead(userId: number): Promise<void> {
-  return apiPatch<void, void>(`/notifications/user/${userId}/read-all`)
+  return apiPut<void, void>(`/notifications/user/${userId}/read-all`)
 }
 
 /**
