@@ -55,7 +55,11 @@ function formatDateLabel(dateKey: string) {
 }
 
 function groupSchedulesByDate(schedules: ExperienceSchedule[]) {
+  // 예약 마감 시간 버퍼 (30분 전까지만 예약 가능)
+  const bufferMinutes = 30;
   const now = new Date();
+  now.setMinutes(now.getMinutes() + bufferMinutes);
+
   return schedules.reduce<Record<string, ExperienceSchedule[]>>((acc, schedule) => {
     const scheduleDate = new Date(schedule.scheduledAt);
 
