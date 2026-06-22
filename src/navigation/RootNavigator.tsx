@@ -50,6 +50,7 @@ import { AIChatScreen } from "@/features/general/AI/AIChatScreen";
 import { ArtisanDetailScreen } from "@/features/general/home/ArtisanDetailScreen";
 import { MasterTodayStatusScreen } from "@/features/master/todayStatus/MasterTodayStatusScreen";
 import { MasterProfileScreen } from "@/features/master/masterProfile/MasterProfileScreen";
+import { NotificationsScreen } from "@/features/notifications/NotificationsScreen";
 
 export type CardNews = {
   id: string;
@@ -93,6 +94,7 @@ export type RootStackParamList = {
   Review: { booking: Booking };
   MyReviews: undefined;
   Settings: undefined;
+  Notifications: undefined;
   MasterHome: undefined;
   MasterExperience: undefined;
   MasterBookings: undefined;
@@ -236,6 +238,7 @@ export function RootNavigator() {
       <Stack.Screen name="AIChat" component={AIChatScreen} />
       <Stack.Screen name="ArtisanDetail" component={ArtisanDetailScreen} />
       <Stack.Screen name="MasterTodayStatus" component={MasterTodayStatusScreen} />
+      <Stack.Screen name="Notifications" component={NotificationsScreen} />
     </Stack.Navigator>
   );
 }

@@ -190,6 +190,7 @@ export function MyPageScreen() {
 
         {/* ── 활동 카드 ── */}
         <View style={ms.grid}>
+          <ActivityCard icon="notifications-outline" label="알림" onPress={() => navigation.navigate("Notifications")} />
           <ActivityCard
             icon="calendar-outline"
             label="예약 내역"
