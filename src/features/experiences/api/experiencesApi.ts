@@ -1,5 +1,18 @@
-import { apiGet } from '@/services/api'
+import { apiGet, apiPost } from '@/services/api'
 import type { Experience } from '@/types/api'
+
+export interface CreateExperienceRequest {
+  title: string
+  description?: string
+  category?: string
+  price: number
+  maxParticipants: number
+  difficulty: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED'
+  durationMinutes?: number
+  imageUrl?: string
+  locationAddress?: string
+  schedules?: { scheduledAt: string; availableSlots: number }[]
+}
 
 /**
  * 활성 체험 목록 조회
@@ -31,4 +44,15 @@ export async function getArtisanExperiences(artisanId: number): Promise<Experien
  */
 export async function getUpcomingExperiences(): Promise<Experience[]> {
   return apiGet<Experience[]>('/experiences/upcoming')
+}
+
+/**
+ * 체험 등록 (장인용)
+ * POST /experiences?artisanId={artisanId}
+ */
+export async function createExperience(
+  artisanId: number,
+  request: CreateExperienceRequest,
+): Promise<Experience> {
+  return apiPost<CreateExperienceRequest, Experience>(`/experiences?artisanId=${artisanId}`, request)
 }

@@ -78,7 +78,7 @@ export type RootStackParamList = {
   MainTabs: NavigatorScreenParams<MainTabParamList>;
   BookingCreate: { exp: ExperienceViewModel; experience: BackendExperience };
   BookingDetail: { booking: Booking };
-  Payment: { exp: ExperienceViewModel; dateLabel: string; time: string; headcount: number; totalPrice: number };
+  Payment: { exp: ExperienceViewModel; dateLabel: string; time: string; headcount: number; totalPrice: number; reservationId?: number };
   BookingRequestComplete: {
     reservationId: number;
     exp?: ExperienceViewModel;
@@ -103,10 +103,25 @@ export type RootStackParamList = {
   MasterProfile: undefined;
   MasterExperienceCreate: undefined;
   Step1BasicInfo: undefined;
-  Step2Photos: undefined;
-  Step3Schedule: undefined;
-  Step4Pricing: undefined;
-  Step5Location: undefined;
+  Step2Photos: { title: string; shortDesc: string; detail: string } | undefined;
+  Step3Schedule: { title: string; shortDesc: string; detail: string } | undefined;
+  Step4Pricing: {
+    title: string;
+    shortDesc: string;
+    detail: string;
+    selectedDays: string[];
+    timeSlots: { id: string; startTime: string; endTime: string }[];
+  } | undefined;
+  Step5Location: {
+    title: string;
+    shortDesc: string;
+    detail: string;
+    selectedDays: string[];
+    timeSlots: { id: string; startTime: string; endTime: string }[];
+    price: string;
+    minGuests: number;
+    maxGuests: number;
+  } | undefined;
   CardNewsList: undefined;
   CardNewsDetail: { news: CardNews };
   AIChat: { news: CardNews };

@@ -7,6 +7,7 @@ import {
   ScrollView,
   Image,
   Platform,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
@@ -15,6 +16,7 @@ import { RootStackParamList } from "@/navigation/RootNavigator";
 import { Ionicons, Feather } from "@expo/vector-icons";
 import { MasterBottomTabs } from "../components/MasterBottomTabs";
 import { MasterHeader } from "../components/MasterHeader";
+import { logout } from "@/features/auth/api/authApi";
 
 // ─── 기존 테마 팔레트 재사용 ──────────────────────────────────────────────────
 const BG       = "#F7F4EF";
@@ -45,6 +47,19 @@ const ss = StyleSheet.create({
 // ─── 장인(Master) 메인 스크린 ──────────────────────────────────────────────────
 export function MasterMyPageScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigation.reset({ index: 0, routes: [{ name: "Login" }] });
+    } catch {
+      Alert.alert("오류", "로그아웃에 실패했습니다.");
+    }
+  };
+
+  const handleSwitchToUserMode = () => {
+    navigation.reset({ index: 0, routes: [{ name: "MainTabs" }] });
+  };
 
   return (
     <SafeAreaView style={ms.safeArea} edges={["top"]}>
@@ -144,6 +159,10 @@ export function MasterMyPageScreen() {
               onPress={() => {
                 if (item === "프로필 수정") {
                   navigation.navigate("MasterProfile");
+                } else if (item === "일반 유저 모드로 전환") {
+                  handleSwitchToUserMode();
+                } else if (item === "로그아웃") {
+                  handleLogout();
                 }
               }}
             >

@@ -13,6 +13,8 @@ import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "@/navigation/RootNavigator";
 import { Ionicons } from "@expo/vector-icons";
+import { payReservation } from "@/features/reservations/api/reservationsApi";
+import { ApiError } from "@/services/api";
 
 const BRAND = "#3D1F0D";
 const GRAY = "#8C7B6E";
@@ -32,20 +34,28 @@ const PAY_METHODS: PayMethod[] = [
 export function PaymentScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const route = useRoute<RouteProp<RootStackParamList, "Payment">>();
-  const { exp, dateLabel, time, headcount, totalPrice } = route.params;
+  const { exp, dateLabel, time, headcount, totalPrice, reservationId } = route.params;
 
   const [selectedMethod, setSelectedMethod] = useState("card");
   const [agreed, setAgreed] = useState(false);
   const [processing, setProcessing] = useState(false);
 
-  const handlePay = () => {
+  const handlePay = async () => {
     if (!agreed) {
       Alert.alert("안내", "결제 진행을 위해 약관에 동의해주세요.");
       return;
     }
+    if (!reservationId) {
+      Alert.alert("오류", "예약 정보를 찾을 수 없습니다.");
+      return;
+    }
+
     setProcessing(true);
-    setTimeout(() => {
-      setProcessing(false);
+    try {
+      // TODO: 토스페이먼츠 SDK 연동 후 실제 paymentKey로 교체
+      const paymentKey = `mock-${selectedMethod}-${Date.now()}`;
+      await payReservation(reservationId, paymentKey);
+
       Alert.alert("결제 완료", "결제가 완료됐어요. 예약이 확정됐습니다.", [
         {
           text: "확인",
@@ -56,7 +66,20 @@ export function PaymentScreen() {
             }),
         },
       ]);
-    }, 800);
+    } catch (error) {
+      let errorMsg = "결제에 실패했습니다.";
+      if (error instanceof ApiError) {
+        errorMsg =
+          error.status === 400
+            ? "장인의 승인이 완료된 예약만 결제할 수 있습니다."
+            : error.message || errorMsg;
+      } else if (error instanceof Error) {
+        errorMsg = error.message;
+      }
+      Alert.alert("결제 실패", errorMsg);
+    } finally {
+      setProcessing(false);
+    }
   };
 
   return (

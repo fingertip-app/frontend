@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useCallback, useState } from "react";
 import {
   View,
   Text,
@@ -8,14 +8,19 @@ import {
   Image,
   Switch,
   Platform,
+  Alert,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useNavigation } from "@react-navigation/native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
 import { MasterBottomTabs } from "../components/MasterBottomTabs";
 import { RootStackParamList } from "@/navigation/RootNavigator";
 import { MasterHeader } from "../components/MasterHeader";
+import { getMyArtisan } from "@/features/artisans/api/artisanApi";
+import { getArtisanExperiences } from "@/features/experiences/api/experiencesApi";
+import type { Experience } from "@/types/api";
 
 // ─── 팔레트 ────────────────────────────────────────────────────────────────────
 const BRAND = "#3B2B26";
@@ -24,36 +29,20 @@ const CARD = "#FFFFFF";
 const GRAY = "#8A8077";
 const BORDER = "#EAE6E1";
 
-// ─── 더미 데이터 ───────────────────────────────────────────────────────────────
-const INITIAL_EXPERIENCES = [
-  {
-    id: "1",
-    title: "이천 도자기 물레 체험",
-    bookings: 12,
-    rating: 4.9,
-    active: true,
-    imageUri: "https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=600&q=80",
-    statusLabel: "ACTIVE",
-  },
-  {
-    id: "2",
-    title: "한지 공예 무드등 만들기",
-    bookings: null,
-    rating: 4.8,
-    active: false,
-    imageUri: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&q=80",
-    statusLabel: "INACTIVE",
-  },
-  {
-    id: "3",
-    title: "프리미엄 다도 명상 체험",
-    bookings: 7,
-    rating: 5.0,
-    active: true,
-    imageUri: "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=600&q=80",
-    statusLabel: "ACTIVE",
-  },
-];
+const PLACEHOLDER_IMAGE = "https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=600&q=80";
+
+function mapExperienceToListItem(exp: Experience) {
+  const bookings = exp.schedules?.reduce((sum, s) => sum + (s.bookedSlots ?? 0), 0) ?? 0;
+  return {
+    id: String(exp.id),
+    title: exp.title,
+    bookings: bookings > 0 ? bookings : null,
+    rating: 0,
+    active: exp.isActive,
+    imageUri: PLACEHOLDER_IMAGE,
+    statusLabel: exp.isActive ? "ACTIVE" : "INACTIVE",
+  };
+}
 
 export function MasterExperienceScreen({
   onMenuPress,
@@ -62,8 +51,40 @@ export function MasterExperienceScreen({
   onMenuPress?: () => void;
   onNotificationPress?: () => void;
 }) {
-  const [experiences, setExperiences] = useState(INITIAL_EXPERIENCES);
+  const [experiences, setExperiences] = useState<ReturnType<typeof mapExperienceToListItem>[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+
+  const loadExperiences = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const artisan = await getMyArtisan();
+      const myExperiences = await getArtisanExperiences(artisan.id);
+      setExperiences(myExperiences.map(mapExperienceToListItem));
+    } catch {
+      Alert.alert("오류", "체험 목록을 불러오지 못했습니다.");
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadExperiences();
+    }, [loadExperiences])
+  );
+
+  const handleComingSoon = () => {
+    Alert.alert("알림", "준비 중인 기능입니다.");
+  };
+
+  const handleMorePress = (id: string) => {
+    Alert.alert("체험 관리", undefined, [
+      { text: "수정", onPress: () => navigation.navigate("MasterExperienceCreate") },
+      { text: "비활성화", onPress: () => toggleActive(id) },
+      { text: "취소", style: "cancel" },
+    ]);
+  };
 
   const toggleActive = (id: string) => {
     setExperiences((prev) =>
@@ -104,13 +125,18 @@ export function MasterExperienceScreen({
         {/* ── 나의 체험 목록 헤더 ── */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>나의 체험 목록</Text>
-          <TouchableOpacity hitSlop={8}>
-            <Text style={styles.moreLink}>전체보기 &gt;</Text>
-          </TouchableOpacity>
         </View>
 
+        {isLoading && <ActivityIndicator size="large" color={BRAND} style={{ marginTop: 20 }} />}
+
+        {!isLoading && experiences.length === 0 && (
+          <Text style={{ color: GRAY, textAlign: "center", marginTop: 20 }}>
+            등록된 체험이 없습니다. 새 체험을 등록해보세요.
+          </Text>
+        )}
+
         {/* ── 체험 카드 목록 ── */}
-        {experiences.map((item) => (
+        {!isLoading && experiences.map((item) => (
           <View key={item.id} style={styles.experienceCard}>
             {/* 이미지 + ACTIVE 뱃지 */}
             <View style={styles.imageWrapper}>
@@ -136,7 +162,7 @@ export function MasterExperienceScreen({
                 <Text style={styles.cardTitle} numberOfLines={1}>
                   {item.title}
                 </Text>
-                <TouchableOpacity hitSlop={8}>
+                <TouchableOpacity hitSlop={8} onPress={() => handleMorePress(item.id)}>
                   <Ionicons name="ellipsis-vertical" size={18} color={GRAY} />
                 </TouchableOpacity>
               </View>
@@ -151,11 +177,15 @@ export function MasterExperienceScreen({
               {/* 수정 · 상세 · 토글 */}
               <View style={styles.cardActions}>
                 <View style={styles.cardActionsLeft}>
-                  <TouchableOpacity style={styles.actionBtn} hitSlop={6}>
+                  <TouchableOpacity
+                    style={styles.actionBtn}
+                    hitSlop={6}
+                    onPress={() => navigation.navigate("MasterExperienceCreate")}
+                  >
                     <Ionicons name="pencil-outline" size={14} color={GRAY} />
                     <Text style={styles.actionBtnText}>수정</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={styles.actionBtn} hitSlop={6}>
+                  <TouchableOpacity style={styles.actionBtn} hitSlop={6} onPress={handleComingSoon}>
                     <Ionicons name="eye-outline" size={14} color={GRAY} />
                     <Text style={styles.actionBtnText}>상세</Text>
                   </TouchableOpacity>
@@ -177,8 +207,8 @@ export function MasterExperienceScreen({
       </ScrollView>
 
       {/* ── 새 체험 등록 FAB ── */}
-      <TouchableOpacity 
-        style={styles.fab} 
+      <TouchableOpacity
+        style={styles.fab}
         activeOpacity={0.85}
         onPress={() => navigation.navigate("Step1BasicInfo")}
       >

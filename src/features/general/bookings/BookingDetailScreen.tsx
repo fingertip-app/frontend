@@ -204,6 +204,7 @@ export function BookingDetailScreen() {
                   time: booking.time,
                   headcount: booking.guests,
                   totalPrice: booking.totalPrice ?? 0,
+                  reservationId: booking.reservationId,
                 })
               }
             >

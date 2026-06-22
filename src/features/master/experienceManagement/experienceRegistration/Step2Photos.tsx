@@ -10,7 +10,7 @@ import {
   Alert,
   Image,
 } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useRoute } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 
 // ─── 팔레트 (Step1과 동일) ─────────────────────────────────────────────────────
@@ -28,6 +28,7 @@ const MAX_DETAIL = 10;
 
 export function Step2Photos() {
   const navigation = useNavigation<any>();
+  const route = useRoute<any>();
   const currentStep = 2;
 
   // 대표 사진: 1장
@@ -214,7 +215,8 @@ export function Step2Photos() {
         <TouchableOpacity
           style={[styles.nextBtn, !mainPhoto && styles.nextBtnDisabled]}
           activeOpacity={0.8}
-          onPress={() => navigation.navigate("Step3Schedule")}
+          disabled={!mainPhoto}
+          onPress={() => navigation.navigate("Step3Schedule", route.params)}
         >
           <Text style={styles.nextBtnText}>다음 단계</Text>
         </TouchableOpacity>

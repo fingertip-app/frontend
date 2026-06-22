@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Image,
   Platform,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
@@ -15,6 +16,14 @@ import { Ionicons } from "@expo/vector-icons";
 import { MasterBottomTabs } from "../components/MasterBottomTabs";
 import { MasterHeader } from "../components/MasterHeader";
 import { RootStackParamList } from "@/navigation/RootNavigator";
+import { getMyArtisan } from "@/features/artisans/api/artisanApi";
+import { getArtisanExperiences } from "@/features/experiences/api/experiencesApi";
+import {
+  approveReservation,
+  getExperienceReservations,
+  rejectReservation,
+} from "@/features/reservations/api/reservationsApi";
+import { getUser } from "@/features/users/api/usersApi";
 
 // ─── 팔레트 ────────────────────────────────────────────────────────────────────
 const BRAND = "#3B2B26";
@@ -24,27 +33,28 @@ const GRAY = "#8A8077";
 const BORDER = "#EAE6E1";
 const ACCENT_BG = "#F0EBE5";
 
-// ─── 더미 데이터 ───────────────────────────────────────────────────────────────
-const BOOKING_REQUESTS = [
-  {
-    id: "1",
-    title: "이천 도자기 물레 체험",
-    date: "2024.05.29 (월)",
-    time: "14:00",
-    guests: "2명",
-    name: "이지원 외국인",
-    image: "https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=200&q=80",
-  },
-  {
-    id: "2",
-    title: "한지 공예 체험",
-    date: "2024.05.30 (목)",
-    time: "10:00",
-    guests: "3명",
-    name: "Yuki Tanaka",
-    image: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=200&q=80",
-  },
-];
+interface BookingRequest {
+  id: number;
+  title: string;
+  date: string;
+  time: string;
+  guests: string;
+  name: string;
+  image: string;
+}
+
+function formatRequestDate(iso: string | null) {
+  if (!iso) return "-";
+  const d = new Date(iso);
+  const weekday = ["일", "월", "화", "수", "목", "금", "토"][d.getDay()];
+  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")} (${weekday})`;
+}
+
+function formatRequestTime(iso: string | null) {
+  if (!iso) return "-";
+  const d = new Date(iso);
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+}
 
 const TODAY_SCHEDULES = [
   {
@@ -67,6 +77,78 @@ export function MasterHomeScreen({
   onNotificationPress?: () => void;
 }) {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const [bookingRequests, setBookingRequests] = useState<BookingRequest[]>([]);
+  const [artisanId, setArtisanId] = useState<number | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const artisan = await getMyArtisan();
+        setArtisanId(artisan.id);
+
+        const experiences = await getArtisanExperiences(artisan.id);
+        const experienceById = new Map(experiences.map((exp) => [exp.id, exp]));
+
+        const reservationLists = await Promise.all(
+          experiences.map((exp) => getExperienceReservations(exp.id))
+        );
+        const pending = reservationLists.flat().filter((r) => r.status === "PENDING");
+
+        const requests = await Promise.all(
+          pending.map(async (r) => {
+            const user = await getUser(r.userId).catch(() => null);
+            return {
+              id: r.id,
+              title: experienceById.get(r.experienceId)?.title ?? "체험",
+              date: formatRequestDate(r.reservedDateTime),
+              time: formatRequestTime(r.reservedDateTime),
+              guests: `${r.numberOfParticipants}명`,
+              name: user?.nickname ?? "알 수 없음",
+              image: "",
+            };
+          })
+        );
+        setBookingRequests(requests);
+      } catch {
+        // 예약 요청 조회 실패 시 빈 목록으로 유지
+      }
+    })();
+  }, []);
+
+  const handleApprove = (id: number) => {
+    Alert.alert("예약 승인", "이 예약을 승인하시겠습니까?", [
+      { text: "취소", style: "cancel" },
+      {
+        text: "승인",
+        onPress: async () => {
+          try {
+            await approveReservation(id, artisanId ?? undefined);
+            setBookingRequests((prev) => prev.filter((b) => b.id !== id));
+          } catch {
+            Alert.alert("알림", "예약 승인에 실패했습니다.");
+          }
+        },
+      },
+    ]);
+  };
+
+  const handleReject = (id: number) => {
+    Alert.alert("예약 거절", "이 예약을 거절하시겠습니까?", [
+      { text: "취소", style: "cancel" },
+      {
+        text: "거절",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await rejectReservation(id, "장인의 사정으로 예약을 거절했습니다.", artisanId ?? undefined);
+            setBookingRequests((prev) => prev.filter((b) => b.id !== id));
+          } catch {
+            Alert.alert("알림", "예약 거절에 실패했습니다.");
+          }
+        },
+      },
+    ]);
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -156,7 +238,7 @@ export function MasterHomeScreen({
           </TouchableOpacity>
         </View>
 
-        {BOOKING_REQUESTS.map((item) => (
+        {bookingRequests.map((item) => (
           <View key={item.id} style={styles.bookingCard}>
             <View style={styles.bookingTop}>
               <Image source={{ uri: item.image }} style={styles.bookingImage} />
@@ -175,10 +257,10 @@ export function MasterHomeScreen({
               </View>
             </View>
             <View style={styles.bookingActions}>
-              <TouchableOpacity style={styles.rejectBtn}>
+              <TouchableOpacity style={styles.rejectBtn} onPress={() => handleReject(item.id)}>
                 <Text style={styles.rejectText}>거절</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.approveBtn}>
+              <TouchableOpacity style={styles.approveBtn} onPress={() => handleApprove(item.id)}>
                 <Text style={styles.approveText}>승인</Text>
               </TouchableOpacity>
             </View>

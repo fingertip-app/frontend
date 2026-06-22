@@ -191,7 +191,8 @@ export function Step1BasicInfo() {
             !(title && shortDesc && detail) && styles.nextBtnDisabled,
           ]}
           activeOpacity={0.8}
-          onPress={() => navigation.navigate("Step2Photos")}
+          disabled={!(title && shortDesc && detail)}
+          onPress={() => navigation.navigate("Step2Photos", { title, shortDesc, detail })}
         >
           <Text style={styles.nextBtnText}>다음 단계</Text>
         </TouchableOpacity>
