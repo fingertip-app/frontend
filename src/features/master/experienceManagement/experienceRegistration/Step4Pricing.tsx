@@ -10,7 +10,7 @@ import {
   TextInput,
   Switch,
 } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useRoute } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 
 // ─── 팔레트 (Step1/2/3과 동일) ────────────────────────────────────────────────
@@ -25,6 +25,7 @@ const STEP_LABELS = ["기본 정보", "사진", "일정 등록", "가격/인원"
 
 export function Step4Pricing() {
   const navigation = useNavigation<any>();
+  const route = useRoute<any>();
   const currentStep = 4;
 
   const [price, setPrice] = useState("0");
@@ -208,7 +209,10 @@ export function Step4Pricing() {
         <TouchableOpacity
           style={[styles.nextBtn, !price && styles.nextBtnDisabled]}
           activeOpacity={0.8}
-          onPress={() => navigation.navigate("Step5Location")}
+          disabled={!price}
+          onPress={() =>
+            navigation.navigate("Step5Location", { ...route.params, price, minGuests, maxGuests })
+          }
         >
           <Text style={styles.nextBtnText}>다음 단계</Text>
         </TouchableOpacity>

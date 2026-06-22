@@ -78,42 +78,6 @@ const POPULAR_EXPERIENCES = [
   },
 ];
 
-const NEW_EXPERIENCES = [
-  {
-    id: "4",
-    title: "자개 모빌 만들기",
-    location: "통영",
-    duration: "2시간",
-    category: "나전칠기",
-    price: "55,000원",
-    rating: 5.0,
-    reviewCount: 12,
-    image: "https://images.unsplash.com/photo-1582738411706-bfc8e691d1c2?w=400&q=80",
-  },
-  {
-    id: "5",
-    title: "천연 염색 스카프",
-    location: "나주",
-    duration: "1.5시간",
-    category: "천연염색",
-    price: "40,000원",
-    rating: 4.5,
-    reviewCount: 4,
-    image: "https://images.unsplash.com/photo-1528698827591-e19ccd7bc23d?w=400&q=80",
-  },
-  {
-    id: "6",
-    title: "전통주 빚기",
-    location: "안동",
-    duration: "3시간",
-    category: "전통음식",
-    price: "70,000원",
-    rating: 4.8,
-    reviewCount: 10,
-    image: "https://images.unsplash.com/photo-1563514995963-3b4eb8216fcb?w=400&q=80",
-  },
-];
-
 const WISHED_EXPERIENCES = [
   {
     id: "7",
@@ -209,10 +173,30 @@ function BannerCard({ item }: { item: typeof TOP_BANNERS[0] }) {
   );
 }
 
-function PopularExperienceCard({ item }: { item: typeof POPULAR_EXPERIENCES[0] }) {
+function mapExperienceToCard(exp: any): typeof POPULAR_EXPERIENCES[0] {
+  return {
+    id: String(exp.id),
+    title: exp.title,
+    location: exp.locationAddress || "위치 미정",
+    duration: exp.durationMinutes ? `${exp.durationMinutes}분` : "시간 미정",
+    category: exp.category || "기타",
+    price: `${Number(exp.price).toLocaleString()}원`,
+    rating: 0,
+    reviewCount: 0,
+    image: "https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=400&q=80",
+  };
+}
+
+function PopularExperienceCard({
+  item,
+  onPress,
+}: {
+  item: typeof POPULAR_EXPERIENCES[0];
+  onPress?: () => void;
+}) {
   const [isWished, setIsWished] = useState(false);
   return (
-    <TouchableOpacity style={styles.popularCard} activeOpacity={0.9}>
+    <TouchableOpacity style={styles.popularCard} activeOpacity={0.9} onPress={onPress}>
       <View style={styles.popularImageContainer}>
         <Image source={{ uri: item.image }} style={styles.popularImage} />
         <TouchableOpacity
@@ -263,6 +247,7 @@ function NearbyArtisanCard({
 export function HomeScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [popularExperiences, setPopularExperiences] = useState<any[]>([]);
+  const [newExperiences, setNewExperiences] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeBanner, setActiveBanner] = useState(0);
@@ -305,7 +290,12 @@ export function HomeScreen() {
         setError(null);
         // 백엔드의 활성 체험 목록 API 호출
         const response = await apiGet<any[]>("/experiences/active");
-        setPopularExperiences(response || []);
+        const experiences = response || [];
+        setPopularExperiences(experiences);
+        const sortedByNewest = [...experiences].sort(
+          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+        setNewExperiences(sortedByNewest.slice(0, 5));
       } catch (e: any) {
         console.error("체험 목록을 불러오는데 실패했습니다:", e);
         setError("체험 목록을 불러오는데 실패했습니다.");
@@ -331,10 +321,35 @@ export function HomeScreen() {
         contentContainerStyle={styles.popularScroll}
       >
         {popularExperiences.map((item) => (
-          <PopularExperienceCard key={item.id} item={item} />
+          <PopularExperienceCard
+            key={item.id}
+            item={mapExperienceToCard(item)}
+            onPress={() => openExperienceDetail(item)}
+          />
         ))}
       </ScrollView>
     );
+  };
+
+  const openExperienceDetail = (exp: any) => {
+    navigation.navigate("MainTabs", {
+      screen: "Explore",
+      params: {
+        exp: {
+          id: String(exp.id),
+          title: exp.title,
+          category: exp.category || "기타",
+          location: exp.locationAddress || "위치 미정",
+          artisan: "장인",
+          rating: 0,
+          reviewCount: 0,
+          duration: exp.durationMinutes ? `${exp.durationMinutes}분` : "시간 미정",
+          price: Number(exp.price) || 0,
+          tags: [],
+          imageUri: "https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=400&q=80",
+        },
+      },
+    });
   };
 
   return (
@@ -502,8 +517,12 @@ export function HomeScreen() {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.popularScroll}
           >
-            {NEW_EXPERIENCES.map((item) => (
-              <PopularExperienceCard key={item.id} item={item} />
+            {newExperiences.map((item) => (
+              <PopularExperienceCard
+                key={item.id}
+                item={mapExperienceToCard(item)}
+                onPress={() => openExperienceDetail(item)}
+              />
             ))}
           </ScrollView>
         </View>

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   Alert,
   FlatList,
   Platform,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
@@ -15,6 +16,15 @@ import { RootStackParamList } from "@/navigation/RootNavigator";
 import { Ionicons } from "@expo/vector-icons";
 import { MasterBottomTabs } from "../components/MasterBottomTabs";
 import { MasterHeader } from "../components/MasterHeader";
+import { getMyArtisan } from "@/features/artisans/api/artisanApi";
+import { getArtisanExperiences } from "@/features/experiences/api/experiencesApi";
+import {
+  approveReservation,
+  getExperienceReservations,
+  rejectReservation,
+} from "@/features/reservations/api/reservationsApi";
+import { getUser } from "@/features/users/api/usersApi";
+import type { Reservation, ReservationStatus } from "@/types/api";
 
 // ─── 팔레트 ────────────────────────────────────────────────────────────────────
 const BRAND = "#3B2B26";
@@ -23,60 +33,116 @@ const CARD = "#FFFFFF";
 const GRAY = "#8A8077";
 const BORDER = "#EAE6E1";
 
-// ─── 더미 데이터 ───────────────────────────────────────────────────────────────
-type BookingStatus = "pending" | "confirmed" | "completed" | "cancelled";
+// ─── 화면 표시용 예약 타입 ───────────────────────────────────────────────────────
+type DisplayStatus = "pending" | "confirmed" | "completed" | "cancelled";
 
-const MOCK_BOOKINGS = [
-  {
-    id: "1",
-    status: "pending" as BookingStatus,
-    title: "이천 도자기 물레 원데이 클래스",
-    date: "2026.06.15 (토)",
-    time: "14:00 - 16:00",
-    bookerName: "김하루",
-    guests: 2,
-    price: 70000,
-  },
-  {
-    id: "2",
-    status: "confirmed" as BookingStatus,
-    title: "청자 상감 기법 심화반 (1회차)",
-    date: "2026.06.16 (일)",
-    time: "10:00 - 13:00",
-    bookerName: "이예솔",
-    guests: 1,
-    price: 150000,
-  },
-  {
-    id: "3",
-    status: "completed" as BookingStatus,
-    title: "어린이를 위한 흙놀이 도예 교실",
-    date: "2026.06.01 (월)",
-    time: "16:00 - 17:30",
-    bookerName: "박지민",
-    guests: 3,
-    price: 75000,
-  },
-];
+interface DisplayBooking {
+  id: number;
+  status: DisplayStatus;
+  title: string;
+  date: string;
+  time: string;
+  bookerName: string;
+  guests: number;
+  price: number;
+}
 
-const STATUS_TABS = [
+const STATUS_TABS: { id: "all" | DisplayStatus; label: string }[] = [
   { id: "all", label: "전체" },
   { id: "pending", label: "승인 대기" },
   { id: "confirmed", label: "예약 확정" },
   { id: "completed", label: "완료됨" },
 ];
 
+// 백엔드 ReservationStatus → 화면 표시용 상태 매핑
+function toDisplayStatus(status: ReservationStatus): DisplayStatus {
+  switch (status) {
+    case "PENDING":
+      return "pending";
+    case "APPROVED":
+    case "PAID":
+    case "CONFIRMED":
+      return "confirmed";
+    case "COMPLETED":
+      return "completed";
+    default:
+      return "cancelled";
+  }
+}
+
+function formatDate(iso: string | null) {
+  if (!iso) return "-";
+  const d = new Date(iso);
+  const weekday = ["일", "월", "화", "수", "목", "금", "토"][d.getDay()];
+  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")} (${weekday})`;
+}
+
+function formatTime(iso: string | null) {
+  if (!iso) return "-";
+  const d = new Date(iso);
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+}
+
 export function MasterBookingsScreen() {
-  const [activeTab, setActiveTab] = useState("all");
-  const [bookings, setBookings] = useState(MOCK_BOOKINGS);
+  const [activeTab, setActiveTab] = useState<"all" | DisplayStatus>("all");
+  const [bookings, setBookings] = useState<DisplayBooking[]>([]);
+  const [reservationsById, setReservationsById] = useState<Record<number, Reservation>>({});
+  const [artisanId, setArtisanId] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+
+  const loadBookings = useCallback(async () => {
+    setLoading(true);
+    try {
+      const artisan = await getMyArtisan();
+      setArtisanId(artisan.id);
+
+      const experiences = await getArtisanExperiences(artisan.id);
+      const experienceById = new Map(experiences.map((exp) => [exp.id, exp]));
+
+      const reservationLists = await Promise.all(
+        experiences.map((exp) => getExperienceReservations(exp.id))
+      );
+      const reservations = reservationLists.flat();
+
+      const userIds = [...new Set(reservations.map((r) => r.userId))];
+      const users = await Promise.all(userIds.map((id) => getUser(id).catch(() => null)));
+      const nicknameByUserId = new Map(
+        users.map((user, idx) => [userIds[idx], user?.nickname ?? "알 수 없음"])
+      );
+
+      setReservationsById(
+        Object.fromEntries(reservations.map((r) => [r.id, r]))
+      );
+      setBookings(
+        reservations.map((r) => ({
+          id: r.id,
+          status: toDisplayStatus(r.status),
+          title: experienceById.get(r.experienceId)?.title ?? "체험",
+          date: formatDate(r.reservedDateTime),
+          time: formatTime(r.reservedDateTime),
+          bookerName: nicknameByUserId.get(r.userId) ?? "알 수 없음",
+          guests: r.numberOfParticipants,
+          price: r.totalPrice,
+        }))
+      );
+    } catch {
+      Alert.alert("알림", "예약 목록을 불러오지 못했습니다.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadBookings();
+  }, [loadBookings]);
 
   const filteredBookings = bookings.filter((b) =>
     activeTab === "all" ? true : b.status === activeTab
   );
 
   // 상태 뱃지 렌더링 헬퍼
-  const renderStatusBadge = (status: BookingStatus) => {
+  const renderStatusBadge = (status: DisplayStatus) => {
     let bgColor = "#F3F4F6";
     let textColor = "#4B5563";
     let label = "";
@@ -112,37 +178,55 @@ export function MasterBookingsScreen() {
   };
 
   // 승인 버튼 핸들러
-  const handleApprove = (id: string) => {
+  const handleApprove = (id: number) => {
     Alert.alert("예약 승인", "이 예약을 승인하시겠습니까?", [
       { text: "취소", style: "cancel" },
-      { 
-        text: "승인", 
-        onPress: () => {
-          setBookings((prev) => prev.map((b) => b.id === id ? { ...b, status: "confirmed" } : b));
-        } 
-      }, // TODO: 실제 API 승인 로직 연동
+      {
+        text: "승인",
+        onPress: async () => {
+          try {
+            const updated = await approveReservation(id, artisanId ?? undefined);
+            setBookings((prev) =>
+              prev.map((b) => (b.id === id ? { ...b, status: toDisplayStatus(updated.status) } : b))
+            );
+          } catch {
+            Alert.alert("알림", "예약 승인에 실패했습니다.");
+          }
+        },
+      },
     ]);
   };
 
   // 거절 버튼 핸들러
-  const handleReject = (id: string) => {
+  const handleReject = (id: number) => {
     Alert.alert("예약 거절", "이 예약을 거절하시겠습니까?", [
       { text: "취소", style: "cancel" },
-      { 
-        text: "거절", 
-        style: "destructive", 
-        onPress: () => {
-          setBookings((prev) => prev.map((b) => b.id === id ? { ...b, status: "cancelled" } : b));
-        } 
-      }, // TODO: 실제 API 거절 로직 연동
+      {
+        text: "거절",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            const updated = await rejectReservation(
+              id,
+              "장인의 사정으로 예약을 거절했습니다.",
+              artisanId ?? undefined
+            );
+            setBookings((prev) =>
+              prev.map((b) => (b.id === id ? { ...b, status: toDisplayStatus(updated.status) } : b))
+            );
+          } catch {
+            Alert.alert("알림", "예약 거절에 실패했습니다.");
+          }
+        },
+      },
     ]);
   };
 
   return (
     <SafeAreaView style={styles.safeArea}>
       {/* ── 공통 상단바 및 서랍 ── */}
-      <MasterHeader 
-        activeItem="예약관리" 
+      <MasterHeader
+        activeItem="예약관리"
         rightComponent={
           <TouchableOpacity hitSlop={8}>
             <Ionicons name="search" size={24} color={BRAND} />
@@ -166,64 +250,85 @@ export function MasterBookingsScreen() {
       </View>
 
       {/* ── 예약 리스트 ── */}
-      <FlatList
-        style={{ flex: 1 }}
-        data={filteredBookings}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Ionicons name="calendar-clear-outline" size={48} color="#D4CDC4" />
-            <Text style={styles.emptyText}>해당하는 예약 내역이 없습니다.</Text>
-          </View>
-        }
-        renderItem={({ item }) => (
-          <TouchableOpacity 
-            style={styles.card}
-            activeOpacity={0.8}
-            onPress={() => navigation.navigate("MasterBookingDetail", { booking: item })}
-          >
-            <View style={styles.cardHeader}>
-              {renderStatusBadge(item.status)}
-              <Text style={styles.cardDate}>{item.date} {item.time}</Text>
+      {loading ? (
+        <View style={styles.emptyContainer}>
+          <ActivityIndicator color={BRAND} />
+        </View>
+      ) : (
+        <FlatList
+          style={{ flex: 1 }}
+          data={filteredBookings}
+          keyExtractor={(item) => String(item.id)}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+          onRefresh={loadBookings}
+          refreshing={loading}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Ionicons name="calendar-clear-outline" size={48} color="#D4CDC4" />
+              <Text style={styles.emptyText}>해당하는 예약 내역이 없습니다.</Text>
             </View>
-
-            <Text style={styles.cardTitle}>{item.title}</Text>
-            
-            <View style={styles.cardInfoRow}>
-              <Text style={styles.cardInfoLabel}>예약자</Text>
-              <Text style={styles.cardInfoValue}>{item.bookerName} (총 {item.guests}명)</Text>
-            </View>
-            <View style={styles.cardInfoRow}>
-              <Text style={styles.cardInfoLabel}>결제금액</Text>
-              <Text style={styles.cardInfoValue}>{item.price.toLocaleString()}원</Text>
-            </View>
-
-            {/* 액션 버튼 (상태에 따라 다르게 노출) */}
-            {item.status === "pending" ? (
-              <View style={styles.actionRow}>
-                <TouchableOpacity 
-                  style={[styles.actionBtn, styles.rejectBtn]}
-                  onPress={() => handleReject(item.id)}
-                >
-                  <Text style={styles.rejectBtnText}>거절</Text>
-                </TouchableOpacity>
-                <TouchableOpacity 
-                  style={[styles.actionBtn, styles.approveBtn]}
-                  onPress={() => handleApprove(item.id)}
-                >
-                  <Text style={styles.approveBtnText}>승인하기</Text>
-                </TouchableOpacity>
+          }
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              style={styles.card}
+              activeOpacity={0.8}
+              onPress={() =>
+                navigation.navigate("MasterBookingDetail", {
+                  booking: {
+                    id: String(item.id),
+                    status: item.status,
+                    title: item.title,
+                    date: item.date,
+                    time: item.time,
+                    bookerName: item.bookerName,
+                    guests: item.guests,
+                    price: item.price,
+                  },
+                })
+              }
+            >
+              <View style={styles.cardHeader}>
+                {renderStatusBadge(item.status)}
+                <Text style={styles.cardDate}>{item.date} {item.time}</Text>
               </View>
-            ) : (
-              <View style={styles.detailBtn}>
-                <Text style={styles.detailBtnText}>상세 보기</Text>
+
+              <Text style={styles.cardTitle}>{item.title}</Text>
+
+              <View style={styles.cardInfoRow}>
+                <Text style={styles.cardInfoLabel}>예약자</Text>
+                <Text style={styles.cardInfoValue}>{item.bookerName} (총 {item.guests}명)</Text>
               </View>
-            )}
-          </TouchableOpacity>
-        )}
-      />
+              <View style={styles.cardInfoRow}>
+                <Text style={styles.cardInfoLabel}>결제금액</Text>
+                <Text style={styles.cardInfoValue}>{item.price.toLocaleString()}원</Text>
+              </View>
+
+              {/* 액션 버튼 (상태에 따라 다르게 노출) */}
+              {item.status === "pending" ? (
+                <View style={styles.actionRow}>
+                  <TouchableOpacity
+                    style={[styles.actionBtn, styles.rejectBtn]}
+                    onPress={() => handleReject(item.id)}
+                  >
+                    <Text style={styles.rejectBtnText}>거절</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.actionBtn, styles.approveBtn]}
+                    onPress={() => handleApprove(item.id)}
+                  >
+                    <Text style={styles.approveBtnText}>승인하기</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <View style={styles.detailBtn}>
+                  <Text style={styles.detailBtnText}>상세 보기</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          )}
+        />
+      )}
 
       {/* ── 하단 탭 바 ── */}
       <MasterBottomTabs activeTab="예약관리" />

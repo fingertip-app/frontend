@@ -12,7 +12,10 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
+import { RootStackParamList } from "@/navigation/RootNavigator";
+import { logout } from "@/features/auth/api/authApi";
 
 const BRAND = "#3B2B26";
 const BG = "#F5F4F0";
@@ -217,7 +220,7 @@ const tr = StyleSheet.create({
 
 // ── 메인 화면 ────────────────────────────────────────────
 export function MasterProfileScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [isEditing, setIsEditing] = useState(false);
 
   const [name, setName] = useState("김도예 장인");
@@ -242,6 +245,19 @@ export function MasterProfileScreen() {
 
   const handleCancel = () => {
     setIsEditing(false);
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigation.reset({ index: 0, routes: [{ name: "Login" }] });
+    } catch {
+      Alert.alert("오류", "로그아웃에 실패했습니다.");
+    }
+  };
+
+  const handleComingSoon = () => {
+    Alert.alert("알림", "준비 중인 기능입니다.");
   };
 
   return (
@@ -285,7 +301,7 @@ export function MasterProfileScreen() {
               style={s.profileImage}
             />
             {isEditing && (
-              <TouchableOpacity style={s.cameraBtn} activeOpacity={0.8}>
+              <TouchableOpacity style={s.cameraBtn} activeOpacity={0.8} onPress={handleComingSoon}>
                 <Ionicons name="camera" size={16} color={CARD} />
               </TouchableOpacity>
             )}
@@ -404,7 +420,7 @@ export function MasterProfileScreen() {
           <SectionHeader icon="shield-outline" title="계정" />
           {ACCOUNT_MENU_ITEMS.map((item, i, arr) => (
             <View key={item.label}>
-              <TouchableOpacity style={s.menuRow} activeOpacity={0.6}>
+              <TouchableOpacity style={s.menuRow} activeOpacity={0.6} onPress={handleComingSoon}>
                 <View style={s.menuIcon}>
                   <Ionicons name={item.icon} size={17} color={ACCENT} />
                 </View>
@@ -416,7 +432,7 @@ export function MasterProfileScreen() {
           ))}
         </View>
 
-        <TouchableOpacity style={s.logoutBtn} activeOpacity={0.7}>
+        <TouchableOpacity style={s.logoutBtn} activeOpacity={0.7} onPress={handleLogout}>
           <Text style={s.logoutText}>로그아웃</Text>
         </TouchableOpacity>
 

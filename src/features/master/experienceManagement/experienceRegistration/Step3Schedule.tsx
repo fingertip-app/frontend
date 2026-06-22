@@ -9,7 +9,7 @@ import {
   Platform,
   TextInput,
 } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useRoute } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 
 // ─── 팔레트 (Step1/2와 동일) ──────────────────────────────────────────────────
@@ -31,6 +31,7 @@ interface TimeSlot {
 
 export function Step3Schedule() {
   const navigation = useNavigation<any>();
+  const route = useRoute<any>();
   const currentStep = 3;
 
   const [selectedDays, setSelectedDays] = useState<string[]>([]);
@@ -225,7 +226,8 @@ export function Step3Schedule() {
         <TouchableOpacity
           style={[styles.nextBtn, timeSlots.length === 0 && styles.nextBtnDisabled]}
           activeOpacity={0.8}
-          onPress={() => navigation.navigate("Step4Pricing")}
+          disabled={timeSlots.length === 0}
+          onPress={() => navigation.navigate("Step4Pricing", { ...route.params, selectedDays, timeSlots })}
         >
           <Text style={styles.nextBtnText}>다음 단계</Text>
         </TouchableOpacity>

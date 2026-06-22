@@ -10,8 +10,10 @@ import {
   Alert,
   TextInput,
 } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useRoute } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
+import { getMyArtisan } from "@/features/artisans/api/artisanApi";
+import { createExperience } from "@/features/experiences/api/experiencesApi";
 
 // ─── 팔레트 (Step1~4와 동일) ──────────────────────────────────────────────────
 const BRAND = "#3B2B26";
@@ -23,24 +25,122 @@ const PLACEHOLDER = "#C4BCB4";
 
 const STEP_LABELS = ["기본 정보", "사진", "일정 등록", "가격/인원", "장소"];
 
+const DAY_TO_WEEKDAY: Record<string, number> = { "일": 0, "월": 1, "화": 2, "수": 3, "목": 4, "금": 5, "토": 6 };
+
+function parseTimeLabel(label: string): { hour: number; minute: number } | null {
+  const match = /^(\d{1,2}):(\d{2})\s*(AM|PM)$/i.exec(label.trim());
+  if (!match) return null;
+  let hour = parseInt(match[1], 10) % 12;
+  if (/pm/i.test(match[3])) hour += 12;
+  return { hour, minute: parseInt(match[2], 10) };
+}
+
+function toLocalDateTimeString(date: Date): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:00`;
+}
+
+function nextOccurrence(weekday: number, hour: number, minute: number): Date {
+  const date = new Date();
+  date.setHours(hour, minute, 0, 0);
+  date.setDate(date.getDate() + 1);
+  while (date.getDay() !== weekday) {
+    date.setDate(date.getDate() + 1);
+  }
+  return date;
+}
+
+function buildSchedules(
+  selectedDays: string[],
+  timeSlots: { startTime: string; endTime: string }[],
+  availableSlots: number
+): { scheduledAt: string; availableSlots: number }[] {
+  const validSlots = timeSlots
+    .map((slot) => parseTimeLabel(slot.startTime))
+    .filter((t): t is { hour: number; minute: number } => t !== null);
+
+  if (validSlots.length === 0) {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(10, 0, 0, 0);
+    return [{ scheduledAt: toLocalDateTimeString(tomorrow), availableSlots }];
+  }
+
+  const weekdays = selectedDays.map((d) => DAY_TO_WEEKDAY[d]).filter((d) => d !== undefined);
+  if (weekdays.length === 0) {
+    return validSlots.map((time) => {
+      const date = new Date();
+      date.setDate(date.getDate() + 1);
+      date.setHours(time.hour, time.minute, 0, 0);
+      return { scheduledAt: toLocalDateTimeString(date), availableSlots };
+    });
+  }
+
+  const schedules: { scheduledAt: string; availableSlots: number }[] = [];
+  for (const weekday of weekdays) {
+    for (const time of validSlots) {
+      schedules.push({
+        scheduledAt: toLocalDateTimeString(nextOccurrence(weekday, time.hour, time.minute)),
+        availableSlots,
+      });
+    }
+  }
+  return schedules;
+}
+
+function computeDurationMinutes(timeSlots: { startTime: string; endTime: string }[]): number {
+  for (const slot of timeSlots) {
+    const start = parseTimeLabel(slot.startTime);
+    const end = parseTimeLabel(slot.endTime);
+    if (start && end) {
+      const minutes = (end.hour * 60 + end.minute) - (start.hour * 60 + start.minute);
+      if (minutes > 0) return minutes;
+    }
+  }
+  return 90;
+}
+
 export function Step5Location() {
   const navigation = useNavigation<any>();
+  const route = useRoute<any>();
+  const params = route.params ?? {};
   const currentStep = 5;
 
   const [address, setAddress] = useState("서울시 종로구 북촌로 11길");
   const [addressDetail, setAddressDetail] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSearch = () => {
     // TODO: 주소 검색 연결
   };
 
-  const handleComplete = () => {
-    Alert.alert("등록 완료", "체험 클래스가 성공적으로 등록되었습니다!", [
-      {
-        text: "확인",
-        onPress: () => navigation.navigate("MasterExperience"),
-      },
-    ]);
+  const handleComplete = async () => {
+    setIsSubmitting(true);
+    try {
+      const artisan = await getMyArtisan();
+      const maxParticipants = params.maxGuests ?? 4;
+      const timeSlots = params.timeSlots ?? [];
+      await createExperience(artisan.id, {
+        title: params.title ?? "",
+        description: params.detail ?? params.shortDesc ?? "",
+        price: Number(params.price) || 0,
+        maxParticipants,
+        difficulty: "BEGINNER",
+        durationMinutes: computeDurationMinutes(timeSlots),
+        locationAddress: addressDetail ? `${address} ${addressDetail}` : address,
+        schedules: buildSchedules(params.selectedDays ?? [], timeSlots, maxParticipants),
+      });
+      Alert.alert("등록 완료", "체험 클래스가 성공적으로 등록되었습니다!", [
+        {
+          text: "확인",
+          onPress: () => navigation.navigate("MasterExperience"),
+        },
+      ]);
+    } catch (e) {
+      Alert.alert("오류", e instanceof Error ? e.message : "체험 등록에 실패했습니다.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -177,11 +277,12 @@ export function Step5Location() {
           <Text style={styles.prevBtnText}>이전</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.nextBtn, !address && styles.nextBtnDisabled]}
+          style={[styles.nextBtn, (!address || isSubmitting) && styles.nextBtnDisabled]}
           activeOpacity={0.8}
+          disabled={!address || isSubmitting}
           onPress={handleComplete}
         >
-          <Text style={styles.nextBtnText}>등록 완료</Text>
+          <Text style={styles.nextBtnText}>{isSubmitting ? "등록 중..." : "등록 완료"}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

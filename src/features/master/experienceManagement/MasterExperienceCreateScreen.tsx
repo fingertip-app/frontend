@@ -8,10 +8,13 @@ import {
   TextInput,
   Platform,
   Image,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
+import { getMyArtisan } from "@/features/artisans/api/artisanApi";
+import { createExperience } from "@/features/experiences/api/experiencesApi";
 
 // ─── 팔레트 ────────────────────────────────────────────────────────────────────
 const BRAND = "#3B2B26";
@@ -28,12 +31,82 @@ export function MasterExperienceCreateScreen() {
   const [category, setCategory] = useState("");
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [mainImage, setMainImage] = useState<string | null>(null);
+  const [scheduleDate, setScheduleDate] = useState("");
+  const [scheduleTime, setScheduleTime] = useState("");
+  const [availableSlots, setAvailableSlots] = useState("");
+  const [durationMinutes, setDurationMinutes] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const CATEGORIES = ["도예", "목공", "한지", "염색", "전통음식", "기타"];
 
   const handleAddImage = () => {
     // TODO: 추후 expo-image-picker 등을 활용해 실제 기기 갤러리와 연동하세요.
     setMainImage("https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=600&q=80");
+  };
+
+  const handleSubmit = async () => {
+    if (!mainImage) {
+      Alert.alert("알림", "대표 이미지를 등록해주세요.");
+      return;
+    }
+    if (!category) {
+      Alert.alert("알림", "카테고리를 선택해주세요.");
+      return;
+    }
+    if (!title.trim()) {
+      Alert.alert("알림", "체험명을 입력해주세요.");
+      return;
+    }
+    const parsedPrice = Number(price);
+    if (!price.trim() || Number.isNaN(parsedPrice) || parsedPrice <= 0) {
+      Alert.alert("알림", "가격을 올바르게 입력해주세요.");
+      return;
+    }
+    if (!description.trim()) {
+      Alert.alert("알림", "상세 설명을 입력해주세요.");
+      return;
+    }
+    const dateMatch = /^\d{4}-\d{2}-\d{2}$/.test(scheduleDate.trim());
+    const timeMatch = /^\d{2}:\d{2}$/.test(scheduleTime.trim());
+    if (!dateMatch || !timeMatch) {
+      Alert.alert("알림", "체험 일정을 YYYY-MM-DD / HH:mm 형식으로 입력해주세요.");
+      return;
+    }
+    const parsedSlots = Number(availableSlots);
+    if (!availableSlots.trim() || Number.isNaN(parsedSlots) || parsedSlots <= 0) {
+      Alert.alert("알림", "모집 인원을 올바르게 입력해주세요.");
+      return;
+    }
+    const parsedDuration = Number(durationMinutes);
+    if (!durationMinutes.trim() || Number.isNaN(parsedDuration) || parsedDuration <= 0) {
+      Alert.alert("알림", "체험 소요 시간(분)을 올바르게 입력해주세요.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const artisan = await getMyArtisan();
+      await createExperience(artisan.id, {
+        title: title.trim(),
+        description: description.trim(),
+        category,
+        price: parsedPrice,
+        maxParticipants: parsedSlots,
+        difficulty: "BEGINNER",
+        imageUrl: mainImage,
+        durationMinutes: parsedDuration,
+        schedules: [
+          { scheduledAt: `${scheduleDate.trim()}T${scheduleTime.trim()}:00`, availableSlots: parsedSlots },
+        ],
+      });
+      Alert.alert("등록 완료", "체험이 성공적으로 등록되었습니다!", [
+        { text: "확인", onPress: () => navigation.goBack() },
+      ]);
+    } catch (e) {
+      Alert.alert("오류", e instanceof Error ? e.message : "체험 등록에 실패했습니다.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -151,19 +224,63 @@ export function MasterExperienceCreateScreen() {
             onChangeText={setDescription}
           />
         </View>
+
+        {/* 체험 일정 입력 */}
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>체험 날짜</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="YYYY-MM-DD (예: 2026-07-01)"
+            placeholderTextColor={GRAY}
+            value={scheduleDate}
+            onChangeText={setScheduleDate}
+          />
+        </View>
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>체험 시간</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="HH:mm (예: 14:00)"
+            placeholderTextColor={GRAY}
+            value={scheduleTime}
+            onChangeText={setScheduleTime}
+          />
+        </View>
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>모집 인원</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="예: 6"
+            placeholderTextColor={GRAY}
+            keyboardType="numeric"
+            value={availableSlots}
+            onChangeText={setAvailableSlots}
+          />
+        </View>
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>소요 시간 (분)</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="예: 90"
+            placeholderTextColor={GRAY}
+            keyboardType="numeric"
+            value={durationMinutes}
+            onChangeText={setDurationMinutes}
+          />
+        </View>
       </ScrollView>
 
       {/* ── 하단 등록 버튼 ── */}
       <View style={styles.footer}>
-        <TouchableOpacity 
-          style={styles.submitBtn} 
+        <TouchableOpacity
+          style={[styles.submitBtn, isSubmitting && { opacity: 0.6 }]}
           activeOpacity={0.8}
-          onPress={() => {
-            alert("체험이 성공적으로 등록되었습니다!");
-            navigation.goBack();
-          }}
+          onPress={handleSubmit}
+          disabled={isSubmitting}
         >
-          <Text style={styles.submitBtnText}>등록하기</Text>
+          <Text style={styles.submitBtnText}>
+            {isSubmitting ? "등록 중..." : "등록하기"}
+          </Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

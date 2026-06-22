@@ -16,10 +16,14 @@ export function MasterBookingDetailScreen() {
   const route = useRoute<RouteProp<RootStackParamList, "MasterBookingDetail">>();
   const { booking } = route.params;
 
+  const phoneNumber = booking.bookerPhone;
+
   // 전화 걸기 핸들러
   const handleCall = () => {
-    // 실제 연동 시 예약자의 실제 전화번호(booking.phone 등)를 사용하시면 됩니다.
-    const phoneNumber = "010-1234-5678"; 
+    if (!phoneNumber) {
+      Alert.alert("알림", "예약자의 연락처 정보가 없습니다.");
+      return;
+    }
     Linking.openURL(`tel:${phoneNumber}`).catch(() => {
       Alert.alert("알림", "전화 앱을 실행할 수 없는 기기입니다.");
     });
@@ -27,7 +31,10 @@ export function MasterBookingDetailScreen() {
 
   // 문자 보내기 핸들러
   const handleSms = () => {
-    const phoneNumber = "010-1234-5678"; 
+    if (!phoneNumber) {
+      Alert.alert("알림", "예약자의 연락처 정보가 없습니다.");
+      return;
+    }
     Linking.openURL(`sms:${phoneNumber}`).catch(() => {
       Alert.alert("알림", "메시지 앱을 실행할 수 없는 기기입니다.");
     });

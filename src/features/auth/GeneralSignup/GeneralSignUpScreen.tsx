@@ -55,8 +55,9 @@ export function GeneralSignUpScreen() {
         setIsNicknameChecked(false);
         Alert.alert("중복확인", "이미 사용 중인 닉네임입니다.\n다른 닉네임을 사용해주세요.");
       }
-    } catch {
-      Alert.alert("오류", "닉네임 확인에 실패했습니다. 다시 시도해주세요.");
+    } catch (e) {
+      console.log("닉네임 확인 실패:", e);
+      Alert.alert("오류", `닉네임 확인에 실패했습니다. ${String(e)}`);
     }
   };
 

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -7,19 +7,27 @@ import {
   ScrollView,
   FlatList,
   Platform,
+  ActivityIndicator,
+  Alert,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
 import { RootStackParamList } from "@/navigation/RootNavigator";
 import { MainLayout } from "@/features/general/home/MainLayout";
+import { getCurrentProfile } from "@/features/auth/api/authApi";
+import { getMyReservations } from "@/features/reservations/api/reservationsApi";
+import { getExperience } from "@/features/experiences/api/experiencesApi";
+import { getArtisan } from "@/features/artisans/api/artisanApi";
+import type { Reservation, ReservationStatus } from "@/types/api";
 
-// ─── 타입 및 더미 데이터 ─────────────────────────────────────────────────────────
+// ─── 타입 ───────────────────────────────────────────────────────────────────────
 
 type TabType = "upcoming" | "pending" | "past" | "cancelled";
 
 export interface Booking {
   id: string;
+  reservationId?: number;
   status: TabType;
   title: string;
   artisan: string;
@@ -43,65 +51,55 @@ const TABS: { id: TabType; label: string }[] = [
   { id: "cancelled", label: "취소 내역" },
 ];
 
-const MOCK_BOOKINGS: Booking[] = [
-  {
-    id: "1",
-    status: "upcoming",
-    title: "이천 도자기 물레 체험",
-    artisan: "김도예 장인",
-    date: "2026.06.15 (토)",
-    time: "오후 2:00 - 4:00",
-    guests: 2,
-    location: "경기 이천시 신둔면 도자예술로 12",
-    imageUri: "https://picsum.photos/seed/pottery/300/200",
-  },
-  {
-    id: "2",
-    status: "upcoming",
-    title: "전주 한지 등 만들기",
-    artisan: "한지마을",
-    date: "2026.06.20 (목)",
-    time: "오전 10:30 - 12:00",
-    guests: 4,
-    location: "전북 전주시 완산구 한지길 24",
-    imageUri: "https://picsum.photos/seed/hanji/300/200",
-    paymentRequired: true,
-    totalPrice: 112000,
-  },
-  {
-    id: "3",
-    status: "pending",
-    title: "나전칠기 자개 소품 제작",
-    artisan: "이영희 장인",
-    date: "2026.06.25 (화)",
-    time: "오후 1:00 - 3:30",
-    guests: 1,
-    location: "서울 종로구 북촌로 5길",
-    imageUri: "https://picsum.photos/seed/craft/300/200",
-  },
-  {
-    id: "4",
-    status: "past",
-    title: "가평 목공예 트레이 만들기",
-    artisan: "목공방 하루",
-    date: "2026.05.10 (일)",
-    time: "오후 3:00 - 5:00",
-    guests: 2,
-    location: "경기 가평군 청평면",
-    imageUri: "https://picsum.photos/seed/wood/300/200",
-  },
-  {
-    id: "5",
-    status: "cancelled",
-    title: "전통 매듭 팔찌 체험",
-    artisan: "김매수 장인",
-    date: "2026.05.01 (금)",
-    time: "오전 11:00 - 12:00",
-    guests: 3,
-    location: "서울 종로구 인사동",
-    imageUri: "https://picsum.photos/seed/knot/300/200",
-  },
-];
+// 백엔드 ReservationStatus → 화면 탭(TabType) 매핑
+function toTabType(status: ReservationStatus): TabType {
+  switch (status) {
+    case "PENDING":
+      return "pending";
+    case "APPROVED":
+    case "PAID":
+    case "CONFIRMED":
+      return "upcoming";
+    case "COMPLETED":
+      return "past";
+    default:
+      return "cancelled";
+  }
+}
+
+function formatDate(iso: string | null) {
+  if (!iso) return "-";
+  const d = new Date(iso);
+  const weekday = ["일", "월", "화", "수", "목", "금", "토"][d.getDay()];
+  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")} (${weekday})`;
+}
+
+function formatTime(iso: string | null) {
+  if (!iso) return "-";
+  const d = new Date(iso);
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+}
+
+async function toBooking(reservation: Reservation): Promise<Booking> {
+  const experience = await getExperience(reservation.experienceId).catch(() => null);
+  const artisan = experience
+    ? await getArtisan(experience.artisanId).catch(() => null)
+    : null;
+
+  return {
+    id: String(reservation.id),
+    reservationId: reservation.id,
+    status: toTabType(reservation.status),
+    title: experience?.title ?? "체험",
+    artisan: artisan?.name ?? "장인",
+    date: formatDate(reservation.reservedDateTime),
+    time: formatTime(reservation.reservedDateTime),
+    guests: reservation.numberOfParticipants,
+    location: experience?.locationAddress ?? "-",
+    totalPrice: reservation.totalPrice,
+    paymentRequired: reservation.status === "APPROVED",
+  };
+}
 
 // 예약 상태 배지 (탭 상태 + 결제 여부를 합쳐 하나의 배지로 표시)
 function getStatusBadge(item: Booking): { label: string; bg: string; color: string } {
@@ -123,10 +121,34 @@ function getStatusBadge(item: Booking): { label: string; bg: string; color: stri
 
 export function BookingsScreen() {
   const [activeTab, setActiveTab] = useState<TabType>("upcoming");
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [loading, setLoading] = useState(true);
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
+  const loadBookings = useCallback(async () => {
+    setLoading(true);
+    try {
+      const profile = await getCurrentProfile();
+      if (!profile) {
+        setBookings([]);
+        return;
+      }
+      const reservations = await getMyReservations(profile.id);
+      const mapped = await Promise.all(reservations.map(toBooking));
+      setBookings(mapped);
+    } catch {
+      Alert.alert("알림", "예약 내역을 불러오지 못했습니다.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadBookings();
+  }, [loadBookings]);
+
   // 현재 탭에 맞는 예약 내역 필터링
-  const filteredBookings = MOCK_BOOKINGS.filter(
+  const filteredBookings = bookings.filter(
     (booking) => booking.status === activeTab
   );
 
@@ -155,17 +177,17 @@ export function BookingsScreen() {
       {/* 본문 (정보) */}
       <View style={styles.cardBody}>
         <Text style={styles.cardTitle}>{item.title}</Text>
-        
+
         <View style={styles.infoRow}>
           <Ionicons name="person-outline" size={14} color="#8A8077" />
           <Text style={styles.infoText}>장인 : {item.artisan}</Text>
         </View>
-        
+
         <View style={styles.infoRow}>
           <Ionicons name="people-outline" size={14} color="#8A8077" />
           <Text style={styles.infoText}>예약 인원 : {item.guests}명</Text>
         </View>
-        
+
         <View style={styles.infoRow}>
           <Ionicons name="location-outline" size={14} color="#8A8077" />
           <Text style={styles.infoText} numberOfLines={1}>{item.location}</Text>
@@ -174,8 +196,8 @@ export function BookingsScreen() {
 
       {/* 하단 버튼 */}
       <View style={styles.cardFooter}>
-        <TouchableOpacity 
-          style={styles.detailButton} 
+        <TouchableOpacity
+          style={styles.detailButton}
           activeOpacity={0.8}
           onPress={() => navigation.navigate("BookingDetail", { booking: item })}
         >
@@ -214,19 +236,27 @@ export function BookingsScreen() {
       </View>
 
       {/* 예약 목록 */}
-      <FlatList
-        data={filteredBookings}
-        keyExtractor={(item) => item.id}
-        renderItem={renderBookingCard}
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Ionicons name="document-text-outline" size={48} color="#D4CDC4" />
-            <Text style={styles.emptyText}>해당하는 예약 내역이 없습니다.</Text>
-          </View>
-        }
-      />
+      {loading ? (
+        <View style={styles.emptyContainer}>
+          <ActivityIndicator color="#3B2B26" />
+        </View>
+      ) : (
+        <FlatList
+          data={filteredBookings}
+          keyExtractor={(item) => item.id}
+          renderItem={renderBookingCard}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+          onRefresh={loadBookings}
+          refreshing={loading}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Ionicons name="document-text-outline" size={48} color="#D4CDC4" />
+              <Text style={styles.emptyText}>해당하는 예약 내역이 없습니다.</Text>
+            </View>
+          }
+        />
+      )}
     </MainLayout>
   );
 }
@@ -241,12 +271,12 @@ const styles = StyleSheet.create({
   activeTabButton: { backgroundColor: "#3B2B26" },
   tabText: { fontSize: 14, fontWeight: "600", color: "#8A8077" },
   activeTabText: { color: "#FFFFFF" },
-  
+
   // 리스트
   listContent: { padding: 20, paddingBottom: 40 },
   emptyContainer: { alignItems: "center", justifyContent: "center", paddingTop: 80 },
   emptyText: { marginTop: 16, fontSize: 15, color: "#8A8077" },
-  
+
   // 예약 카드
   card: {
     backgroundColor: "#FFFFFF",
@@ -277,7 +307,7 @@ const styles = StyleSheet.create({
   cardTitle: { fontSize: 18, fontWeight: "bold", color: "#3B2B26", marginBottom: 12 },
   infoRow: { flexDirection: "row", alignItems: "center", marginBottom: 6 },
   infoText: { fontSize: 13, color: "#6E665F", marginLeft: 8, flex: 1 },
-  
+
   cardFooter: { marginTop: 4 },
   detailButton: {
     width: "100%", backgroundColor: "#FAF9F6", paddingVertical: 12, borderRadius: 10,
