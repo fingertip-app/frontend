@@ -57,7 +57,7 @@ export function GeneralSignUpScreen() {
       }
     } catch (e) {
       console.log("닉네임 확인 실패:", e);
-      Alert.alert("오류", `닉네임 확인에 실패했습니다. ${String(e)}`);
+      Alert.alert("오류", "닉네임 확인에 실패했습니다. 다시 시도해주세요.");
     }
   };
 
