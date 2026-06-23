@@ -14,7 +14,8 @@ import { apiGet } from "@/services/api";
 import { getMyReservations } from "@/features/reservations/api/reservationsApi";
 import { getExperience } from "@/features/experiences/api/experiencesApi";
 import { getMyWishlists } from "@/features/wishlists/api/wishlistsApi";
-import type { Reservation, Wishlist } from "@/types/api";
+import { getHeroBanners, getRecommendedArtisan, getNearbyArtisans } from "./api/homeApi";
+import type { Reservation, Wishlist, Banner, Artisan } from "@/types/api";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const BANNER_WIDTH = SCREEN_WIDTH - 48;
@@ -49,22 +50,6 @@ function formatScheduleTime(iso: string | null): string {
   });
 }
 
-const TOP_BANNERS = [
-  {
-    id: "1",
-    tag: "오늘 하루,",
-    title: "장인의 시간이\n되어보세요",
-    subtitle: "전통의 가치를 경험하는 특별한 하루를 만나보세요.",
-    image: "https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=800&q=80",
-  },
-  {
-    id: "2",
-    tag: "이번 주 추천,",
-    title: "손끝에서 피어나는\n전통 매듭 공예",
-    subtitle: "조선시대 왕실 기법을 직접 배워보세요.",
-    image: "https://images.unsplash.com/photo-1606722590583-6951b5ea92ad?w=800&q=80",
-  },
-];
 
 const POPULAR_EXPERIENCES = [
   {
@@ -117,44 +102,6 @@ function mapWishlistToCard(wishlist: Wishlist): typeof POPULAR_EXPERIENCES[0] {
   };
 }
 
-const TODAY_ARTISAN = {
-  name: "김영수 장인",
-  badge: "국가무형유산 매듭장",
-  quote: '"매듭에는 사람의 마음을 잇는 힘이 있습니다."',
-  image: "https://images.unsplash.com/photo-1556157382-97eda2d62296?w=800&q=80",
-};
-
-// 장인 작업실 위치 (실제로는 백엔드 Experience.locationLat/Lng 기준이어야 하나,
-// 현재 /experiences/active 응답에 장인명이 포함되지 않아 좌표만 목업으로 둔다)
-const NEARBY_ARTISANS = [
-  {
-    id: "1",
-    name: "김도예 장인",
-    category: "도자기",
-    location: "경기 이천시",
-    lat: 37.2725,
-    lng: 127.4348,
-    image: "https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=300&q=80",
-  },
-  {
-    id: "2",
-    name: "한지마을",
-    category: "한지공예",
-    location: "전북 전주시",
-    lat: 35.8242,
-    lng: 127.1480,
-    image: "https://images.unsplash.com/photo-1607453998774-d533f65dac99?w=300&q=80",
-  },
-  {
-    id: "3",
-    name: "이영희 장인",
-    category: "나전칠기",
-    location: "서울 종로구",
-    lat: 37.5735,
-    lng: 126.9788,
-    image: "https://images.unsplash.com/photo-1582738411706-bfc8e691d1c2?w=300&q=80",
-  },
-];
 
 function getDistanceKm(lat1: number, lng1: number, lat2: number, lng2: number) {
   const R = 6371;
@@ -166,11 +113,11 @@ function getDistanceKm(lat1: number, lng1: number, lat2: number, lng2: number) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-function BannerCard({ item }: { item: typeof TOP_BANNERS[0] }) {
+function BannerCard({ item }: { item: Banner }) {
   return (
     <TouchableOpacity activeOpacity={0.95} style={{ width: BANNER_WIDTH, marginRight: 16 }}>
       <ImageBackground
-        source={{ uri: item.image }}
+        source={{ uri: item.imageUrl }}
         style={styles.bannerCard}
         imageStyle={styles.bannerImage}
       >
@@ -266,7 +213,13 @@ export function HomeScreen() {
   const [error, setError] = useState<string | null>(null);
   const [activeBanner, setActiveBanner] = useState(0);
   const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
+<<<<<<< HEAD
   const [upcomingSchedule, setUpcomingSchedule] = useState<UpcomingSchedule | null>(null);
+=======
+  const [banners, setBanners] = useState<Banner[]>([]);
+  const [recommendedArtisan, setRecommendedArtisan] = useState<Artisan | null>(null);
+  const [nearbyArtisans, setNearbyArtisans] = useState<Artisan[]>([]);
+>>>>>>> 6d33953 (feat: 배너 & 오늘의 장인 & 근처 장인 API 연동)
 
   const handleBannerScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const index = Math.round(e.nativeEvent.contentOffset.x / (BANNER_WIDTH + 16));
@@ -274,12 +227,32 @@ export function HomeScreen() {
   };
 
   useEffect(() => {
+    const fetchBannersAndArtisan = async () => {
+      try {
+        const [bannersData, artisanData] = await Promise.all([
+          getHeroBanners(),
+          getRecommendedArtisan(),
+        ]);
+        setBanners(bannersData);
+        setRecommendedArtisan(artisanData);
+      } catch (e) {
+        console.error("[Home] 배너/장인 로드 실패:", e);
+      }
+    };
+    fetchBannersAndArtisan();
+  }, []);
+
+  useEffect(() => {
     const fetchLocation = async () => {
       try {
         const { status } = await Location.requestForegroundPermissionsAsync();
         if (status !== "granted") return;
         const position = await Location.getCurrentPositionAsync({});
-        setUserCoords({ lat: position.coords.latitude, lng: position.coords.longitude });
+        const coords = { lat: position.coords.latitude, lng: position.coords.longitude };
+        setUserCoords(coords);
+        // 위치 정보 받은 후 근처 장인 로드
+        const nearby = await getNearbyArtisans(coords.lat, coords.lng);
+        setNearbyArtisans(nearby);
       } catch (e) {
         console.warn("위치 정보를 가져오지 못했습니다:", e);
       }
@@ -287,16 +260,10 @@ export function HomeScreen() {
     fetchLocation();
   }, []);
 
-  const nearbyArtisans = userCoords
-    ? [...NEARBY_ARTISANS].sort(
-        (a, b) =>
-          getDistanceKm(userCoords.lat, userCoords.lng, a.lat, a.lng) -
-          getDistanceKm(userCoords.lat, userCoords.lng, b.lat, b.lng)
-      )
-    : NEARBY_ARTISANS;
-
-  const getDistanceLabel = (item: typeof NEARBY_ARTISANS[0]) =>
-    userCoords ? `${getDistanceKm(userCoords.lat, userCoords.lng, item.lat, item.lng).toFixed(1)}km` : "거리 정보 없음";
+  const getDistanceLabel = (item: Artisan) => {
+    if (!userCoords || !item.lat || !item.lng) return "거리 정보 없음";
+    return `${getDistanceKm(userCoords.lat, userCoords.lng, item.lat, item.lng).toFixed(1)}km`;
+  };
 
   // 다가오는 일정 로드
   useEffect(() => {
@@ -424,13 +391,13 @@ export function HomeScreen() {
             decelerationRate="fast"
             onMomentumScrollEnd={handleBannerScroll}
           >
-            {TOP_BANNERS.map((banner) => (
+            {banners.map((banner) => (
               <BannerCard key={banner.id} item={banner} />
             ))}
           </ScrollView>
           {/* 페이지 인디케이터 */}
           <View style={styles.dotRow}>
-            {TOP_BANNERS.map((_, i) => (
+            {banners.map((_, i) => (
               <View key={i} style={[styles.dot, activeBanner === i && styles.dotActive]} />
             ))}
           </View>
@@ -503,26 +470,32 @@ export function HomeScreen() {
 
 
         {/* 오늘의 장인 */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>오늘의 장인</Text>
-          <TouchableOpacity style={styles.artisanCard} activeOpacity={0.9}>
-            <Image source={{ uri: TODAY_ARTISAN.image }} style={styles.artisanImage} />
-            <View style={styles.artisanInfo}>
-              <View style={styles.artisanBadgeWrap}>
-                <Text style={styles.artisanBadge}>{TODAY_ARTISAN.badge}</Text>
+        {recommendedArtisan && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>오늘의 장인</Text>
+            <TouchableOpacity style={styles.artisanCard} activeOpacity={0.9}>
+              <Image source={{ uri: recommendedArtisan.imageUrl }} style={styles.artisanImage} />
+              <View style={styles.artisanInfo}>
+                {recommendedArtisan.badge && (
+                  <View style={styles.artisanBadgeWrap}>
+                    <Text style={styles.artisanBadge}>{recommendedArtisan.badge}</Text>
+                  </View>
+                )}
+                <Text style={styles.artisanName}>{recommendedArtisan.name}</Text>
+                {recommendedArtisan.quote && (
+                  <Text style={styles.artisanQuote}>{recommendedArtisan.quote}</Text>
+                )}
+                <TouchableOpacity
+                  style={styles.artisanButton}
+                  activeOpacity={0.85}
+                  onPress={() => navigation.navigate("ArtisanDetail" as any)}
+                >
+                  <Text style={styles.artisanButtonText}>장인 스토리 보기</Text>
+                </TouchableOpacity>
               </View>
-              <Text style={styles.artisanName}>{TODAY_ARTISAN.name}</Text>
-              <Text style={styles.artisanQuote}>{TODAY_ARTISAN.quote}</Text>
-              <TouchableOpacity
-                style={styles.artisanButton}
-                activeOpacity={0.85}
-                onPress={() => navigation.navigate("ArtisanDetail" as any)}
-              >
-                <Text style={styles.artisanButtonText}>장인 스토리 보기</Text>
-              </TouchableOpacity>
-            </View>
-          </TouchableOpacity>
-        </View>
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* 내 주변 장인 */}
         <View style={styles.section}>
