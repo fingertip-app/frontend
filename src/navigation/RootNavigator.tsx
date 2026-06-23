@@ -51,6 +51,7 @@ import { ArtisanDetailScreen } from "@/features/general/home/ArtisanDetailScreen
 import { MasterTodayStatusScreen } from "@/features/master/todayStatus/MasterTodayStatusScreen";
 import { MasterProfileScreen } from "@/features/master/masterProfile/MasterProfileScreen";
 import { NotificationsScreen } from "@/features/notifications/NotificationsScreen";
+import { QrScannerScreen } from "@/features/master/qrScanner/QrScannerScreen";
 
 export type CardNews = {
   id: string;
@@ -129,6 +130,7 @@ export type RootStackParamList = {
   AIChat: { news: CardNews };
   ArtisanDetail: undefined;
   MasterTodayStatus: undefined;
+  QrScanner: undefined;
 };
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
@@ -239,6 +241,7 @@ export function RootNavigator() {
       <Stack.Screen name="ArtisanDetail" component={ArtisanDetailScreen} />
       <Stack.Screen name="MasterTodayStatus" component={MasterTodayStatusScreen} />
       <Stack.Screen name="Notifications" component={NotificationsScreen} />
+      <Stack.Screen name="QrScanner" component={QrScannerScreen} />
     </Stack.Navigator>
   );
 }
