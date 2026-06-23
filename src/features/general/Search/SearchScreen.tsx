@@ -587,20 +587,22 @@ export function SearchScreen() {
   const [error, setError] = useState<string | null>(null);
 
   // API에서 체험 목록 가져오기
+  const fetchExperiences = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const apiExperiences = await getActiveExperiences();
+      const uiExperiences = apiExperiences.map(mapApiExperienceToUI);
+      setAllExperiences(uiExperiences);
+    } catch (e) {
+      console.error("체험 목록 로딩 실패:", e);
+      setError("체험 목록을 불러오는데 실패했습니다.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchExperiences = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
-        const apiExperiences = await getActiveExperiences();
-        const uiExperiences = apiExperiences.map(mapApiExperienceToUI);
-        setAllExperiences(uiExperiences);
-      } catch (e) {
-        setError("체험 목록을 불러오는데 실패했습니다.");
-      } finally {
-        setIsLoading(false);
-      }
-    };
     fetchExperiences();
   }, []);
 
@@ -646,9 +648,9 @@ export function SearchScreen() {
       if (activeFilter === "monthly" && !exp.tags.includes("월정액")) return false;
       // 검색어
       if (query) {
-        const q = query.toLowerCase();
-        if (!exp.title.includes(q) && !exp.location.includes(q) && !exp.artisan.includes(q))
-          return false;
+        const q = query.trim().toLowerCase();
+        const searchText = `${exp.title} ${exp.location} ${exp.artisan} ${exp.category}`.toLowerCase();
+        if (!searchText.includes(q)) return false;
       }
       return true;
     });
@@ -663,6 +665,42 @@ export function SearchScreen() {
   }, [allExperiences, query, activeCategory, activeFilter, sort]);
 
   const currentDropdown = openDropdown ? dropdownConfig[openDropdown] : null;
+
+  // 로딩 중 표시
+  if (isLoading) {
+    return (
+      <MainLayout>
+        <View style={{ flex: 1, backgroundColor: "#F9FAFB", justifyContent: "center", alignItems: "center" }}>
+          <ActivityIndicator size="large" color={BRAND} />
+          <Text style={{ marginTop: 12, fontSize: 14, color: "#6B7280" }}>체험 목록을 불러오는 중...</Text>
+        </View>
+      </MainLayout>
+    );
+  }
+
+  // 에러 표시
+  if (error) {
+    return (
+      <MainLayout>
+        <View style={{ flex: 1, backgroundColor: "#F9FAFB", justifyContent: "center", alignItems: "center", paddingHorizontal: 24 }}>
+          <Text style={{ fontSize: 40 }}>⚠️</Text>
+          <Text style={{ marginTop: 12, fontSize: 16, fontWeight: "700", color: "#374151" }}>{error}</Text>
+          <TouchableOpacity
+            onPress={fetchExperiences}
+            style={{
+              marginTop: 20,
+              paddingHorizontal: 20,
+              paddingVertical: 12,
+              backgroundColor: BRAND,
+              borderRadius: 12,
+            }}
+          >
+            <Text style={{ color: "#FFF", fontWeight: "600" }}>다시 시도</Text>
+          </TouchableOpacity>
+        </View>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>
