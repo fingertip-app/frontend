@@ -1,6 +1,8 @@
 import { supabase } from '@/lib/supabase'
 
 const rawApiBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL?.trim() || 'http://localhost:8080'
+// API_BASE_URL는 항상 '/api'로 끝나도록 정규화합니다.
+// 따라서 apiGet('/qr/example') 호출은 실제로 `${API_BASE_URL}/qr/example`로 요청됩니다.
 const API_BASE_URL = rawApiBaseUrl.replace(/\/$/, '').endsWith('/api')
   ? rawApiBaseUrl.replace(/\/$/, '')
   : `${rawApiBaseUrl.replace(/\/$/, '')}/api`

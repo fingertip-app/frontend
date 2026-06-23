@@ -46,6 +46,23 @@ export type ReservationStatus =
   | 'REJECTED'
   | 'CANCELLED'
 
+/**
+ * 예약 응답에 포함될 체험 정보 (평점/리뷰 포함)
+ * Backend ReservationResponse.experience 필드와 매핑
+ */
+export interface ExperienceWithReviews {
+  id: number
+  title: string
+  category: string
+  locationAddress: string
+  price: number
+  durationMinutes: number
+  artisanName: string
+  rating: number
+  reviewCount: number
+  maxParticipants: number
+}
+
 export interface Reservation {
   id: number
   userId: number
@@ -63,6 +80,8 @@ export interface Reservation {
   isNotificationSent: boolean
   createdAt: string
   updatedAt: string
+  // 선택적 필드: include=experience 쿼리 파라미터 사용 시 포함
+  experience?: ExperienceWithReviews
 }
 
 // ========== Wishlist ==========
