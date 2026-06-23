@@ -271,7 +271,6 @@ export function HomeScreen() {
   const [activeBanner, setActiveBanner] = useState(0);
   const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [upcomingSchedule, setUpcomingSchedule] = useState<UpcomingSchedule | null>(null);
-  const [scheduleLoading, setScheduleLoading] = useState(false);
 
   const handleBannerScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const index = Math.round(e.nativeEvent.contentOffset.x / (BANNER_WIDTH + 16));
@@ -307,7 +306,6 @@ export function HomeScreen() {
   useEffect(() => {
     const fetchUpcomingSchedule = async () => {
       try {
-        setScheduleLoading(true);
         const reservations = await getMyReservations();
 
         // APPROVED, PAID, CONFIRMED 상태 중 가장 가까운 미래 일정 찾기
@@ -332,13 +330,12 @@ export function HomeScreen() {
             time: formatScheduleTime(nextReservation.reservedDateTime),
             title: experience.title,
             location: experience.locationAddress || "위치 미정",
-            image: "https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=200&q=80",
+            image: experience.imageUrl || "https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=200&q=80",
           });
         }
       } catch (e) {
         console.error("다가오는 일정을 불러오는데 실패했습니다:", e);
-      } finally {
-        setScheduleLoading(false);
+        // 일정이 없거나 에러 발생 시 섹션을 표시하지 않음 (null 상태 유지)
       }
     };
 
