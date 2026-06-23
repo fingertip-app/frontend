@@ -195,26 +195,43 @@ export function BookingCreateScreen() {
   };
 
   const handleBook = async () => {
+    console.log("🔔 [예약] 예약 버튼 클릭됨");
+
     if (!selectedSchedule || !selectedDateKey) {
+      console.log("🔴 [예약] 날짜/시간 미선택");
       Alert.alert("알림", "예약할 날짜와 시간을 선택해주세요.");
       return;
     }
 
+    console.log("🔔 [예약] 선택된 스케줄:", {
+      experienceId: experience.id,
+      scheduleId: selectedSchedule.id,
+      numberOfParticipants: headcount,
+      requestMessage: requestMessage.trim() || undefined,
+    });
+
     setIsSubmitting(true);
     try {
+      console.log("🔔 [예약] 프로필 조회 시작");
       const profile = await getCurrentProfile();
+      console.log("🔔 [예약] 프로필 조회 결과:", profile);
+
       if (!profile) {
+        console.log("🔴 [예약] 로그인 필요");
         Alert.alert("로그인 필요", "예약하려면 로그인이 필요합니다.");
         navigation.navigate("Login");
         return;
       }
 
+      console.log("🔔 [예약] createReservation API 호출 시작");
       const reservation = await createReservation({
         experienceId: experience.id,
         scheduleId: selectedSchedule.id,
         numberOfParticipants: headcount,
         requestMessage: requestMessage.trim() || undefined,
       });
+
+      console.log("✅ [예약] 예약 생성 성공:", reservation);
 
       navigation.navigate("BookingRequestComplete", {
         reservationId: reservation.id,
@@ -226,6 +243,7 @@ export function BookingCreateScreen() {
         requestMessage,
       });
     } catch (error) {
+      console.log("🔴 [예약] 예약 생성 실패:", error);
       let errorMsg = "예약 신청에 실패했습니다.";
 
       if (error instanceof ApiError) {
