@@ -13,7 +13,8 @@ import { MainLayout } from "./MainLayout";
 import { apiGet } from "@/services/api";
 import { getMyReservations } from "@/features/reservations/api/reservationsApi";
 import { getExperience } from "@/features/experiences/api/experiencesApi";
-import type { Reservation } from "@/types/api";
+import { getMyWishlists } from "@/features/wishlists/api/wishlistsApi";
+import type { Reservation, Wishlist } from "@/types/api";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const BANNER_WIDTH = SCREEN_WIDTH - 48;
@@ -37,10 +38,15 @@ function formatScheduleDate(iso: string | null): string {
   return `${d.getMonth() + 1}월 ${d.getDate()}일 (${weekday})`;
 }
 
+// 시간 포맷팅 함수 - 사용자 로케일에 맞춘 포맷팅
 function formatScheduleTime(iso: string | null): string {
   if (!iso) return "-";
   const d = new Date(iso);
-  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  return d.toLocaleTimeString("ko-KR", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
 }
 
 const TOP_BANNERS = [
@@ -96,30 +102,20 @@ const POPULAR_EXPERIENCES = [
   },
 ];
 
-const WISHED_EXPERIENCES = [
-  {
-    id: "7",
-    title: "이천 도자기 물레 체험",
-    location: "이천",
-    duration: "2시간",
-    category: "도예",
-    price: "35,000원",
-    rating: 4.9,
-    reviewCount: 128,
-    image: "https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=400&q=80",
-  },
-  {
-    id: "8",
-    title: "전주 한지 등 만들기 체험",
-    location: "전주",
-    duration: "1.5시간",
-    category: "한지",
-    price: "28,000원",
-    rating: 4.8,
-    reviewCount: 96,
-    image: "https://images.unsplash.com/photo-1607453998774-d533f65dac99?w=400&q=80",
-  }
-];
+// Wishlist를 UI 카드 형식으로 변환
+function mapWishlistToCard(wishlist: Wishlist): typeof POPULAR_EXPERIENCES[0] {
+  return {
+    id: String(wishlist.experienceId),
+    title: wishlist.experienceTitle,
+    location: wishlist.experienceLocation || "위치 미정",
+    duration: wishlist.experienceDurationMinutes ? `${wishlist.experienceDurationMinutes}분` : "시간 미정",
+    category: wishlist.experienceCategory || "기타",
+    price: `${Number(wishlist.experiencePrice).toLocaleString()}원`,
+    rating: 0, // TODO: 리뷰 평점 연동 필요
+    reviewCount: 0, // TODO: 리뷰 개수 연동 필요
+    image: wishlist.experienceImageUrl || "https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=400&q=80",
+  };
+}
 
 const TODAY_ARTISAN = {
   name: "김영수 장인",
@@ -441,7 +437,7 @@ export function HomeScreen() {
         </View>
 
         {/* 다가오는 일정 */}
-        {upcomingSchedule && (
+        {upcomingSchedule ? (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>다가오는 일정</Text>
@@ -486,9 +482,26 @@ export function HomeScreen() {
               </View>
             </TouchableOpacity>
           </View>
+        ) : (
+          <View style={styles.section}>
+            <View style={styles.emptyScheduleContainer}>
+              <Text style={styles.emptyScheduleIcon}>📋</Text>
+              <Text style={styles.emptyScheduleTitle}>예정된 체험이 없습니다</Text>
+              <Text style={styles.emptyScheduleDesc}>
+                새로운 체험을 찾아 예약해보세요!
+              </Text>
+              <TouchableOpacity
+                style={styles.emptyScheduleButton}
+                activeOpacity={0.85}
+                onPress={() => navigation.navigate("MainTabs", { screen: "Explore" })}
+              >
+                <Text style={styles.emptyScheduleButtonText}>체험 탐색하기</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         )}
 
-        
+
         {/* 오늘의 장인 */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>오늘의 장인</Text>
@@ -736,6 +749,44 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   artisanButtonText: { fontSize: 13, fontWeight: "600", color: "#3B2B26" },
+
+  // 빈 다가오는 일정 상태
+  emptyScheduleContainer: {
+    backgroundColor: "#FEF3E2",
+    borderRadius: 14,
+    padding: 28,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#E8D5C4",
+  },
+  emptyScheduleIcon: {
+    fontSize: 48,
+    marginBottom: 12,
+  },
+  emptyScheduleTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#3B2B26",
+    marginBottom: 6,
+  },
+  emptyScheduleDesc: {
+    fontSize: 13,
+    color: "#8A8077",
+    marginBottom: 16,
+    textAlign: "center",
+    lineHeight: 18,
+  },
+  emptyScheduleButton: {
+    backgroundColor: "#3B2B26",
+    borderRadius: 8,
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+  },
+  emptyScheduleButtonText: {
+    color: "#FFF",
+    fontSize: 13,
+    fontWeight: "600",
+  },
 
   // 에러 텍스트
   errorText: {

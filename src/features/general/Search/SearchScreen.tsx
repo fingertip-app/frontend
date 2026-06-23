@@ -37,6 +37,24 @@ type FilterChip = {
 
 type SortOption = "추천순" | "가격 낮은순" | "가격 높은순" | "별점순" | "리뷰 많은순";
 
+/** Backend API 응답 타입 */
+interface ApiExperience {
+  id: number;
+  title: string;
+  category?: string;
+  locationAddress?: string;
+  price: number;
+  rating?: number;
+  reviewCount?: number;
+  imageUrl?: string;
+  durationMinutes?: number;
+  maxParticipants?: number;
+  supportedLanguages?: string[];
+  activeSchedules?: { scheduledAt: string }[];
+  createdAt: string;
+  artisanName?: string;
+}
+
 export type Experience = {
   id: string;
   title: string;
@@ -128,6 +146,40 @@ function mapApiExperienceToUI(exp: ApiExperience): Experience {
 
 function categoryToId(label: string): string {
   return CATEGORIES.find((c) => c.label === label)?.id ?? "etc";
+}
+
+/**
+ * Backend API 응답(ApiExperience)을 UI 타입(Experience)으로 변환
+ * - 필드 매핑 및 기본값 처리
+ * - 자동 판별: 가족체험, 외국인 가능, 오늘 예약 가능 여부
+ */
+function mapApiExperienceToUI(exp: ApiExperience): Experience {
+  return {
+    id: String(exp.id),
+    title: exp.title,
+    category: exp.category || "기타",
+    location: exp.locationAddress || "위치 미정",
+    artisan: exp.artisanName || "장인",
+    // 평점/리뷰 수: Backend에서 제공되지 않으면 0으로 표시
+    rating: exp.rating ?? 0,
+    reviewCount: exp.reviewCount ?? 0,
+    duration: exp.durationMinutes ? `${exp.durationMinutes}분` : "시간 미정",
+    price: Number(exp.price) || 0,
+    tags: [],
+    imageUri: exp.imageUrl || "https://picsum.photos/seed/experience/300/200",
+    // 자동 판별: 최대 참가 인원이 4명 이상이면 가족 체험으로 표시
+    familyOk: (exp.maxParticipants ?? 0) >= 4,
+    // 자동 판별: 지원 언어에 'en' 또는 '영어' 포함되면 외국인 가능으로 표시
+    foreignOk: exp.supportedLanguages?.some(lang =>
+      lang.toLowerCase().includes('en') || lang.includes('영어')
+    ),
+    // 자동 판별: 오늘 활성 스케줄이 있으면 오늘 예약 가능으로 표시
+    todayBooking: exp.activeSchedules?.some(schedule => {
+      const scheduleDate = new Date(schedule.scheduledAt);
+      const today = new Date();
+      return scheduleDate.toDateString() === today.toDateString();
+    }),
+  };
 }
 
 // ─── 서브 컴포넌트 ─────────────────────────────────────────────────────────────
