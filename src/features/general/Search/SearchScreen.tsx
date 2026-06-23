@@ -10,6 +10,7 @@ import {
   StatusBar,
   Platform,
   Animated,
+  ActivityIndicator,
 } from "react-native";
 import { Ionicons, Feather } from "@expo/vector-icons";
 import { useRoute, RouteProp, useNavigation } from "@react-navigation/native";
@@ -17,6 +18,8 @@ import { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
 import { DetailBottomSheet } from "./DetailBottomSheet";
 import { MainLayout } from "@/features/general/home/MainLayout";
 import { MainTabParamList } from "@/navigation/RootNavigator";
+import { getActiveExperiences } from "@/features/experiences/api/experiencesApi";
+import type { Experience as ApiExperience } from "@/types/api";
 
 // ─── 타입 ────────────────────────────────────────────────────────────────────
 
@@ -90,128 +93,36 @@ const DATE_OPTIONS   = ["날짜 선택", "오늘", "이번 주말", "다음 주"
 const TIME_OPTIONS   = ["시간 선택", "오전", "오후", "저녁"];
 const LEVEL_OPTIONS  = ["난이도", "입문", "초급", "중급"];
 
-const ALL_EXPERIENCES: Experience[] = [
-  {
-    id: "1",
-    title: "이천 도자기 물레 체험",
-    category: "도예",
-    location: "경기 이천시",
-    artisan: "김도예 장인",
-    rating: 4.9,
-    reviewCount: 128,
-    duration: "2시간",
-    price: 35000,
+// API Experience를 UI Experience로 변환
+function mapApiExperienceToUI(exp: ApiExperience): Experience {
+  const hasUpcomingSchedule = exp.schedules?.some(s => {
+    const scheduledDate = new Date(s.scheduledAt);
+    const today = new Date();
+    return s.isActive && scheduledDate >= today && s.remainingSlots > 0;
+  });
+
+  const isFamilyFriendly = exp.maxParticipants >= 4;
+  const isForeignOk = exp.supportedLanguages?.includes('en') || exp.supportedLanguages?.includes('영어');
+
+  return {
+    id: String(exp.id),
+    title: exp.title,
+    category: exp.category || "기타",
+    location: exp.locationAddress || "위치 미정",
+    artisan: "장인", // TODO: artisan 정보 추가 필요
+    rating: 0, // TODO: 리뷰 평점 연동 필요
+    reviewCount: 0, // TODO: 리뷰 개수 연동 필요
+    duration: exp.durationMinutes ? `${exp.durationMinutes}분` : "시간 미정",
+    price: exp.price || 0,
     tags: [],
-    badge: "BEST",
-    imageUri: "https://picsum.photos/seed/pottery/300/200",
-    todayBooking: true,
-    foreignOk: true,
-    highlight: "오늘 예약 가능",
+    imageUri: "https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=400&q=80",
+    todayBooking: hasUpcomingSchedule,
+    foreignOk: isForeignOk,
+    familyOk: isFamilyFriendly,
+    highlight: hasUpcomingSchedule ? "예약 가능" : undefined,
     highlightColor: "#E87B35",
-  },
-  {
-    id: "2",
-    title: "전주 한지 등 만들기 체험",
-    category: "한지",
-    location: "전북 전주시",
-    artisan: "한지마을",
-    rating: 4.8,
-    reviewCount: 96,
-    duration: "1.5시간",
-    price: 28000,
-    tags: ["가족 추천"],
-    imageUri: "https://picsum.photos/seed/hanji/300/200",
-    foreignOk: true,
-    familyOk: true,
-  },
-  {
-    id: "3",
-    title: "서울 전통 매듭 체험",
-    category: "기타",
-    location: "서울 종로구",
-    artisan: "김매수 장인",
-    rating: 4.7,
-    reviewCount: 74,
-    duration: "1시간",
-    price: 25000,
-    tags: ["월정액"],
-    imageUri: "https://picsum.photos/seed/knot/300/200",
-    foreignOk: true,
-  },
-  {
-    id: "4",
-    title: "가평 목공예 소품 만들기",
-    category: "목공",
-    location: "경기 가평군",
-    artisan: "목공방 하루",
-    rating: 4.6,
-    reviewCount: 52,
-    duration: "2.5시간",
-    price: 30000,
-    tags: ["가족 추천", "초급"],
-    imageUri: "https://picsum.photos/seed/woodcraft/300/200",
-  },
-  {
-    id: "5",
-    title: "천연 염색 스카프 만들기",
-    category: "염색",
-    location: "서울 종로구",
-    artisan: "염색공방 자연",
-    rating: 4.5,
-    reviewCount: 41,
-    duration: "2시간",
-    price: 38000,
-    tags: ["외국어 가능"],
-    imageUri: "https://picsum.photos/seed/dye/300/200",
-    foreignOk: true,
-    badge: "NEW",
-  },
-  {
-    id: "6",
-    title: "전통 다과 & 다도 체험",
-    category: "전통음식",
-    location: "서울 중구",
-    artisan: "다원 하늘",
-    rating: 4.9,
-    reviewCount: 203,
-    duration: "1.5시간",
-    price: 42000,
-    tags: ["가족 추천"],
-    imageUri: "https://picsum.photos/seed/tea/300/200",
-    familyOk: true,
-    badge: "BEST",
-  },
-  {
-    id: "7",
-    title: "제주 옹기 체험",
-    category: "도예",
-    location: "제주 서귀포시",
-    artisan: "제주옹기 박장인",
-    rating: 4.4,
-    reviewCount: 33,
-    duration: "3시간",
-    price: 45000,
-    tags: ["초급"],
-    imageUri: "https://picsum.photos/seed/jeju/300/200",
-  },
-  {
-    id: "8",
-    title: "전통 한지 부채 만들기",
-    category: "한지",
-    location: "전북 전주시",
-    artisan: "부채마을",
-    rating: 4.6,
-    reviewCount: 67,
-    duration: "1시간",
-    price: 22000,
-    tags: ["가족 추천", "입문"],
-    imageUri: "https://picsum.photos/seed/fan/300/200",
-    familyOk: true,
-    foreignOk: true,
-    highlight: "오늘 예약 가능",
-    highlightColor: "#E87B35",
-  },
-];
+  };
+}
 
 // ─── 헬퍼 ─────────────────────────────────────────────────────────────────────
 
@@ -670,11 +581,33 @@ export function SearchScreen() {
   const [level,  setLevel]  = useState("난이도");
   const [sort,   setSort]   = useState<SortOption>("추천순");
 
+  // API 데이터 상태
+  const [allExperiences, setAllExperiences] = useState<Experience[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // API에서 체험 목록 가져오기
+  useEffect(() => {
+    const fetchExperiences = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const apiExperiences = await getActiveExperiences();
+        const uiExperiences = apiExperiences.map(mapApiExperienceToUI);
+        setAllExperiences(uiExperiences);
+      } catch (e) {
+        setError("체험 목록을 불러오는데 실패했습니다.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchExperiences();
+  }, []);
+
   // 라우트 파라미터가 변경될 때마다 필터를 갱신
   useEffect(() => {
     if (route.params?.filter) {
       setFilter(route.params.filter);
-      // 파라미터를 적용한 후 초기화하여 다음에 또 들어와도 useEffect가 다시 실행되게 함
       navigation.setParams({ filter: undefined });
     }
   }, [route.params?.filter, navigation]);
@@ -701,7 +634,7 @@ export function SearchScreen() {
 
   // 필터링 + 정렬
   const results = useMemo(() => {
-    let list = ALL_EXPERIENCES.filter((exp) => {
+    let list = allExperiences.filter((exp) => {
       // 카테고리
       if (activeCategory !== "all") {
         const catLabel = CATEGORIES.find((c) => c.id === activeCategory)?.label;
@@ -727,7 +660,7 @@ export function SearchScreen() {
     if (sort === "리뷰 많은순")   list = [...list].sort((a, b) => b.reviewCount - a.reviewCount);
 
     return list;
-  }, [query, activeCategory, activeFilter, sort]);
+  }, [allExperiences, query, activeCategory, activeFilter, sort]);
 
   const currentDropdown = openDropdown ? dropdownConfig[openDropdown] : null;
 
