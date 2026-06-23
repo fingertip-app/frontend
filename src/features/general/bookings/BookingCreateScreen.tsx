@@ -187,7 +187,7 @@ export function BookingCreateScreen() {
         return;
       }
 
-      const reservation = await createReservation(profile.id, {
+      const reservation = await createReservation({
         experienceId: experience.id,
         scheduleId: selectedSchedule.id,
         numberOfParticipants: headcount,

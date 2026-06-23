@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -127,8 +127,24 @@ const ac = StyleSheet.create({
 
 // ─── 메인 스크린 ──────────────────────────────────────────────────────────────
 export function MyPageScreen() {
-  const interests = ["도예", "한지", "힐링체험", "전통음식"];
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const [profile, setProfile] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadProfile();
+  }, []);
+
+  const loadProfile = async () => {
+    try {
+      const currentProfile = await getCurrentProfile();
+      setProfile(currentProfile);
+    } catch {
+      Alert.alert("알림", "프로필 정보를 불러오지 못했습니다.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleLogout = async () => {
     try {
@@ -138,6 +154,16 @@ export function MyPageScreen() {
       Alert.alert('오류', '로그아웃에 실패했습니다.');
     }
   };
+
+  if (loading) {
+    return (
+      <MainLayout>
+        <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+          <ActivityIndicator color={BRAND} />
+        </View>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>
@@ -151,38 +177,40 @@ export function MyPageScreen() {
           <View style={ms.profileRow}>
             {/* 아바타 */}
             <Image
-              source={{ uri: "https://i.pravatar.cc/150?img=47" }}
+              source={{ uri: profile?.profileImageUrl || "https://i.pravatar.cc/150?img=47" }}
               style={ms.avatar}
             />
             {/* 이름 + 소개 */}
             <View style={{ flex: 1, marginLeft: 14 }}>
               <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 4 }}>
-                <Text style={ms.profileName}>김하루 님</Text>
+                <Text style={ms.profileName}>{profile?.name || "사용자"} 님</Text>
                 <TouchableOpacity hitSlop={8} style={{ marginLeft: 6 }}>
                   <Feather name="edit-2" size={14} color={TEXT_S} />
                 </TouchableOpacity>
               </View>
-              <Text style={ms.profileBio}>전통문화를 사랑하는 여행자</Text>
+              <Text style={ms.profileBio}>{profile?.bio || "전통문화를 사랑하는 여행자"}</Text>
             </View>
           </View>
 
           {/* 관심 태그 */}
-          <View style={ms.tagRow}>
-            {interests.map((t) => (
-              <InterestTag key={t} label={t} />
-            ))}
-          </View>
+          {profile?.preferredCategories && profile.preferredCategories.length > 0 && (
+            <View style={ms.tagRow}>
+              {profile.preferredCategories.map((category: string) => (
+                <InterestTag key={category} label={category} />
+              ))}
+            </View>
+          )}
         </View>
 
         {/* ── 통계 4개 ── */}
         <View style={ms.statsRow}>
-          <StatItem label="찜한 체험"   value="12" onPress={() => navigation.navigate("Wishlist")} />
+          <StatItem label="찜한 체험"   value="0" onPress={() => navigation.navigate("Wishlist")} />
           <View style={ms.statDivider} />
-          <StatItem label="작성한 후기" value="8" onPress={() => navigation.navigate("MyReviews")} />
+          <StatItem label="작성한 후기" value="0" onPress={() => navigation.navigate("MyReviews")} />
           <View style={ms.statDivider} />
-          <StatItem label="쿠폰함"      value="3" />
+          <StatItem label="쿠폰함"      value="0" />
           <View style={ms.statDivider} />
-          <StatItem label="포인트"      value="1,250P" isLast />
+          <StatItem label="포인트"      value="0P" isLast />
         </View>
 
         {/* ── 섹션 타이틀 ── */}
