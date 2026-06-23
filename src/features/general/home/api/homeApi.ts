@@ -1,31 +1,5 @@
 import { apiGet } from '@/services/api';
-
-/**
- * 배너 인터페이스
- */
-export interface Banner {
-  id: number;
-  tag: string;
-  title: string;
-  subtitle: string;
-  imageUrl: string;
-  linkUrl?: string;
-}
-
-/**
- * 장인 인터페이스 (추천/주변)
- */
-export interface Artisan {
-  id: number;
-  name: string;
-  badge?: string;
-  quote?: string;
-  imageUrl: string;
-  category?: string;
-  location?: string;
-  lat?: number;
-  lng?: number;
-}
+import type { Banner, Artisan } from '@/types/api';
 
 /**
  * 히어로 배너 목록 조회
