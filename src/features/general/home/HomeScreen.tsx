@@ -11,19 +11,43 @@ import { RootStackParamList } from "@/navigation/RootNavigator";
 import { CardNewsCarousel } from "../cardnews/CardNewsCarousel";
 import { MainLayout } from "./MainLayout";
 import { apiGet } from "@/services/api";
+import { getMyReservations } from "@/features/reservations/api/reservationsApi";
+import { getExperience } from "@/features/experiences/api/experiencesApi";
+import { getMyWishlists } from "@/features/wishlists/api/wishlistsApi";
+import type { Reservation, Wishlist } from "@/types/api";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const BANNER_WIDTH = SCREEN_WIDTH - 48;
 
-const UPCOMING_SCHEDULE = {
-  id: "1",
-  date: "5월 29일 (월)",
-  time: "10:00",
-  title: "이천 도자기 물레 체험",
-  location: "경기 이천시",
-  dDay: "D-4",
-  image: "https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=200&q=80",
-};
+// 다가오는 일정 타입
+interface UpcomingSchedule {
+  id: string;
+  reservationId: number;
+  date: string;
+  time: string;
+  title: string;
+  location: string;
+  image: string;
+}
+
+// 날짜 포맷팅 함수
+function formatScheduleDate(iso: string | null): string {
+  if (!iso) return "-";
+  const d = new Date(iso);
+  const weekday = ["일", "월", "화", "수", "목", "금", "토"][d.getDay()];
+  return `${d.getMonth() + 1}월 ${d.getDate()}일 (${weekday})`;
+}
+
+// 시간 포맷팅 함수 - 사용자 로케일에 맞춘 포맷팅
+function formatScheduleTime(iso: string | null): string {
+  if (!iso) return "-";
+  const d = new Date(iso);
+  return d.toLocaleTimeString("ko-KR", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+}
 
 const TOP_BANNERS = [
   {
@@ -78,30 +102,20 @@ const POPULAR_EXPERIENCES = [
   },
 ];
 
-const WISHED_EXPERIENCES = [
-  {
-    id: "7",
-    title: "이천 도자기 물레 체험",
-    location: "이천",
-    duration: "2시간",
-    category: "도예",
-    price: "35,000원",
-    rating: 4.9,
-    reviewCount: 128,
-    image: "https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=400&q=80",
-  },
-  {
-    id: "8",
-    title: "전주 한지 등 만들기 체험",
-    location: "전주",
-    duration: "1.5시간",
-    category: "한지",
-    price: "28,000원",
-    rating: 4.8,
-    reviewCount: 96,
-    image: "https://images.unsplash.com/photo-1607453998774-d533f65dac99?w=400&q=80",
-  }
-];
+// Wishlist를 UI 카드 형식으로 변환
+function mapWishlistToCard(wishlist: Wishlist): typeof POPULAR_EXPERIENCES[0] {
+  return {
+    id: String(wishlist.experienceId),
+    title: wishlist.experienceTitle,
+    location: wishlist.experienceLocation || "위치 미정",
+    duration: wishlist.experienceDurationMinutes ? `${wishlist.experienceDurationMinutes}분` : "시간 미정",
+    category: wishlist.experienceCategory || "기타",
+    price: `${Number(wishlist.experiencePrice).toLocaleString()}원`,
+    rating: 0, // TODO: 리뷰 평점 연동 필요
+    reviewCount: 0, // TODO: 리뷰 개수 연동 필요
+    image: wishlist.experienceImageUrl || "https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=400&q=80",
+  };
+}
 
 const TODAY_ARTISAN = {
   name: "김영수 장인",
@@ -252,6 +266,8 @@ export function HomeScreen() {
   const [error, setError] = useState<string | null>(null);
   const [activeBanner, setActiveBanner] = useState(0);
   const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [upcomingSchedule, setUpcomingSchedule] = useState<UpcomingSchedule | null>(null);
+  const [wishedExperiences, setWishedExperiences] = useState<typeof POPULAR_EXPERIENCES>([]);
 
   const handleBannerScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const index = Math.round(e.nativeEvent.contentOffset.x / (BANNER_WIDTH + 16));
@@ -282,6 +298,62 @@ export function HomeScreen() {
 
   const getDistanceLabel = (item: typeof NEARBY_ARTISANS[0]) =>
     userCoords ? `${getDistanceKm(userCoords.lat, userCoords.lng, item.lat, item.lng).toFixed(1)}km` : "거리 정보 없음";
+
+  // 다가오는 일정 로드
+  useEffect(() => {
+    const fetchUpcomingSchedule = async () => {
+      try {
+        const reservations = await getMyReservations();
+
+        // APPROVED, PAID, CONFIRMED 상태 중 가장 가까운 미래 일정 찾기
+        const upcomingReservations = reservations
+          .filter(r =>
+            (r.status === "APPROVED" || r.status === "PAID" || r.status === "CONFIRMED") &&
+            r.reservedDateTime &&
+            new Date(r.reservedDateTime) > new Date()
+          )
+          .sort((a, b) =>
+            new Date(a.reservedDateTime!).getTime() - new Date(b.reservedDateTime!).getTime()
+          );
+
+        if (upcomingReservations.length > 0) {
+          const nextReservation = upcomingReservations[0];
+          const experience = await getExperience(nextReservation.experienceId);
+
+          setUpcomingSchedule({
+            id: String(nextReservation.id),
+            reservationId: nextReservation.id,
+            date: formatScheduleDate(nextReservation.reservedDateTime),
+            time: formatScheduleTime(nextReservation.reservedDateTime),
+            title: experience.title,
+            location: experience.locationAddress || "위치 미정",
+            image: experience.imageUrl || "https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=200&q=80",
+          });
+        }
+      } catch (e) {
+        console.error("다가오는 일정을 불러오는데 실패했습니다:", e);
+        // 일정이 없거나 에러 발생 시 섹션을 표시하지 않음 (null 상태 유지)
+      }
+    };
+
+    fetchUpcomingSchedule();
+  }, []);
+
+  // 찜 목록 로드
+  useEffect(() => {
+    const fetchWishlists = async () => {
+      try {
+        const wishlists = await getMyWishlists();
+        const wishCards = wishlists.slice(0, 5).map(mapWishlistToCard);
+        setWishedExperiences(wishCards);
+      } catch (e) {
+        console.error("찜 목록을 불러오는데 실패했습니다:", e);
+        // 에러 발생 시 빈 배열 유지
+      }
+    };
+
+    fetchWishlists();
+  }, []);
 
   useEffect(() => {
     const fetchExperiences = async () => {
@@ -382,46 +454,71 @@ export function HomeScreen() {
         </View>
 
         {/* 다가오는 일정 */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>다가오는 일정</Text>
-            <TouchableOpacity 
-              activeOpacity={0.7}
-              onPress={() => navigation.navigate("MainTabs", { screen: "Bookings" })}
+        {upcomingSchedule ? (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>다가오는 일정</Text>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => navigation.navigate("MainTabs", { screen: "Bookings" })}
+              >
+                <Text style={styles.viewAllText}>전체보기 &gt;</Text>
+              </TouchableOpacity>
+            </View>
+            <TouchableOpacity
+              style={styles.scheduleCard}
+              activeOpacity={0.9}
+              onPress={() => navigation.navigate("BookingDetail", {
+                booking: {
+                  id: upcomingSchedule.id,
+                  reservationId: upcomingSchedule.reservationId,
+                  date: upcomingSchedule.date,
+                  time: upcomingSchedule.time,
+                  title: upcomingSchedule.title,
+                  location: upcomingSchedule.location,
+                  imageUri: upcomingSchedule.image,
+                  artisan: "장인",
+                  status: "upcoming",
+                  guests: 1,
+                } as any
+              })}
             >
-              <Text style={styles.viewAllText}>전체보기 &gt;</Text>
+              <Image source={{ uri: upcomingSchedule.image }} style={styles.scheduleThumb} />
+              <View style={styles.scheduleInfo}>
+                <View style={styles.scheduleDateRow}>
+                  <Text style={styles.scheduleCalIcon}>📅</Text>
+                  <Text style={styles.scheduleDateTime}>
+                    {upcomingSchedule.date} {upcomingSchedule.time}
+                  </Text>
+                </View>
+                <Text style={styles.scheduleTitle}>{upcomingSchedule.title}</Text>
+                <View style={styles.scheduleLocationRow}>
+                  <Text style={styles.scheduleLocationIcon}>📍</Text>
+                  <Text style={styles.scheduleLocation}>{upcomingSchedule.location}</Text>
+                </View>
+              </View>
             </TouchableOpacity>
           </View>
-          <TouchableOpacity 
-            style={styles.scheduleCard} 
-            activeOpacity={0.9}
-            onPress={() => navigation.navigate("BookingDetail", { 
-              booking: {
-                ...UPCOMING_SCHEDULE,
-                imageUri: UPCOMING_SCHEDULE.image,
-                artisan: "김도예 장인",
-                status: "upcoming",
-              } as any 
-            })}
-          >
-            <Image source={{ uri: UPCOMING_SCHEDULE.image }} style={styles.scheduleThumb} />
-            <View style={styles.scheduleInfo}>
-              <View style={styles.scheduleDateRow}>
-                <Text style={styles.scheduleCalIcon}>📅</Text>
-                <Text style={styles.scheduleDateTime}>
-                  {UPCOMING_SCHEDULE.date} {UPCOMING_SCHEDULE.time}
-                </Text>
-              </View>
-              <Text style={styles.scheduleTitle}>{UPCOMING_SCHEDULE.title}</Text>
-              <View style={styles.scheduleLocationRow}>
-                <Text style={styles.scheduleLocationIcon}>📍</Text>
-                <Text style={styles.scheduleLocation}>{UPCOMING_SCHEDULE.location}</Text>
-              </View>
+        ) : (
+          <View style={styles.section}>
+            <View style={styles.emptyScheduleContainer}>
+              <Text style={styles.emptyScheduleIcon}>📋</Text>
+              <Text style={styles.emptyScheduleTitle}>예정된 체험이 없습니다</Text>
+              <Text style={styles.emptyScheduleDesc}>
+                새로운 체험을 찾아 예약해보세요!
+              </Text>
+              <TouchableOpacity
+                style={styles.emptyScheduleButton}
+                activeOpacity={0.85}
+                onPress={() => navigation.navigate("MainTabs", { screen: "Explore" })}
+              >
+                <Text style={styles.emptyScheduleButtonText}>체험 탐색하기</Text>
+              </TouchableOpacity>
             </View>
-          </TouchableOpacity>
-        </View>
+          </View>
+        )}
 
-        
+
         {/* 오늘의 장인 */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>오늘의 장인</Text>
@@ -466,26 +563,28 @@ export function HomeScreen() {
         </View>
 
         {/* 찜한 체험 */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>❤️ 내가 찜한 체험</Text>
-            <TouchableOpacity
-              activeOpacity={0.7}
-              onPress={() => navigation.navigate("Wishlist" as any)}
+        {wishedExperiences.length > 0 && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>❤️ 내가 찜한 체험</Text>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => navigation.navigate("Wishlist" as any)}
+              >
+                <Text style={styles.viewAllText}>더보기 &gt;</Text>
+              </TouchableOpacity>
+            </View>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.popularScroll}
             >
-              <Text style={styles.viewAllText}>더보기 &gt;</Text>
-            </TouchableOpacity>
+              {wishedExperiences.map((item) => (
+                <PopularExperienceCard key={item.id} item={item} />
+              ))}
+            </ScrollView>
           </View>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.popularScroll}
-          >
-            {WISHED_EXPERIENCES.map((item) => (
-              <PopularExperienceCard key={item.id} item={item} />
-            ))}
-          </ScrollView>
-        </View>
+        )}
 
         {/* 인기 체험 */}
         <View style={styles.section}>
@@ -669,6 +768,44 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   artisanButtonText: { fontSize: 13, fontWeight: "600", color: "#3B2B26" },
+
+  // 빈 다가오는 일정 상태
+  emptyScheduleContainer: {
+    backgroundColor: "#FEF3E2",
+    borderRadius: 14,
+    padding: 28,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#E8D5C4",
+  },
+  emptyScheduleIcon: {
+    fontSize: 48,
+    marginBottom: 12,
+  },
+  emptyScheduleTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#3B2B26",
+    marginBottom: 6,
+  },
+  emptyScheduleDesc: {
+    fontSize: 13,
+    color: "#8A8077",
+    marginBottom: 16,
+    textAlign: "center",
+    lineHeight: 18,
+  },
+  emptyScheduleButton: {
+    backgroundColor: "#3B2B26",
+    borderRadius: 8,
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+  },
+  emptyScheduleButtonText: {
+    color: "#FFF",
+    fontSize: 13,
+    fontWeight: "600",
+  },
 
   // 에러 텍스트
   errorText: {
