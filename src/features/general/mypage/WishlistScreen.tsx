@@ -1,30 +1,43 @@
-import React from "react";
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, FlatList, Image } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import React, { useCallback, useState } from "react";
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, FlatList, Image, ActivityIndicator, Alert } from "react-native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
+import { getMyWishlists, removeFromWishlist } from "@/features/wishlists/api/wishlistsApi";
+import type { Wishlist } from "@/types/api";
 
-// 간단한 더미 데이터
-const WISH_LIST = [
-  {
-    id: "1",
-    title: "이천 도자기 물레 체험",
-    category: "도예",
-    location: "경기 이천시",
-    price: 35000,
-    imageUri: "https://picsum.photos/seed/pottery/300/200",
-  },
-  {
-    id: "2",
-    title: "전주 한지 등 만들기 체험",
-    category: "한지",
-    location: "전북 전주시",
-    price: 28000,
-    imageUri: "https://picsum.photos/seed/hanji/300/200",
-  }
-];
+const PLACEHOLDER_IMAGE = "https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=400&q=80";
 
 export function WishlistScreen() {
   const navigation = useNavigation();
+  const [wishlists, setWishlists] = useState<Wishlist[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const loadWishlists = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const data = await getMyWishlists();
+      setWishlists(data);
+    } catch {
+      Alert.alert("알림", "찜 목록을 불러오지 못했습니다.");
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadWishlists();
+    }, [loadWishlists])
+  );
+
+  const handleRemove = async (experienceId: number) => {
+    try {
+      await removeFromWishlist(experienceId);
+      setWishlists((prev) => prev.filter((w) => w.experienceId !== experienceId));
+    } catch {
+      Alert.alert("알림", "찜 해제에 실패했습니다.");
+    }
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -39,24 +52,31 @@ export function WishlistScreen() {
       </View>
 
       {/* ── 찜한 목록 ── */}
+      {isLoading ? (
+        <ActivityIndicator color="#3B2B26" style={{ marginTop: 40 }} />
+      ) : (
       <FlatList
-        data={WISH_LIST}
-        keyExtractor={(item) => item.id}
+        data={wishlists}
+        keyExtractor={(item) => String(item.id)}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
         renderItem={({ item }) => (
           <TouchableOpacity style={styles.card} activeOpacity={0.9}>
-            <Image source={{ uri: item.imageUri }} style={styles.cardImage} />
-            
+            <Image source={{ uri: item.experienceImageUrl || PLACEHOLDER_IMAGE }} style={styles.cardImage} />
+
             {/* 좋아요 하트 버튼 */}
-            <TouchableOpacity style={styles.heartButton} activeOpacity={0.8}>
+            <TouchableOpacity
+              style={styles.heartButton}
+              activeOpacity={0.8}
+              onPress={() => handleRemove(item.experienceId)}
+            >
               <Ionicons name="heart" size={20} color="#EF4444" />
             </TouchableOpacity>
-            
+
             <View style={styles.cardInfo}>
-              <Text style={styles.categoryText}>{item.location} · {item.category}</Text>
-              <Text style={styles.titleText} numberOfLines={1}>{item.title}</Text>
-              <Text style={styles.priceText}>{item.price.toLocaleString()}원~</Text>
+              <Text style={styles.categoryText}>{item.experienceLocation} · {item.experienceCategory}</Text>
+              <Text style={styles.titleText} numberOfLines={1}>{item.experienceTitle}</Text>
+              <Text style={styles.priceText}>{item.experiencePrice.toLocaleString()}원~</Text>
             </View>
           </TouchableOpacity>
         )}
@@ -67,6 +87,7 @@ export function WishlistScreen() {
           </View>
         }
       />
+      )}
     </SafeAreaView>
   );
 }

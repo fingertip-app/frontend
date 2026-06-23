@@ -14,6 +14,12 @@ export interface ExperienceSchedule {
   isActive: boolean
 }
 
+export interface ExperienceImage {
+  id: number
+  imageUrl: string
+  displayOrder: number
+}
+
 export interface Experience {
   id: number
   artisanId: number
@@ -31,6 +37,8 @@ export interface Experience {
   locationLng: number
   isActive: boolean
   schedules: ExperienceSchedule[]
+  images: ExperienceImage[]
+  tags: string[]
   createdAt: string
   updatedAt: string
 }
@@ -111,6 +119,20 @@ export interface CardNews {
   categoryTags: string[]
   relatedExperienceIds: number[]
   isActive: boolean
+  createdAt: string
+}
+
+// ========== Wishlist ==========
+
+export interface Wishlist {
+  id: number
+  experienceId: number
+  experienceTitle: string
+  experienceCategory: string
+  experienceLocation: string
+  experiencePrice: number
+  experienceDurationMinutes: number
+  experienceImageUrl: string | null
   createdAt: string
 }
 

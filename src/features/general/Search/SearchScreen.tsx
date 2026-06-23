@@ -19,7 +19,7 @@ import { DetailBottomSheet } from "./DetailBottomSheet";
 import { MainLayout } from "@/features/general/home/MainLayout";
 import { MainTabParamList } from "@/navigation/RootNavigator";
 import { getActiveExperiences } from "@/features/experiences/api/experiencesApi";
-import type { Experience as ApiExperience } from "@/types/api";
+import { addToWishlist, getMyWishlists, removeFromWishlist } from "@/features/wishlists/api/wishlistsApi";
 
 // ─── 타입 ────────────────────────────────────────────────────────────────────
 
@@ -113,13 +113,13 @@ const LEVEL_OPTIONS  = ["난이도", "입문", "초급", "중급"];
 
 // API Experience를 UI Experience로 변환
 function mapApiExperienceToUI(exp: ApiExperience): Experience {
-  const hasUpcomingSchedule = exp.schedules?.some(s => {
+  const hasUpcomingSchedule = exp.activeSchedules?.some(s => {
     const scheduledDate = new Date(s.scheduledAt);
     const today = new Date();
-    return s.isActive && scheduledDate >= today && s.remainingSlots > 0;
+    return scheduledDate >= today;
   });
 
-  const isFamilyFriendly = exp.maxParticipants >= 4;
+  const isFamilyFriendly = (exp.maxParticipants ?? 0) >= 4;
   const isForeignOk = exp.supportedLanguages?.includes('en') || exp.supportedLanguages?.includes('영어');
 
   return {
@@ -146,40 +146,6 @@ function mapApiExperienceToUI(exp: ApiExperience): Experience {
 
 function categoryToId(label: string): string {
   return CATEGORIES.find((c) => c.label === label)?.id ?? "etc";
-}
-
-/**
- * Backend API 응답(ApiExperience)을 UI 타입(Experience)으로 변환
- * - 필드 매핑 및 기본값 처리
- * - 자동 판별: 가족체험, 외국인 가능, 오늘 예약 가능 여부
- */
-function mapApiExperienceToUI(exp: ApiExperience): Experience {
-  return {
-    id: String(exp.id),
-    title: exp.title,
-    category: exp.category || "기타",
-    location: exp.locationAddress || "위치 미정",
-    artisan: exp.artisanName || "장인",
-    // 평점/리뷰 수: Backend에서 제공되지 않으면 0으로 표시
-    rating: exp.rating ?? 0,
-    reviewCount: exp.reviewCount ?? 0,
-    duration: exp.durationMinutes ? `${exp.durationMinutes}분` : "시간 미정",
-    price: Number(exp.price) || 0,
-    tags: [],
-    imageUri: exp.imageUrl || "https://picsum.photos/seed/experience/300/200",
-    // 자동 판별: 최대 참가 인원이 4명 이상이면 가족 체험으로 표시
-    familyOk: (exp.maxParticipants ?? 0) >= 4,
-    // 자동 판별: 지원 언어에 'en' 또는 '영어' 포함되면 외국인 가능으로 표시
-    foreignOk: exp.supportedLanguages?.some(lang =>
-      lang.toLowerCase().includes('en') || lang.includes('영어')
-    ),
-    // 자동 판별: 오늘 활성 스케줄이 있으면 오늘 예약 가능으로 표시
-    todayBooking: exp.activeSchedules?.some(schedule => {
-      const scheduleDate = new Date(schedule.scheduledAt);
-      const today = new Date();
-      return scheduleDate.toDateString() === today.toDateString();
-    }),
-  };
 }
 
 // ─── 서브 컴포넌트 ─────────────────────────────────────────────────────────────
@@ -498,9 +464,17 @@ function TagBadge({ label }: { label: string }) {
 }
 
 /** 체험 카드 */
-function ExperienceCard({ item, onPress }: { item: Experience; onPress: () => void }) {
-  const [liked, setLiked] = useState(false);
-
+function ExperienceCard({
+  item,
+  onPress,
+  liked,
+  onToggleLike,
+}: {
+  item: Experience;
+  onPress: () => void;
+  liked: boolean;
+  onToggleLike: () => void;
+}) {
   return (
     <TouchableOpacity
       activeOpacity={0.92}
@@ -552,7 +526,7 @@ function ExperienceCard({ item, onPress }: { item: Experience; onPress: () => vo
           <Text style={{ flex: 1, fontSize: 14, fontWeight: "700", color: "#111827", paddingRight: 6, lineHeight: 20 }} numberOfLines={2}>
             {item.title}
           </Text>
-          <TouchableOpacity onPress={() => setLiked((p) => !p)} hitSlop={8}>
+          <TouchableOpacity onPress={onToggleLike} hitSlop={8}>
             <Ionicons name={liked ? "heart" : "heart-outline"} size={20} color={liked ? "#EF4444" : "#D1D5DB"} />
           </TouchableOpacity>
         </View>
@@ -637,6 +611,32 @@ export function SearchScreen() {
   const [allExperiences, setAllExperiences] = useState<Experience[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [wishedIds, setWishedIds] = useState<Set<number>>(new Set());
+
+  useEffect(() => {
+    getMyWishlists()
+      .then((wishlists) => setWishedIds(new Set(wishlists.map((w) => w.experienceId))))
+      .catch((e) => console.error("찜 목록을 불러오는데 실패했습니다:", e));
+  }, []);
+
+  const handleToggleWish = async (experienceId: number) => {
+    const isCurrentlyWished = wishedIds.has(experienceId);
+    try {
+      if (isCurrentlyWished) {
+        await removeFromWishlist(experienceId);
+        setWishedIds((prev) => {
+          const next = new Set(prev);
+          next.delete(experienceId);
+          return next;
+        });
+      } else {
+        await addToWishlist(experienceId);
+        setWishedIds((prev) => new Set(prev).add(experienceId));
+      }
+    } catch (e) {
+      console.error("찜하기 처리에 실패했습니다:", e);
+    }
+  };
 
   // API에서 체험 목록 가져오기
   const fetchExperiences = async () => {
@@ -766,7 +766,14 @@ export function SearchScreen() {
         <FlatList
           data={results}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <ExperienceCard item={item} onPress={() => setSelectedExp(item)} />}
+        renderItem={({ item }) => (
+          <ExperienceCard
+            item={item}
+            onPress={() => setSelectedExp(item)}
+            liked={wishedIds.has(Number(item.id))}
+            onToggleLike={() => handleToggleWish(Number(item.id))}
+          />
+        )}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 24 }}
         ListEmptyComponent={<EmptyState query={query} />}

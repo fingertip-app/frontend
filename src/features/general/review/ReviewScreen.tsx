@@ -9,11 +9,14 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Image,
+  Alert,
+  ActivityIndicator,
 } from "react-native";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { RootStackParamList } from "@/navigation/RootNavigator";
 import { MainLayout } from "@/features/general/home/MainLayout";
+import { createReview, updateReview } from "@/features/reviews/api/reviewsApi";
 
 const BRAND = "#3D1F0D";
 const GRAY = "#8A8077";
@@ -35,22 +38,48 @@ const RATING_LABELS: Record<number, string> = {
 export function ReviewScreen() {
   const navigation = useNavigation();
   const route = useRoute<RouteProp<RootStackParamList, "Review">>();
-  const { booking } = route.params;
+  const { booking, existingReview } = route.params;
+  const isEditing = !!existingReview;
 
-  const [rating, setRating] = useState(0);
+  const [rating, setRating] = useState(existingReview?.rating ?? 0);
   const [hovered, setHovered] = useState(0);
-  const [content, setContent] = useState("");
+  const [content, setContent] = useState(existingReview?.content ?? "");
   // 실제 앱에서는 ImagePicker를 사용. 여기서는 더미 URI 배열로 대체.
-  const [photos, setPhotos] = useState<string[]>([]);
+  const [photos, setPhotos] = useState<string[]>(existingReview?.imageUrls ?? []);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const displayRating = hovered || rating;
 
-  const handleSubmit = () => {
-    alert("리뷰가 등록되었습니다!");
-    navigation.goBack();
+  const handleSubmit = async () => {
+    if (!booking.experienceId) {
+      Alert.alert("오류", "체험 정보를 찾을 수 없습니다.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const payload = {
+        reservationId: booking.reservationId,
+        experienceId: booking.experienceId,
+        rating,
+        content,
+        imageUrl: photos[0],
+      };
+      if (existingReview) {
+        await updateReview(existingReview.id, payload);
+      } else {
+        await createReview(payload);
+      }
+      Alert.alert("완료", isEditing ? "후기가 수정되었습니다." : "리뷰가 등록되었습니다!");
+      navigation.goBack();
+    } catch (e) {
+      Alert.alert("오류", e instanceof Error ? e.message : "후기 등록에 실패했습니다.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const canSubmit = rating > 0 && content.length >= 10;
+  const canSubmit = rating > 0 && content.length >= 10 && !isSubmitting;
 
   return (
     <MainLayout>
@@ -63,7 +92,7 @@ export function ReviewScreen() {
           <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={10}>
             <Ionicons name="arrow-back" size={24} color="#1C1107" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>후기 작성하기</Text>
+          <Text style={styles.headerTitle}>{isEditing ? "후기 수정하기" : "후기 작성하기"}</Text>
           <View style={{ width: 24 }} />
         </View>
 
@@ -190,7 +219,11 @@ export function ReviewScreen() {
             onPress={handleSubmit}
             disabled={!canSubmit}
           >
-            <Text style={styles.submitBtnText}>등록하기</Text>
+            {isSubmitting ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <Text style={styles.submitBtnText}>{isEditing ? "수정하기" : "등록하기"}</Text>
+            )}
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>

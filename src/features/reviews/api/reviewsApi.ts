@@ -1,4 +1,4 @@
-import { apiGet, apiPost, apiDelete } from '@/services/api'
+import { apiGet, apiPost, apiPut, apiDelete } from '@/services/api'
 import type { Review } from '@/types/api'
 
 /**
@@ -20,6 +20,14 @@ export interface CreateReviewRequest {
  */
 export async function createReview(req: CreateReviewRequest): Promise<Review> {
   return apiPost<CreateReviewRequest, Review>('/reviews', req)
+}
+
+/**
+ * 리뷰 수정
+ * PUT /reviews/{reviewId}
+ */
+export async function updateReview(reviewId: number, req: CreateReviewRequest): Promise<Review> {
+  return apiPut<CreateReviewRequest, Review>(`/reviews/${reviewId}`, req)
 }
 
 /**

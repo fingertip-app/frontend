@@ -12,8 +12,9 @@ import { CardNewsCarousel } from "../cardnews/CardNewsCarousel";
 import { MainLayout } from "./MainLayout";
 import { apiGet } from "@/services/api";
 import { getMyReservations } from "@/features/reservations/api/reservationsApi";
+import { getCurrentProfile } from "@/features/auth/api/authApi";
 import { getExperience } from "@/features/experiences/api/experiencesApi";
-import { getMyWishlists } from "@/features/wishlists/api/wishlistsApi";
+import { addToWishlist, getMyWishlists, removeFromWishlist } from "@/features/wishlists/api/wishlistsApi";
 import type { Reservation, Wishlist } from "@/types/api";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
@@ -204,18 +205,21 @@ function mapExperienceToCard(exp: any): typeof POPULAR_EXPERIENCES[0] {
 function PopularExperienceCard({
   item,
   onPress,
+  isWished,
+  onToggleWish,
 }: {
   item: typeof POPULAR_EXPERIENCES[0];
   onPress?: () => void;
+  isWished?: boolean;
+  onToggleWish?: () => void;
 }) {
-  const [isWished, setIsWished] = useState(false);
   return (
     <TouchableOpacity style={styles.popularCard} activeOpacity={0.9} onPress={onPress}>
       <View style={styles.popularImageContainer}>
         <Image source={{ uri: item.image }} style={styles.popularImage} />
         <TouchableOpacity
           style={styles.wishButton}
-          onPress={() => setIsWished(!isWished)}
+          onPress={onToggleWish}
           activeOpacity={0.8}
         >
           <Text style={styles.wishIcon}>{isWished ? "❤️" : "🤍"}</Text>
@@ -267,6 +271,28 @@ export function HomeScreen() {
   const [activeBanner, setActiveBanner] = useState(0);
   const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [upcomingSchedule, setUpcomingSchedule] = useState<UpcomingSchedule | null>(null);
+  const [wishedExperiences, setWishedExperiences] = useState<typeof POPULAR_EXPERIENCES>([]);
+  const [wishedIds, setWishedIds] = useState<Set<number>>(new Set());
+
+  const handleToggleWish = async (experienceId: number) => {
+    const isCurrentlyWished = wishedIds.has(experienceId);
+    try {
+      if (isCurrentlyWished) {
+        await removeFromWishlist(experienceId);
+        setWishedIds((prev) => {
+          const next = new Set(prev);
+          next.delete(experienceId);
+          return next;
+        });
+        setWishedExperiences((prev) => prev.filter((e) => Number(e.id) !== experienceId));
+      } else {
+        await addToWishlist(experienceId);
+        setWishedIds((prev) => new Set(prev).add(experienceId));
+      }
+    } catch (e) {
+      console.error("찜하기 처리에 실패했습니다:", e);
+    }
+  };
 
   const handleBannerScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const index = Math.round(e.nativeEvent.contentOffset.x / (BANNER_WIDTH + 16));
@@ -302,7 +328,9 @@ export function HomeScreen() {
   useEffect(() => {
     const fetchUpcomingSchedule = async () => {
       try {
-        const reservations = await getMyReservations();
+        const profile = await getCurrentProfile();
+        if (!profile) return;
+        const reservations = await getMyReservations(profile.id);
 
         // APPROVED, PAID, CONFIRMED 상태 중 가장 가까운 미래 일정 찾기
         const upcomingReservations = reservations
@@ -326,7 +354,7 @@ export function HomeScreen() {
             time: formatScheduleTime(nextReservation.reservedDateTime),
             title: experience.title,
             location: experience.locationAddress || "위치 미정",
-            image: experience.imageUrl || "https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=200&q=80",
+            image: experience.images?.[0]?.imageUrl || "https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=200&q=80",
           });
         }
       } catch (e) {
@@ -336,6 +364,23 @@ export function HomeScreen() {
     };
 
     fetchUpcomingSchedule();
+  }, []);
+
+  // 찜 목록 로드
+  useEffect(() => {
+    const fetchWishlists = async () => {
+      try {
+        const wishlists = await getMyWishlists();
+        const wishCards = wishlists.slice(0, 5).map(mapWishlistToCard);
+        setWishedExperiences(wishCards);
+        setWishedIds(new Set(wishlists.map((w) => w.experienceId)));
+      } catch (e) {
+        console.error("찜 목록을 불러오는데 실패했습니다:", e);
+        // 에러 발생 시 빈 배열 유지
+      }
+    };
+
+    fetchWishlists();
   }, []);
 
   useEffect(() => {
@@ -380,6 +425,8 @@ export function HomeScreen() {
             key={item.id}
             item={mapExperienceToCard(item)}
             onPress={() => openExperienceDetail(item)}
+            isWished={wishedIds.has(item.id)}
+            onToggleWish={() => handleToggleWish(item.id)}
           />
         ))}
       </ScrollView>
@@ -561,8 +608,13 @@ export function HomeScreen() {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.popularScroll}
           >
-            {WISHED_EXPERIENCES.map((item) => (
-              <PopularExperienceCard key={item.id} item={item} />
+            {wishedExperiences.map((item) => (
+              <PopularExperienceCard
+                key={item.id}
+                item={item}
+                isWished
+                onToggleWish={() => handleToggleWish(Number(item.id))}
+              />
             ))}
           </ScrollView>
         </View>
@@ -602,6 +654,8 @@ export function HomeScreen() {
                 key={item.id}
                 item={mapExperienceToCard(item)}
                 onPress={() => openExperienceDetail(item)}
+                isWished={wishedIds.has(item.id)}
+                onToggleWish={() => handleToggleWish(item.id)}
               />
             ))}
           </ScrollView>

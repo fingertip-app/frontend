@@ -28,6 +28,7 @@ type TabType = "upcoming" | "pending" | "past" | "cancelled";
 export interface Booking {
   id: string;
   reservationId?: number;
+  experienceId?: number;
   status: TabType;
   title: string;
   artisan: string;
@@ -89,6 +90,7 @@ async function toBooking(reservation: Reservation): Promise<Booking> {
   return {
     id: String(reservation.id),
     reservationId: reservation.id,
+    experienceId: reservation.experienceId,
     status: toTabType(reservation.status),
     title: experience?.title ?? "체험",
     artisan: artisan?.name ?? "장인",
