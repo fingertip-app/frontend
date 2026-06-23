@@ -65,6 +65,22 @@ export interface Reservation {
   updatedAt: string
 }
 
+// ========== Wishlist ==========
+
+export interface Wishlist {
+  id: number
+  userId: number
+  experienceId: number
+  experienceTitle: string
+  experienceCategory: string
+  experienceLocation: string
+  experiencePrice: number
+  experienceDurationMinutes: number
+  experienceImageUrl: string | null
+  createdAt: string
+  updatedAt?: string
+}
+
 // ========== CardNews ==========
 
 export interface CardNews {
