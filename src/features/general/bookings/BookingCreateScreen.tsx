@@ -60,11 +60,30 @@ function groupSchedulesByDate(schedules: ExperienceSchedule[]) {
   const now = new Date();
   now.setMinutes(now.getMinutes() + bufferMinutes);
 
-  return schedules.reduce<Record<string, ExperienceSchedule[]>>((acc, schedule) => {
+  console.log('[날짜선택] 전체 스케줄 수:', schedules.length);
+  console.log('[날짜선택] 기준 시간 (30분 버퍼):', now.toLocaleString());
+
+  const result = schedules.reduce<Record<string, ExperienceSchedule[]>>((acc, schedule) => {
     const scheduleDate = new Date(schedule.scheduledAt);
 
+    // 디버깅 로그
+    const isActive = schedule.isActive;
+    const hasSlots = schedule.remainingSlots > 0;
+    const isFuture = scheduleDate >= now;
+    const filtered = !isActive || !hasSlots || !isFuture;
+
+    if (filtered) {
+      console.log('[날짜선택] 필터됨:', {
+        date: scheduleDate.toLocaleString(),
+        isActive,
+        remainingSlots: schedule.remainingSlots,
+        isFuture,
+        reason: !isActive ? '비활성' : !hasSlots ? '좌석없음' : '과거날짜'
+      });
+    }
+
     // 과거 날짜, 비활성, 남은 좌석 없음 필터링
-    if (!schedule.isActive || schedule.remainingSlots <= 0 || scheduleDate < now) return acc;
+    if (filtered) return acc;
 
     const dateKey = getScheduleDate(schedule);
     acc[dateKey] = [...(acc[dateKey] ?? []), schedule].sort(
@@ -72,6 +91,9 @@ function groupSchedulesByDate(schedules: ExperienceSchedule[]) {
     );
     return acc;
   }, {});
+
+  console.log('[날짜선택] 예약 가능한 날짜:', Object.keys(result).sort());
+  return result;
 }
 
 export function BookingCreateScreen() {
