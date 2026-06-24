@@ -16,6 +16,7 @@ import { getExperience } from "@/features/experiences/api/experiencesApi";
 import { getMyWishlists } from "@/features/wishlists/api/wishlistsApi";
 import { getHeroBanners, getRecommendedArtisan, getNearbyArtisans } from "./api/homeApi";
 import type { Reservation, Wishlist, Banner, Artisan } from "@/types/api";
+import { supabase } from "@/lib/supabase";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const BANNER_WIDTH = SCREEN_WIDTH - 48;
@@ -51,44 +52,21 @@ function formatScheduleTime(iso: string | null): string {
 }
 
 
-const POPULAR_EXPERIENCES = [
-  {
-    id: "1",
-    title: "도자기 물레 체험",
-    location: "이천",
-    duration: "2시간",
-    category: "도자기",
-    price: "45,000원",
-    rating: 4.9,
-    reviewCount: 128,
-    image: "https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=400&q=80",
-  },
-  {
-    id: "2",
-    title: "한지 등 만들기",
-    location: "전주",
-    duration: "1.5시간",
-    category: "한지공예",
-    price: "38,000원",
-    rating: 4.8,
-    reviewCount: 96,
-    image: "https://images.unsplash.com/photo-1607453998774-d533f65dac99?w=400&q=80",
-  },
-  {
-    id: "3",
-    title: "전통 매듭 팔찌",
-    location: "서울",
-    duration: "1시간",
-    category: "매듭/자수",
-    price: "30,000원",
-    rating: 4.7,
-    reviewCount: 84,
-    image: "https://images.unsplash.com/photo-1606722590583-6951b5ea92ad?w=400&q=80",
-  },
-];
+// Experience를 UI 카드 형식으로 변환
+interface ExperienceCard {
+  id: string;
+  title: string;
+  location: string;
+  duration: string;
+  category: string;
+  price: string;
+  rating: number;
+  reviewCount: number;
+  image: string;
+}
 
 // Wishlist를 UI 카드 형식으로 변환
-function mapWishlistToCard(wishlist: Wishlist): typeof POPULAR_EXPERIENCES[0] {
+function mapWishlistToCard(wishlist: Wishlist): ExperienceCard {
   return {
     id: String(wishlist.experienceId),
     title: wishlist.experienceTitle,
@@ -134,7 +112,7 @@ function BannerCard({ item }: { item: Banner }) {
   );
 }
 
-function mapExperienceToCard(exp: any): typeof POPULAR_EXPERIENCES[0] {
+function mapExperienceToCard(exp: any): ExperienceCard {
   return {
     id: String(exp.id),
     title: exp.title,
@@ -152,7 +130,7 @@ function PopularExperienceCard({
   item,
   onPress,
 }: {
-  item: typeof POPULAR_EXPERIENCES[0];
+  item: ExperienceCard;
   onPress?: () => void;
 }) {
   const [isWished, setIsWished] = useState(false);
@@ -186,16 +164,16 @@ function NearbyArtisanCard({
   distanceLabel,
   onPress,
 }: {
-  item: typeof NEARBY_ARTISANS[0];
+  item: Artisan;
   distanceLabel: string;
   onPress: () => void;
 }) {
   return (
     <TouchableOpacity style={styles.nearbyCard} activeOpacity={0.9} onPress={onPress}>
-      <Image source={{ uri: item.image }} style={styles.nearbyImage} />
+      <Image source={{ uri: item.profileImageUrl }} style={styles.nearbyImage} />
       <View style={styles.nearbyInfo}>
         <Text style={styles.nearbyName} numberOfLines={1}>{item.name}</Text>
-        <Text style={styles.nearbyMeta}>{item.category} · {item.location}</Text>
+        <Text style={styles.nearbyMeta}>{item.heritageCategory} · {item.address || "위치 정보 없음"}</Text>
         <View style={styles.nearbyDistanceRow}>
           <Text style={styles.nearbyDistanceIcon}>📍</Text>
           <Text style={styles.nearbyDistance}>{distanceLabel}</Text>
@@ -213,16 +191,16 @@ export function HomeScreen() {
   const [error, setError] = useState<string | null>(null);
   const [activeBanner, setActiveBanner] = useState(0);
   const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
-<<<<<<< HEAD
   const [upcomingSchedule, setUpcomingSchedule] = useState<UpcomingSchedule | null>(null);
-=======
+  const [wishedExperiences, setWishedExperiences] = useState<ExperienceCard[]>([]);
   const [banners, setBanners] = useState<Banner[]>([]);
   const [recommendedArtisan, setRecommendedArtisan] = useState<Artisan | null>(null);
   const [nearbyArtisans, setNearbyArtisans] = useState<Artisan[]>([]);
->>>>>>> 6d33953 (feat: 배너 & 오늘의 장인 & 근처 장인 API 연동)
 
   const handleBannerScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const index = Math.round(e.nativeEvent.contentOffset.x / (BANNER_WIDTH + 16));
+    const offsetX = e.nativeEvent.contentOffset.x;
+    const index = Math.round(offsetX / (BANNER_WIDTH + 16));
+    console.log("🎯 [배너 스크롤]", { offsetX, index, activeBanner });
     setActiveBanner(index);
   };
 
@@ -261,14 +239,18 @@ export function HomeScreen() {
   }, []);
 
   const getDistanceLabel = (item: Artisan) => {
-    if (!userCoords || !item.lat || !item.lng) return "거리 정보 없음";
-    return `${getDistanceKm(userCoords.lat, userCoords.lng, item.lat, item.lng).toFixed(1)}km`;
+    if (!userCoords || !item.latitude || !item.longitude) return "거리 정보 없음";
+    return `${getDistanceKm(userCoords.lat, userCoords.lng, item.latitude, item.longitude).toFixed(1)}km`;
   };
 
   // 다가오는 일정 로드
   useEffect(() => {
     const fetchUpcomingSchedule = async () => {
       try {
+        // 인증 체크
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return; // 로그인하지 않은 경우 스킵
+
         const reservations = await getMyReservations();
 
         // APPROVED, PAID, CONFIRMED 상태 중 가장 가까운 미래 일정 찾기
@@ -293,7 +275,7 @@ export function HomeScreen() {
             time: formatScheduleTime(nextReservation.reservedDateTime),
             title: experience.title,
             location: experience.locationAddress || "위치 미정",
-            image: experience.imageUrl || "https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=200&q=80",
+            image: "https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=200&q=80",
           });
         }
       } catch (e) {
@@ -327,6 +309,25 @@ export function HomeScreen() {
     };
 
     fetchExperiences();
+  }, []);
+
+  // 찜한 체험 로드
+  useEffect(() => {
+    const fetchWishlists = async () => {
+      try {
+        // 인증 체크
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return; // 로그인하지 않은 경우 스킵
+
+        const wishlists = await getMyWishlists();
+        const wishlistCards = wishlists.map(mapWishlistToCard);
+        setWishedExperiences(wishlistCards);
+      } catch (e) {
+        console.error("찜 목록을 불러오는데 실패했습니다:", e);
+      }
+    };
+
+    fetchWishlists();
   }, []);
 
   const renderPopularExperiences = () => {
@@ -389,7 +390,9 @@ export function HomeScreen() {
             contentContainerStyle={styles.bannerScroll}
             snapToInterval={BANNER_WIDTH + 16}
             decelerationRate="fast"
+            onScroll={handleBannerScroll}
             onMomentumScrollEnd={handleBannerScroll}
+            scrollEventThrottle={16}
           >
             {banners.map((banner) => (
               <BannerCard key={banner.id} item={banner} />
@@ -474,21 +477,21 @@ export function HomeScreen() {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>오늘의 장인</Text>
             <TouchableOpacity style={styles.artisanCard} activeOpacity={0.9}>
-              <Image source={{ uri: recommendedArtisan.imageUrl }} style={styles.artisanImage} />
+              <Image source={{ uri: recommendedArtisan.profileImageUrl }} style={styles.artisanImage} />
               <View style={styles.artisanInfo}>
-                {recommendedArtisan.badge && (
+                {recommendedArtisan.heritageCategory && (
                   <View style={styles.artisanBadgeWrap}>
-                    <Text style={styles.artisanBadge}>{recommendedArtisan.badge}</Text>
+                    <Text style={styles.artisanBadge}>{recommendedArtisan.heritageCategory}</Text>
                   </View>
                 )}
                 <Text style={styles.artisanName}>{recommendedArtisan.name}</Text>
-                {recommendedArtisan.quote && (
-                  <Text style={styles.artisanQuote}>{recommendedArtisan.quote}</Text>
+                {recommendedArtisan.bio && (
+                  <Text style={styles.artisanQuote}>{recommendedArtisan.bio}</Text>
                 )}
                 <TouchableOpacity
                   style={styles.artisanButton}
                   activeOpacity={0.85}
-                  onPress={() => navigation.navigate("ArtisanDetail" as any)}
+                  onPress={() => navigation.navigate("ArtisanDetail", { artisanId: recommendedArtisan.id })}
                 >
                   <Text style={styles.artisanButtonText}>장인 스토리 보기</Text>
                 </TouchableOpacity>
@@ -512,7 +515,7 @@ export function HomeScreen() {
                 key={item.id}
                 item={item}
                 distanceLabel={getDistanceLabel(item)}
-                onPress={() => navigation.navigate("ArtisanDetail" as any)}
+                onPress={() => navigation.navigate("ArtisanDetail", { artisanId: item.id })}
               />
             ))}
           </ScrollView>
@@ -534,7 +537,7 @@ export function HomeScreen() {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.popularScroll}
           >
-            {WISHED_EXPERIENCES.map((item) => (
+            {wishedExperiences.map((item) => (
               <PopularExperienceCard key={item.id} item={item} />
             ))}
           </ScrollView>

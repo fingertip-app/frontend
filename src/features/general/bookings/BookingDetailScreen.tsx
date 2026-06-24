@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -8,11 +8,14 @@ import {
   ScrollView,
   Image,
   Platform,
+  Alert,
+  ActivityIndicator,
 } from "react-native";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
 import { RootStackParamList } from "@/navigation/RootNavigator";
+import { cancelReservation } from "@/features/reservations/api/reservationsApi";
 
 const BRAND = "#3D1F0D";
 const GRAY = "#8A8077";
@@ -24,6 +27,42 @@ export function BookingDetailScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const route = useRoute<RouteProp<RootStackParamList, "BookingDetail">>();
   const { booking } = route.params;
+  const [isCancelling, setIsCancelling] = useState(false);
+
+  const handleCancelReservation = async () => {
+    if (!booking.reservationId) {
+      Alert.alert("오류", "예약 정보를 찾을 수 없습니다.");
+      return;
+    }
+
+    Alert.alert(
+      "예약 취소",
+      "정말 이 예약을 취소하시겠습니까?",
+      [
+        { text: "아니오", style: "cancel" },
+        {
+          text: "예, 취소합니다",
+          style: "destructive",
+          onPress: async () => {
+            setIsCancelling(true);
+            try {
+              await cancelReservation(booking.reservationId!, "사용자 요청으로 취소");
+              Alert.alert("취소 완료", "예약이 취소되었습니다.", [
+                {
+                  text: "확인",
+                  onPress: () => navigation.navigate("MainTabs", { screen: "Bookings" }),
+                },
+              ]);
+            } catch (error) {
+              Alert.alert("취소 실패", error instanceof Error ? error.message : "예약 취소에 실패했습니다.");
+            } finally {
+              setIsCancelling(false);
+            }
+          },
+        },
+      ]
+    );
+  };
 
   const getStatusLabel = (status: string) => {
     switch (status) {
@@ -179,8 +218,17 @@ export function BookingDetailScreen() {
       <View style={styles.footer}>
         {booking.status === "upcoming" && booking.paymentRequired ? (
           <View style={styles.footerRow}>
-            <TouchableOpacity style={styles.cancelBtn} activeOpacity={0.8}>
-              <Text style={styles.cancelBtnText}>예약 취소</Text>
+            <TouchableOpacity
+              style={styles.cancelBtn}
+              activeOpacity={0.8}
+              onPress={handleCancelReservation}
+              disabled={isCancelling}
+            >
+              {isCancelling ? (
+                <ActivityIndicator color="#1C1107" />
+              ) : (
+                <Text style={styles.cancelBtnText}>예약 취소</Text>
+              )}
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.chatBtn}
@@ -229,8 +277,17 @@ export function BookingDetailScreen() {
           </View>
         ) : booking.status === "pending" ? (
           <View style={styles.footerRow}>
-            <TouchableOpacity style={styles.cancelBtn} activeOpacity={0.8}>
-              <Text style={styles.cancelBtnText}>예약 취소</Text>
+            <TouchableOpacity
+              style={styles.cancelBtn}
+              activeOpacity={0.8}
+              onPress={handleCancelReservation}
+              disabled={isCancelling}
+            >
+              {isCancelling ? (
+                <ActivityIndicator color="#1C1107" />
+              ) : (
+                <Text style={styles.cancelBtnText}>예약 취소</Text>
+              )}
             </TouchableOpacity>
             <TouchableOpacity style={styles.chatBtn} activeOpacity={0.85}>
               <Ionicons name="chatbubble-ellipses-outline" size={17} color="#FFFFFF" style={{ marginRight: 6 }} />
