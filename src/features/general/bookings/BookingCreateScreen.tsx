@@ -249,8 +249,10 @@ export function BookingCreateScreen() {
       if (error instanceof ApiError) {
         if (error.status === 401) {
           errorMsg = "로그인이 필요합니다. 다시 로그인해주세요.";
-        } else if (error.status === 409) {
+        } else if (error.status === 409 || error.message?.includes("Duplicate active reservation")) {
           errorMsg = "이미 예약된 일정입니다. 다른 시간을 선택해주세요.";
+        } else if (error.message?.includes("Booking slot is unavailable")) {
+          errorMsg = "정원이 모두 찼습니다. 다른 시간을 선택해주세요.";
         } else if (error.status === 400) {
           errorMsg = error.message || "요청 정보가 올바르지 않습니다.";
         } else {

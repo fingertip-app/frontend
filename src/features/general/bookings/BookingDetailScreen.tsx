@@ -189,6 +189,21 @@ export function BookingDetailScreen() {
           )}
         </View>
 
+        {/* ── 거절/취소 사유 카드 ── */}
+        {booking.status === "cancelled" && (booking.rejectionReason || booking.cancellationReason) && (
+          <View style={[styles.card, { borderColor: "#FFDAD6", backgroundColor: "#FFFAFA" }]}>
+            <View style={styles.noticeHeader}>
+              <Ionicons name="alert-circle-outline" size={18} color="#C62828" />
+              <Text style={[styles.sectionTitle, { color: "#C62828" }]}>
+                {booking.reservationStatus === "REJECTED" ? "거절 사유" : "취소 사유"}
+              </Text>
+            </View>
+            <Text style={[styles.noticeText, { color: "#B71C1C" }]}>
+              {booking.rejectionReason || booking.cancellationReason}
+            </Text>
+          </View>
+        )}
+
         {/* ── 결제 정보 카드 ── */}
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>결제 정보</Text>

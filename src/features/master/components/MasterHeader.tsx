@@ -3,6 +3,8 @@ import { View, Text, StyleSheet, TouchableOpacity, Platform } from "react-native
 import { Ionicons } from "@expo/vector-icons";
 import { CustomDrawer } from "@/features/general/home/CustomDrawer";
 import { useNavigation } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { RootStackParamList } from "@/navigation/RootNavigator";
 
 const BRAND = "#3B2B26";
 const BG = "transparent"; // 부모 SafeAreaView의 배경색을 따름
@@ -16,7 +18,7 @@ interface MasterHeaderProps {
 
 export function MasterHeader({ title = "장인과 하루", activeItem = "홈", hasNotification = true, rightComponent }: MasterHeaderProps) {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const navigation = useNavigation();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   return (
     <>
@@ -28,7 +30,7 @@ export function MasterHeader({ title = "장인과 하루", activeItem = "홈", h
         {rightComponent ? (
           rightComponent
         ) : (
-          <TouchableOpacity onPress={() => {/* 알림 화면 이동 */}} hitSlop={12}>
+          <TouchableOpacity onPress={() => navigation.navigate("Notifications")} hitSlop={12}>
             <View>
               <Ionicons name="notifications-outline" size={24} color={BRAND} />
               {hasNotification && <View style={styles.notiBadge} />}

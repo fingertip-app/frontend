@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
+import * as Location from "expo-location";
 import { createRegisteredExperience } from "../experienceManagementApi";
 import type { ExperienceRegistrationParams } from "../types";
 
@@ -31,12 +32,56 @@ export function Step5Location() {
   const params = (route.params ?? {}) as Partial<ExperienceRegistrationParams>;
   const currentStep = 5;
 
-  const [address, setAddress] = useState("서울시 종로구 북촌로 11길");
+  const [address, setAddress] = useState("");
   const [addressDetail, setAddressDetail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLocating, setIsLocating] = useState(false);
+  const [pinLabel, setPinLabel] = useState("주소를 입력하거나 현재 위치를 사용해주세요");
 
-  const handleSearch = () => {
-    // TODO: 주소 검색 연결
+  const handleSearch = async () => {
+    if (!address.trim()) {
+      Alert.alert("알림", "주소를 입력해주세요.");
+      return;
+    }
+    try {
+      const results = await Location.geocodeAsync(address.trim());
+      if (!results.length) {
+        Alert.alert("알림", "입력하신 주소를 찾을 수 없어요. 다시 확인해주세요.");
+        return;
+      }
+      setPinLabel(address.trim());
+    } catch {
+      Alert.alert("알림", "주소 확인 중 오류가 발생했어요.");
+    }
+  };
+
+  const handleUseCurrentLocation = async () => {
+    setIsLocating(true);
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert("권한 필요", "현재 위치를 사용하려면 위치 권한이 필요합니다.");
+        return;
+      }
+      const position = await Location.getCurrentPositionAsync({});
+      const [place] = await Location.reverseGeocodeAsync({
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+      });
+      if (!place) {
+        Alert.alert("알림", "현재 위치의 주소를 확인할 수 없어요.");
+        return;
+      }
+      const formatted = [place.region, place.city, place.district, place.street, place.name]
+        .filter(Boolean)
+        .join(" ");
+      setAddress(formatted || "");
+      setPinLabel(formatted || "현재 위치");
+    } catch {
+      Alert.alert("알림", "현재 위치를 가져오지 못했어요.");
+    } finally {
+      setIsLocating(false);
+    }
   };
 
   const handleComplete = async () => {
@@ -172,7 +217,7 @@ export function Step5Location() {
             {/* 핀 */}
             <View style={styles.pinWrapper}>
               <View style={styles.pinLabel}>
-                <Text style={styles.pinLabelText}>백인제 가옥 인근</Text>
+                <Text style={styles.pinLabelText} numberOfLines={1}>{pinLabel}</Text>
               </View>
               <View style={styles.pin}>
                 <View style={styles.pinDot} />
@@ -182,7 +227,12 @@ export function Step5Location() {
           </View>
 
           {/* 현재 위치 버튼 */}
-          <TouchableOpacity style={styles.locationBtn}>
+          <TouchableOpacity
+            style={styles.locationBtn}
+            onPress={handleUseCurrentLocation}
+            disabled={isLocating}
+            activeOpacity={0.8}
+          >
             <Ionicons name="locate-outline" size={18} color={BRAND} />
           </TouchableOpacity>
         </View>
