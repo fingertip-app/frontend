@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useState } from "react";
 import {
   View,
   Text,
@@ -10,7 +10,7 @@ import {
   ActivityIndicator,
   Alert,
 } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
 import { RootStackParamList } from "@/navigation/RootNavigator";
@@ -44,6 +44,8 @@ export interface Booking {
   totalPrice?: number;
   // 장인 승인은 끝났지만 아직 결제 전인 예약 (결제는 승인 후에만 가능)
   paymentRequired?: boolean;
+  rejectionReason?: string | null;
+  cancellationReason?: string | null;
 }
 
 const TABS: { id: TabType; label: string }[] = [
@@ -102,6 +104,8 @@ async function toBooking(reservation: Reservation): Promise<Booking> {
     location: experience?.locationAddress ?? "-",
     totalPrice: reservation.totalPrice,
     paymentRequired: reservation.status === "APPROVED",
+    rejectionReason: reservation.rejectionReason,
+    cancellationReason: reservation.cancellationReason,
   };
 }
 
@@ -147,9 +151,11 @@ export function BookingsScreen() {
     }
   }, []);
 
-  useEffect(() => {
-    loadBookings();
-  }, [loadBookings]);
+  useFocusEffect(
+    useCallback(() => {
+      loadBookings();
+    }, [loadBookings])
+  );
 
   // 현재 탭에 맞는 예약 내역 필터링
   const filteredBookings = bookings.filter(
