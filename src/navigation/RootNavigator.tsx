@@ -116,11 +116,13 @@ export type RootStackParamList = {
   MasterProfile: undefined;
   MasterExperienceCreate: { experienceId?: number } | undefined;
   Step1BasicInfo: undefined;
-  Step2Photos: { title: string; shortDesc: string; detail: string } | undefined;
+  Step2Photos: { title: string; shortDesc: string; detail: string; category: string; tags: string[] } | undefined;
   Step3Schedule: {
     title: string;
     shortDesc: string;
     detail: string;
+    category: string;
+    tags: string[];
     mainPhoto: ExperiencePhoto;
     detailPhotos: ExperiencePhoto[];
   } | undefined;
@@ -128,6 +130,8 @@ export type RootStackParamList = {
     title: string;
     shortDesc: string;
     detail: string;
+    category: string;
+    tags: string[];
     mainPhoto: ExperiencePhoto;
     detailPhotos: ExperiencePhoto[];
     operationStartDate: string;
@@ -139,6 +143,8 @@ export type RootStackParamList = {
     title: string;
     shortDesc: string;
     detail: string;
+    category: string;
+    tags: string[];
     mainPhoto: ExperiencePhoto;
     detailPhotos: ExperiencePhoto[];
     operationStartDate: string;

@@ -68,6 +68,7 @@ export async function createRegisteredExperience(
 ): Promise<Experience> {
   const price = Number(params.price)
   if (!params.title.trim()) throw new Error('체험 제목을 입력해주세요.')
+  if (!params.category.trim()) throw new Error('체험 분야를 선택해주세요.')
   if (!Number.isFinite(price) || price <= 0) throw new Error('가격을 올바르게 입력해주세요.')
   if (!locationAddress.trim()) throw new Error('체험 장소를 입력해주세요.')
   if (params.maxGuests <= 0) throw new Error('최대 인원을 올바르게 설정해주세요.')
@@ -89,12 +90,14 @@ export async function createRegisteredExperience(
   return createExperience(artisan.id, {
     title: params.title.trim(),
     description,
+    category: params.category,
     price,
     maxParticipants: params.maxGuests,
     difficulty: 'BEGINNER',
     durationMinutes: computeDurationMinutes(params.timeSlots),
     imageUrl,
     locationAddress: locationAddress.trim(),
+    tags: params.tags,
     schedules,
   })
 }

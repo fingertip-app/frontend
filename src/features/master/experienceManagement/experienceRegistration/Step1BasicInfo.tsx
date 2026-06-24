@@ -8,6 +8,7 @@ import {
   ScrollView,
   TextInput,
   Platform,
+  Alert,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 
@@ -22,6 +23,12 @@ const PLACEHOLDER = "#C4BCB4";
 // ─── 스텝 레이블 ───────────────────────────────────────────────────────────────
 const STEP_LABELS = ["기본 정보", "사진", "일정 등록", "가격/인원", "장소"];
 
+// 탐색 탭(SearchScreen)의 카테고리 칩과 동일한 분야 목록 — 필터링이 정상 동작하려면 이 중 하나로 등록되어야 함
+const CATEGORY_OPTIONS = [
+  "도자기", "한지공예", "목공", "염색", "전통음식",
+  "모시짜기", "갓일", "자수", "매듭공예", "한복", "탈제작", "국악", "전통주",
+];
+
 export function Step1BasicInfo() {
   const navigation = useNavigation<any>();
   const currentStep = 1;
@@ -29,9 +36,32 @@ export function Step1BasicInfo() {
   const [title, setTitle] = useState("");
   const [shortDesc, setShortDesc] = useState("");
   const [detail, setDetail] = useState("");
+  const [category, setCategory] = useState("");
+  const [tagInput, setTagInput] = useState("");
+  const [tags, setTags] = useState<string[]>([]);
 
   const SHORT_MAX = 30;
   const DETAIL_MAX = 1000;
+  const TAG_MAX = 10;
+
+  const handleAddTag = () => {
+    const value = tagInput.trim().replace(/^#/, "");
+    if (!value) return;
+    if (tags.length >= TAG_MAX) {
+      Alert.alert("알림", `태그는 최대 ${TAG_MAX}개까지 추가할 수 있습니다.`);
+      return;
+    }
+    if (tags.includes(value)) {
+      setTagInput("");
+      return;
+    }
+    setTags((current) => [...current, value]);
+    setTagInput("");
+  };
+
+  const handleRemoveTag = (tag: string) => {
+    setTags((current) => current.filter((t) => t !== tag));
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -181,6 +211,72 @@ export function Step1BasicInfo() {
             />
           </View>
         </View>
+
+        {/* ── 체험 분야 ── */}
+        <View style={styles.inputGroup}>
+          <View style={styles.labelRow}>
+            <Text style={styles.label}>체험 분야</Text>
+            <Text style={styles.required}>*</Text>
+          </View>
+          <View style={styles.tagList}>
+            {CATEGORY_OPTIONS.map((option) => {
+              const isSelected = category === option;
+              return (
+                <TouchableOpacity
+                  key={option}
+                  style={[styles.categoryChip, isSelected && styles.categoryChipSelected]}
+                  activeOpacity={0.8}
+                  onPress={() => setCategory(option)}
+                >
+                  <Text
+                    style={[styles.categoryChipText, isSelected && styles.categoryChipTextSelected]}
+                  >
+                    {option}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+
+        {/* ── 스타일 태그 ── */}
+        <View style={styles.inputGroup}>
+          <View style={styles.labelRow}>
+            <Text style={styles.label}>스타일 태그</Text>
+            <Text style={styles.counter}>
+              {tags.length} / {TAG_MAX}
+            </Text>
+          </View>
+          <View style={styles.tagInputRow}>
+            <TextInput
+              style={[styles.input, styles.tagInput]}
+              placeholder="예) 전통섬유, 여름공예"
+              placeholderTextColor={PLACEHOLDER}
+              value={tagInput}
+              onChangeText={setTagInput}
+              onSubmitEditing={handleAddTag}
+              returnKeyType="done"
+            />
+            <TouchableOpacity style={styles.tagAddBtn} activeOpacity={0.8} onPress={handleAddTag}>
+              <Text style={styles.tagAddBtnText}>추가</Text>
+            </TouchableOpacity>
+          </View>
+          {tags.length > 0 && (
+            <View style={styles.tagList}>
+              {tags.map((tag) => (
+                <TouchableOpacity
+                  key={tag}
+                  style={styles.tagChip}
+                  activeOpacity={0.7}
+                  onPress={() => handleRemoveTag(tag)}
+                >
+                  <Text style={styles.tagChipText}>#{tag}</Text>
+                  <Text style={styles.tagChipRemove}>✕</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+        </View>
       </ScrollView>
 
       {/* ── 하단 다음 버튼 ── */}
@@ -188,11 +284,13 @@ export function Step1BasicInfo() {
         <TouchableOpacity
           style={[
             styles.nextBtn,
-            !(title && shortDesc && detail) && styles.nextBtnDisabled,
+            !(title && shortDesc && detail && category) && styles.nextBtnDisabled,
           ]}
           activeOpacity={0.8}
-          disabled={!(title && shortDesc && detail)}
-          onPress={() => navigation.navigate("Step2Photos", { title, shortDesc, detail })}
+          disabled={!(title && shortDesc && detail && category)}
+          onPress={() =>
+            navigation.navigate("Step2Photos", { title, shortDesc, detail, category, tags })
+          }
         >
           <Text style={styles.nextBtnText}>다음 단계</Text>
         </TouchableOpacity>
@@ -331,6 +429,72 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     fontSize: 15,
     color: "#1C1107",
+  },
+
+  // 스타일 태그
+  tagInputRow: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  tagInput: {
+    flex: 1,
+  },
+  tagAddBtn: {
+    backgroundColor: BRAND,
+    borderRadius: 10,
+    paddingHorizontal: 18,
+    justifyContent: "center",
+  },
+  tagAddBtnText: {
+    color: "#FFF",
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  tagList: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 12,
+  },
+  tagChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "#EDE8E3",
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+  },
+  tagChipText: {
+    fontSize: 13,
+    color: BRAND,
+    fontWeight: "600",
+  },
+  tagChipRemove: {
+    fontSize: 11,
+    color: GRAY,
+  },
+
+  // 체험 분야 칩
+  categoryChip: {
+    backgroundColor: CARD,
+    borderWidth: 1,
+    borderColor: BORDER,
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  categoryChipSelected: {
+    backgroundColor: BRAND,
+    borderColor: BRAND,
+  },
+  categoryChipText: {
+    fontSize: 13,
+    color: BRAND,
+    fontWeight: "600",
+  },
+  categoryChipTextSelected: {
+    color: "#FFF",
   },
 
   // 상세 설명 박스
