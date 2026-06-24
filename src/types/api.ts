@@ -170,11 +170,13 @@ export interface ExplainResponse {
 
 export interface Banner {
   id: number
-  tag: string
   title: string
   subtitle: string
+  tag: string
   imageUrl: string
-  linkUrl?: string
+  bannerType: string
+  displayOrder: number
+  createdAt: string
 }
 
 // ========== Artisan ==========
@@ -197,9 +199,6 @@ export interface Artisan {
   address: string | null
   latitude: number | null
   longitude: number | null
-  // UI에서 사용하는 추가 필드 (선택적)
-  badge?: string
-  quote?: string
 }
 
 // ========== Notification ==========
