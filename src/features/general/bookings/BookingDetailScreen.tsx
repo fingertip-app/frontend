@@ -230,36 +230,36 @@ export function BookingDetailScreen() {
           </View>
         )}
 
-        {/* ── 결제 정보 카드 ── */}
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>결제 정보</Text>
+        {/* ── 결제 정보 카드 (실제 결제 완료된 예약만 노출) ── */}
+        {!!booking.paidAt && (
+          <View style={styles.card}>
+            <Text style={styles.sectionTitle}>결제 정보</Text>
 
-          <View style={styles.payRow}>
-            <Text style={styles.payLabel}>주문 번호</Text>
-            <Text style={styles.payValue}>{booking.orderNo ?? "R20240615-9921"}</Text>
-          </View>
-          <View style={styles.payRow}>
-            <Text style={styles.payLabel}>결제 일시</Text>
-            <Text style={styles.payValue}>{booking.paidAt ?? "2024년 5월 20일 오후 3:45"}</Text>
-          </View>
-          <View style={styles.payRow}>
-            <Text style={styles.payLabel}>결제 수단</Text>
-            <Text style={styles.payValue}>{booking.payMethod ?? "신용카드 (현대 4402)"}</Text>
-          </View>
+            <View style={styles.payRow}>
+              <Text style={styles.payLabel}>주문 번호</Text>
+              <Text style={styles.payValue}>{booking.orderNo ?? "정보 없음"}</Text>
+            </View>
+            <View style={styles.payRow}>
+              <Text style={styles.payLabel}>결제 일시</Text>
+              <Text style={styles.payValue}>{booking.paidAt}</Text>
+            </View>
+            <View style={styles.payRow}>
+              <Text style={styles.payLabel}>결제 수단</Text>
+              <Text style={styles.payValue}>{booking.payMethod ?? "정보 없음"}</Text>
+            </View>
 
-          <View style={styles.divider} />
+            <View style={styles.divider} />
 
-          <View style={styles.payRow}>
-            <Text style={[styles.payLabel, { fontSize: 15, fontWeight: "600", color: "#1C1107" }]}>
-              총 결제 금액
-            </Text>
-            <Text style={styles.totalAmount}>
-              {booking.totalPrice
-                ? `${Number(booking.totalPrice).toLocaleString()}원`
-                : "70,000원"}
-            </Text>
+            <View style={styles.payRow}>
+              <Text style={[styles.payLabel, { fontSize: 15, fontWeight: "600", color: "#1C1107" }]}>
+                총 결제 금액
+              </Text>
+              <Text style={styles.totalAmount}>
+                {booking.totalPrice ? `${Number(booking.totalPrice).toLocaleString()}원` : "-"}
+              </Text>
+            </View>
           </View>
-        </View>
+        )}
 
         {/* ── 준비물 및 유의사항 카드 ── */}
         <View style={styles.card}>

@@ -84,6 +84,18 @@ function formatTime(iso: string | null) {
   return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 }
 
+// 결제 완료 시점을 정확히 기록하는 컬럼이 없어, 상태 변경 시각(updatedAt)을 결제 일시로 대신 사용
+function formatPaidAt(iso: string | null) {
+  if (!iso) return undefined;
+  const d = new Date(iso);
+  const hours = d.getHours();
+  const period = hours < 12 ? "오전" : "오후";
+  const displayHour = hours % 12 === 0 ? 12 : hours % 12;
+  return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일 ${period} ${displayHour}:${String(d.getMinutes()).padStart(2, "0")}`;
+}
+
+const PAID_STATUSES: ReservationStatus[] = ["PAID", "CONFIRMED", "COMPLETED"];
+
 async function toBooking(reservation: Reservation): Promise<Booking> {
   const experience = await getExperience(reservation.experienceId).catch(() => null);
   const artisan = experience
@@ -106,6 +118,10 @@ async function toBooking(reservation: Reservation): Promise<Booking> {
     paymentRequired: reservation.status === "APPROVED",
     rejectionReason: reservation.rejectionReason,
     cancellationReason: reservation.cancellationReason,
+    orderNo: reservation.paymentOrderId ?? undefined,
+    paidAt: PAID_STATUSES.includes(reservation.status)
+      ? formatPaidAt(reservation.updatedAt)
+      : undefined,
   };
 }
 
