@@ -1,19 +1,48 @@
-import React from "react";
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, FlatList, Image } from "react-native";
+import React, { useEffect, useState } from "react";
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, FlatList, Image, ActivityIndicator } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "@/navigation/RootNavigator";
 import { Ionicons } from "@expo/vector-icons";
-
-const DUMMY_NEWS = [
-  { id: "1", title: "K-콘텐츠 속 자수,\n조선 왕실 기법입니다", desc: "AI 해설과 전통 자수 체험으로 연결", tag: "전통 자수", imageUri: "https://images.unsplash.com/photo-1605369680336-6468700a9437?w=400&q=80" },
-  { id: "2", title: "천년의 빛을 품은\n나전칠기의 비밀", desc: "바다의 보석이 일상 소품으로 재탄생하다", tag: "나전칠기", imageUri: "https://images.unsplash.com/photo-1578683010236-d716f9a3f461?w=400&q=80" },
-  { id: "3", title: "흙과 불이 빚어낸 예술,\n이천 도자기 마을", desc: "가족과 함께하는 주말 도예 체험 가이드", tag: "도자기", imageUri: "https://images.unsplash.com/photo-1610701596007-11502861dcfa?w=400&q=80" },
-  { id: "4", title: "전통주 빚기,\n쌀과 누룩의 마법", desc: "집에서 쉽게 따라하는 막걸리 빚기", tag: "전통음식", imageUri: "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=400&q=80" },
-];
+import { getActiveCardNews } from "@/features/cardnews/api/cardNewsApi";
+import type { CardNews } from "@/types/api";
 
 export function CardNewsListScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const [cardNews, setCardNews] = useState<CardNews[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchCardNews = async () => {
+      try {
+        const data = await getActiveCardNews();
+        setCardNews(data);
+      } catch (e) {
+        console.error("카드뉴스를 불러오는데 실패했습니다:", e);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchCardNews();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={10}>
+            <Ionicons name="arrow-back" size={24} color="#3B2B26" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>한물결 카드뉴스</Text>
+          <View style={{ width: 24 }} />
+        </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#3B2B26" />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -26,23 +55,34 @@ export function CardNewsListScreen() {
       </View>
 
       <FlatList
-        data={DUMMY_NEWS}
-        keyExtractor={(item) => item.id}
+        data={cardNews}
+        keyExtractor={(item) => String(item.id)}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
         renderItem={({ item }) => (
-          <TouchableOpacity 
-            style={styles.card} 
+          <TouchableOpacity
+            style={styles.card}
             activeOpacity={0.9}
-            onPress={() => navigation.navigate("CardNewsDetail", { news: item })}
+            onPress={() => {
+              console.log('📰 CardNews item:', JSON.stringify(item, null, 2));
+              navigation.navigate("CardNewsDetail", {
+                news: {
+                  id: String(item.id),
+                  title: item.title || '제목 없음',
+                  desc: item.aiExplanation || '',
+                  tag: item.categoryTags?.[0] || item.contentType || '기타',
+                  imageUri: item.imageUrl || ''
+                }
+              });
+            }}
           >
-            <Image source={{ uri: item.imageUri }} style={styles.cardImage} resizeMode="cover" />
+            <Image source={{ uri: item.imageUrl }} style={styles.cardImage} resizeMode="cover" />
             <View style={styles.cardBody}>
               <View style={styles.tagBadge}>
-                <Text style={styles.tagText}>{item.tag}</Text>
+                <Text style={styles.tagText}>{item.categoryTags[0] || item.contentType}</Text>
               </View>
               <Text style={styles.cardTitle}>{item.title}</Text>
-              <Text style={styles.cardDesc} numberOfLines={1}>{item.desc}</Text>
+              <Text style={styles.cardDesc} numberOfLines={1}>{item.aiExplanation}</Text>
             </View>
           </TouchableOpacity>
         )}
@@ -53,6 +93,7 @@ export function CardNewsListScreen() {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: '#F5F4F0' },
+  loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
   header: {
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
     paddingHorizontal: 20, paddingVertical: 14, backgroundColor: '#F5F4F0',

@@ -2,9 +2,9 @@ import React, { useState, useRef, useEffect } from "react";
 import {
   ScrollView, Text, View, StyleSheet, TouchableOpacity,
   Image, ImageBackground, FlatList, NativeSyntheticEvent,
-  NativeScrollEvent, Dimensions, ActivityIndicator,
+  NativeScrollEvent, Dimensions, ActivityIndicator, Alert,
 } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import * as Location from "expo-location";
 import { RootStackParamList } from "@/navigation/RootNavigator";
@@ -12,10 +12,11 @@ import { CardNewsCarousel } from "../cardnews/CardNewsCarousel";
 import { MainLayout } from "./MainLayout";
 import { apiGet } from "@/services/api";
 import { getMyReservations } from "@/features/reservations/api/reservationsApi";
-import { getCurrentProfile } from "@/features/auth/api/authApi";
 import { getExperience } from "@/features/experiences/api/experiencesApi";
-import { addToWishlist, getMyWishlists, removeFromWishlist } from "@/features/wishlists/api/wishlistsApi";
-import type { Reservation, Wishlist } from "@/types/api";
+import { getMyWishlists, addToWishlist, removeFromWishlist, checkWishlist } from "@/features/wishlists/api/wishlistsApi";
+import { getHeroBanners, getRecommendedArtisan, getNearbyArtisans } from "./api/homeApi";
+import type { Reservation, Wishlist, Banner, Artisan } from "@/types/api";
+import { supabase } from "@/lib/supabase";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const BANNER_WIDTH = SCREEN_WIDTH - 48;
@@ -50,61 +51,22 @@ function formatScheduleTime(iso: string | null): string {
   });
 }
 
-const TOP_BANNERS = [
-  {
-    id: "1",
-    tag: "오늘 하루,",
-    title: "장인의 시간이\n되어보세요",
-    subtitle: "전통의 가치를 경험하는 특별한 하루를 만나보세요.",
-    image: "https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=800&q=80",
-  },
-  {
-    id: "2",
-    tag: "이번 주 추천,",
-    title: "손끝에서 피어나는\n전통 매듭 공예",
-    subtitle: "조선시대 왕실 기법을 직접 배워보세요.",
-    image: "https://images.unsplash.com/photo-1606722590583-6951b5ea92ad?w=800&q=80",
-  },
-];
 
-const POPULAR_EXPERIENCES = [
-  {
-    id: "1",
-    title: "도자기 물레 체험",
-    location: "이천",
-    duration: "2시간",
-    category: "도자기",
-    price: "45,000원",
-    rating: 4.9,
-    reviewCount: 128,
-    image: "https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=400&q=80",
-  },
-  {
-    id: "2",
-    title: "한지 등 만들기",
-    location: "전주",
-    duration: "1.5시간",
-    category: "한지공예",
-    price: "38,000원",
-    rating: 4.8,
-    reviewCount: 96,
-    image: "https://images.unsplash.com/photo-1607453998774-d533f65dac99?w=400&q=80",
-  },
-  {
-    id: "3",
-    title: "전통 매듭 팔찌",
-    location: "서울",
-    duration: "1시간",
-    category: "매듭/자수",
-    price: "30,000원",
-    rating: 4.7,
-    reviewCount: 84,
-    image: "https://images.unsplash.com/photo-1606722590583-6951b5ea92ad?w=400&q=80",
-  },
-];
+// Experience를 UI 카드 형식으로 변환
+interface ExperienceCard {
+  id: string;
+  title: string;
+  location: string;
+  duration: string;
+  category: string;
+  price: string;
+  rating: number;
+  reviewCount: number;
+  image: string;
+}
 
 // Wishlist를 UI 카드 형식으로 변환
-function mapWishlistToCard(wishlist: Wishlist): typeof POPULAR_EXPERIENCES[0] {
+function mapWishlistToCard(wishlist: Wishlist): ExperienceCard {
   return {
     id: String(wishlist.experienceId),
     title: wishlist.experienceTitle,
@@ -118,44 +80,6 @@ function mapWishlistToCard(wishlist: Wishlist): typeof POPULAR_EXPERIENCES[0] {
   };
 }
 
-const TODAY_ARTISAN = {
-  name: "김영수 장인",
-  badge: "국가무형유산 매듭장",
-  quote: '"매듭에는 사람의 마음을 잇는 힘이 있습니다."',
-  image: "https://images.unsplash.com/photo-1556157382-97eda2d62296?w=800&q=80",
-};
-
-// 장인 작업실 위치 (실제로는 백엔드 Experience.locationLat/Lng 기준이어야 하나,
-// 현재 /experiences/active 응답에 장인명이 포함되지 않아 좌표만 목업으로 둔다)
-const NEARBY_ARTISANS = [
-  {
-    id: "1",
-    name: "김도예 장인",
-    category: "도자기",
-    location: "경기 이천시",
-    lat: 37.2725,
-    lng: 127.4348,
-    image: "https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=300&q=80",
-  },
-  {
-    id: "2",
-    name: "한지마을",
-    category: "한지공예",
-    location: "전북 전주시",
-    lat: 35.8242,
-    lng: 127.1480,
-    image: "https://images.unsplash.com/photo-1607453998774-d533f65dac99?w=300&q=80",
-  },
-  {
-    id: "3",
-    name: "이영희 장인",
-    category: "나전칠기",
-    location: "서울 종로구",
-    lat: 37.5735,
-    lng: 126.9788,
-    image: "https://images.unsplash.com/photo-1582738411706-bfc8e691d1c2?w=300&q=80",
-  },
-];
 
 function getDistanceKm(lat1: number, lng1: number, lat2: number, lng2: number) {
   const R = 6371;
@@ -167,11 +91,11 @@ function getDistanceKm(lat1: number, lng1: number, lat2: number, lng2: number) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-function BannerCard({ item }: { item: typeof TOP_BANNERS[0] }) {
+function BannerCard({ item }: { item: Banner }) {
   return (
     <TouchableOpacity activeOpacity={0.95} style={{ width: BANNER_WIDTH, marginRight: 16 }}>
       <ImageBackground
-        source={{ uri: item.image }}
+        source={{ uri: item.imageUrl }}
         style={styles.bannerCard}
         imageStyle={styles.bannerImage}
       >
@@ -188,7 +112,7 @@ function BannerCard({ item }: { item: typeof TOP_BANNERS[0] }) {
   );
 }
 
-function mapExperienceToCard(exp: any): typeof POPULAR_EXPERIENCES[0] {
+function mapExperienceToCard(exp: any): ExperienceCard {
   return {
     id: String(exp.id),
     title: exp.title,
@@ -205,22 +129,69 @@ function mapExperienceToCard(exp: any): typeof POPULAR_EXPERIENCES[0] {
 function PopularExperienceCard({
   item,
   onPress,
-  isWished,
-  onToggleWish,
+  refreshTrigger,
 }: {
-  item: typeof POPULAR_EXPERIENCES[0];
+  item: ExperienceCard;
   onPress?: () => void;
-  isWished?: boolean;
-  onToggleWish?: () => void;
+  refreshTrigger?: number;
 }) {
+  const [isWished, setIsWished] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  // 마운트 시 + refreshTrigger 변경 시 찜 상태 확인
+  useEffect(() => {
+    const fetchWishlistStatus = async () => {
+      try {
+        const isLiked = await checkWishlist(Number(item.id));
+        setIsWished(isLiked);
+      } catch (e) {
+        console.log("찜 상태 확인 실패:", e);
+      }
+    };
+    fetchWishlistStatus();
+  }, [item.id, refreshTrigger]);
+
+  // 찜 토글 핸들러
+  const handleToggleWishlist = async () => {
+    if (loading) return;
+
+    setLoading(true);
+    const experienceId = Number(item.id);
+
+    try {
+      if (isWished) {
+        await removeFromWishlist(experienceId);
+        setIsWished(false);
+        console.log("✅ 찜 해제:", item.title);
+      } else {
+        await addToWishlist(experienceId);
+        setIsWished(true);
+        console.log("✅ 찜 추가:", item.title);
+      }
+    } catch (error: any) {
+      console.error("❌ 찜 토글 실패:", error);
+
+      // 409 에러 (이미 찜됨) 처리
+      if (error.status === 409) {
+        console.log("⚠️ 이미 찜된 체험 - 상태 동기화");
+        setIsWished(true);
+      } else {
+        Alert.alert("알림", "찜 기능을 사용할 수 없습니다.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <TouchableOpacity style={styles.popularCard} activeOpacity={0.9} onPress={onPress}>
       <View style={styles.popularImageContainer}>
         <Image source={{ uri: item.image }} style={styles.popularImage} />
         <TouchableOpacity
           style={styles.wishButton}
-          onPress={onToggleWish}
+          onPress={handleToggleWishlist}
           activeOpacity={0.8}
+          disabled={loading}
         >
           <Text style={styles.wishIcon}>{isWished ? "❤️" : "🤍"}</Text>
         </TouchableOpacity>
@@ -243,16 +214,16 @@ function NearbyArtisanCard({
   distanceLabel,
   onPress,
 }: {
-  item: typeof NEARBY_ARTISANS[0];
+  item: Artisan;
   distanceLabel: string;
   onPress: () => void;
 }) {
   return (
     <TouchableOpacity style={styles.nearbyCard} activeOpacity={0.9} onPress={onPress}>
-      <Image source={{ uri: item.image }} style={styles.nearbyImage} />
+      <Image source={{ uri: item.profileImageUrl }} style={styles.nearbyImage} />
       <View style={styles.nearbyInfo}>
         <Text style={styles.nearbyName} numberOfLines={1}>{item.name}</Text>
-        <Text style={styles.nearbyMeta}>{item.category} · {item.location}</Text>
+        <Text style={styles.nearbyMeta}>{item.heritageCategory} · {item.address || "위치 정보 없음"}</Text>
         <View style={styles.nearbyDistanceRow}>
           <Text style={styles.nearbyDistanceIcon}>📍</Text>
           <Text style={styles.nearbyDistance}>{distanceLabel}</Text>
@@ -271,33 +242,61 @@ export function HomeScreen() {
   const [activeBanner, setActiveBanner] = useState(0);
   const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [upcomingSchedule, setUpcomingSchedule] = useState<UpcomingSchedule | null>(null);
-  const [wishedExperiences, setWishedExperiences] = useState<typeof POPULAR_EXPERIENCES>([]);
-  const [wishedIds, setWishedIds] = useState<Set<number>>(new Set());
+  const [wishedExperiences, setWishedExperiences] = useState<ExperienceCard[]>([]);
+  const [banners, setBanners] = useState<Banner[]>([]);
+  const [recommendedArtisan, setRecommendedArtisan] = useState<Artisan | null>(null);
+  const [nearbyArtisans, setNearbyArtisans] = useState<Artisan[]>([]);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-  const handleToggleWish = async (experienceId: number) => {
-    const isCurrentlyWished = wishedIds.has(experienceId);
+  // 찜한 체험 목록 로드 함수
+  const fetchWishlists = React.useCallback(async () => {
     try {
-      if (isCurrentlyWished) {
-        await removeFromWishlist(experienceId);
-        setWishedIds((prev) => {
-          const next = new Set(prev);
-          next.delete(experienceId);
-          return next;
-        });
-        setWishedExperiences((prev) => prev.filter((e) => Number(e.id) !== experienceId));
-      } else {
-        await addToWishlist(experienceId);
-        setWishedIds((prev) => new Set(prev).add(experienceId));
+      // 인증 체크
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        setWishedExperiences([]);
+        return;
       }
+
+      const wishlists = await getMyWishlists();
+      const wishlistCards = wishlists.map(mapWishlistToCard);
+      setWishedExperiences(wishlistCards);
+      console.log("✅ 찜한 체험 목록 갱신:", wishlistCards.length);
     } catch (e) {
-      console.error("찜하기 처리에 실패했습니다:", e);
+      console.error("찜 목록을 불러오는데 실패했습니다:", e);
     }
-  };
+  }, []);
+
+  // 화면 포커스 시 찜 목록 + 찜 상태 새로고침
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchWishlists(); // 찜 목록 새로고침
+      setRefreshTrigger((prev) => prev + 1); // 각 카드의 찜 상태 새로고침
+    }, [fetchWishlists])
+  );
 
   const handleBannerScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const index = Math.round(e.nativeEvent.contentOffset.x / (BANNER_WIDTH + 16));
+    const offsetX = e.nativeEvent.contentOffset.x;
+    const index = Math.round(offsetX / (BANNER_WIDTH + 16));
+    console.log("🎯 [배너 스크롤]", { offsetX, index, activeBanner });
     setActiveBanner(index);
   };
+
+  useEffect(() => {
+    const fetchBannersAndArtisan = async () => {
+      try {
+        const [bannersData, artisanData] = await Promise.all([
+          getHeroBanners(),
+          getRecommendedArtisan(),
+        ]);
+        setBanners(bannersData);
+        setRecommendedArtisan(artisanData);
+      } catch (e) {
+        console.error("[Home] 배너/장인 로드 실패:", e);
+      }
+    };
+    fetchBannersAndArtisan();
+  }, []);
 
   useEffect(() => {
     const fetchLocation = async () => {
@@ -305,7 +304,11 @@ export function HomeScreen() {
         const { status } = await Location.requestForegroundPermissionsAsync();
         if (status !== "granted") return;
         const position = await Location.getCurrentPositionAsync({});
-        setUserCoords({ lat: position.coords.latitude, lng: position.coords.longitude });
+        const coords = { lat: position.coords.latitude, lng: position.coords.longitude };
+        setUserCoords(coords);
+        // 위치 정보 받은 후 근처 장인 로드
+        const nearby = await getNearbyArtisans(coords.lat, coords.lng);
+        setNearbyArtisans(nearby);
       } catch (e) {
         console.warn("위치 정보를 가져오지 못했습니다:", e);
       }
@@ -313,24 +316,20 @@ export function HomeScreen() {
     fetchLocation();
   }, []);
 
-  const nearbyArtisans = userCoords
-    ? [...NEARBY_ARTISANS].sort(
-        (a, b) =>
-          getDistanceKm(userCoords.lat, userCoords.lng, a.lat, a.lng) -
-          getDistanceKm(userCoords.lat, userCoords.lng, b.lat, b.lng)
-      )
-    : NEARBY_ARTISANS;
-
-  const getDistanceLabel = (item: typeof NEARBY_ARTISANS[0]) =>
-    userCoords ? `${getDistanceKm(userCoords.lat, userCoords.lng, item.lat, item.lng).toFixed(1)}km` : "거리 정보 없음";
+  const getDistanceLabel = (item: Artisan) => {
+    if (!userCoords || !item.latitude || !item.longitude) return "거리 정보 없음";
+    return `${getDistanceKm(userCoords.lat, userCoords.lng, item.latitude, item.longitude).toFixed(1)}km`;
+  };
 
   // 다가오는 일정 로드
   useEffect(() => {
     const fetchUpcomingSchedule = async () => {
       try {
-        const profile = await getCurrentProfile();
-        if (!profile) return;
-        const reservations = await getMyReservations(profile.id);
+        // 인증 체크
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return; // 로그인하지 않은 경우 스킵
+
+        const reservations = await getMyReservations();
 
         // APPROVED, PAID, CONFIRMED 상태 중 가장 가까운 미래 일정 찾기
         const upcomingReservations = reservations
@@ -354,7 +353,7 @@ export function HomeScreen() {
             time: formatScheduleTime(nextReservation.reservedDateTime),
             title: experience.title,
             location: experience.locationAddress || "위치 미정",
-            image: experience.images?.[0]?.imageUrl || "https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=200&q=80",
+            image: "https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=200&q=80",
           });
         }
       } catch (e) {
@@ -364,23 +363,6 @@ export function HomeScreen() {
     };
 
     fetchUpcomingSchedule();
-  }, []);
-
-  // 찜 목록 로드
-  useEffect(() => {
-    const fetchWishlists = async () => {
-      try {
-        const wishlists = await getMyWishlists();
-        const wishCards = wishlists.slice(0, 5).map(mapWishlistToCard);
-        setWishedExperiences(wishCards);
-        setWishedIds(new Set(wishlists.map((w) => w.experienceId)));
-      } catch (e) {
-        console.error("찜 목록을 불러오는데 실패했습니다:", e);
-        // 에러 발생 시 빈 배열 유지
-      }
-    };
-
-    fetchWishlists();
   }, []);
 
   useEffect(() => {
@@ -407,6 +389,11 @@ export function HomeScreen() {
     fetchExperiences();
   }, []);
 
+  // 초기 마운트 시 찜한 체험 로드
+  useEffect(() => {
+    fetchWishlists();
+  }, [fetchWishlists]);
+
   const renderPopularExperiences = () => {
     if (isLoading) {
       return <ActivityIndicator size="large" color="#3B2B26" style={{ height: 250 }} />;
@@ -425,8 +412,7 @@ export function HomeScreen() {
             key={item.id}
             item={mapExperienceToCard(item)}
             onPress={() => openExperienceDetail(item)}
-            isWished={wishedIds.has(item.id)}
-            onToggleWish={() => handleToggleWish(item.id)}
+            refreshTrigger={refreshTrigger}
           />
         ))}
       </ScrollView>
@@ -469,15 +455,17 @@ export function HomeScreen() {
             contentContainerStyle={styles.bannerScroll}
             snapToInterval={BANNER_WIDTH + 16}
             decelerationRate="fast"
+            onScroll={handleBannerScroll}
             onMomentumScrollEnd={handleBannerScroll}
+            scrollEventThrottle={16}
           >
-            {TOP_BANNERS.map((banner) => (
+            {banners.map((banner) => (
               <BannerCard key={banner.id} item={banner} />
             ))}
           </ScrollView>
           {/* 페이지 인디케이터 */}
           <View style={styles.dotRow}>
-            {TOP_BANNERS.map((_, i) => (
+            {banners.map((_, i) => (
               <View key={i} style={[styles.dot, activeBanner === i && styles.dotActive]} />
             ))}
           </View>
@@ -550,26 +538,32 @@ export function HomeScreen() {
 
 
         {/* 오늘의 장인 */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>오늘의 장인</Text>
-          <TouchableOpacity style={styles.artisanCard} activeOpacity={0.9}>
-            <Image source={{ uri: TODAY_ARTISAN.image }} style={styles.artisanImage} />
-            <View style={styles.artisanInfo}>
-              <View style={styles.artisanBadgeWrap}>
-                <Text style={styles.artisanBadge}>{TODAY_ARTISAN.badge}</Text>
+        {recommendedArtisan && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>오늘의 장인</Text>
+            <TouchableOpacity style={styles.artisanCard} activeOpacity={0.9}>
+              <Image source={{ uri: recommendedArtisan.profileImageUrl }} style={styles.artisanImage} />
+              <View style={styles.artisanInfo}>
+                {recommendedArtisan.heritageCategory && (
+                  <View style={styles.artisanBadgeWrap}>
+                    <Text style={styles.artisanBadge}>{recommendedArtisan.heritageCategory}</Text>
+                  </View>
+                )}
+                <Text style={styles.artisanName}>{recommendedArtisan.name}</Text>
+                {recommendedArtisan.bio && (
+                  <Text style={styles.artisanQuote}>{recommendedArtisan.bio}</Text>
+                )}
+                <TouchableOpacity
+                  style={styles.artisanButton}
+                  activeOpacity={0.85}
+                  onPress={() => navigation.navigate("ArtisanDetail", { artisanId: recommendedArtisan.id })}
+                >
+                  <Text style={styles.artisanButtonText}>장인 스토리 보기</Text>
+                </TouchableOpacity>
               </View>
-              <Text style={styles.artisanName}>{TODAY_ARTISAN.name}</Text>
-              <Text style={styles.artisanQuote}>{TODAY_ARTISAN.quote}</Text>
-              <TouchableOpacity
-                style={styles.artisanButton}
-                activeOpacity={0.85}
-                onPress={() => navigation.navigate("ArtisanDetail" as any)}
-              >
-                <Text style={styles.artisanButtonText}>장인 스토리 보기</Text>
-              </TouchableOpacity>
-            </View>
-          </TouchableOpacity>
-        </View>
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* 내 주변 장인 */}
         <View style={styles.section}>
@@ -586,7 +580,7 @@ export function HomeScreen() {
                 key={item.id}
                 item={item}
                 distanceLabel={getDistanceLabel(item)}
-                onPress={() => navigation.navigate("ArtisanDetail" as any)}
+                onPress={() => navigation.navigate("ArtisanDetail", { artisanId: item.id })}
               />
             ))}
           </ScrollView>
@@ -603,20 +597,22 @@ export function HomeScreen() {
               <Text style={styles.viewAllText}>더보기 &gt;</Text>
             </TouchableOpacity>
           </View>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.popularScroll}
-          >
-            {wishedExperiences.map((item) => (
-              <PopularExperienceCard
-                key={item.id}
-                item={item}
-                isWished
-                onToggleWish={() => handleToggleWish(Number(item.id))}
-              />
-            ))}
-          </ScrollView>
+          {wishedExperiences.length > 0 ? (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.popularScroll}
+            >
+              {wishedExperiences.map((item) => (
+                <PopularExperienceCard key={item.id} item={item} refreshTrigger={refreshTrigger} />
+              ))}
+            </ScrollView>
+          ) : (
+            <View style={{ paddingVertical: 40, alignItems: "center" }}>
+              <Text style={{ fontSize: 28, marginBottom: 8 }}>🤍</Text>
+              <Text style={{ fontSize: 14, color: "#8A8077" }}>아직 찜한 체험이 없습니다</Text>
+            </View>
+          )}
         </View>
 
         {/* 인기 체험 */}
@@ -654,8 +650,7 @@ export function HomeScreen() {
                 key={item.id}
                 item={mapExperienceToCard(item)}
                 onPress={() => openExperienceDetail(item)}
-                isWished={wishedIds.has(item.id)}
-                onToggleWish={() => handleToggleWish(item.id)}
+                refreshTrigger={refreshTrigger}
               />
             ))}
           </ScrollView>

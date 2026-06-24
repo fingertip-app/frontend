@@ -19,8 +19,9 @@ import { SearchScreen } from "@/features/general/Search/SearchScreen";
 import { AIrecommendationScreen } from "@/features/general/AI/AIrecommendationScreen";
 import { BookingsScreen } from "@/features/general/bookings/BookingsScreen";
 import { MyPageScreen } from "@/features/general/mypage/MyPageScreen";
+import { ProfileEditScreen } from "@/features/general/mypage/ProfileEditScreen";
 import { BookingCreateScreen } from "@/features/general/bookings/BookingCreateScreen";
-import type { Experience as BackendExperience, Review as BackendReview } from "@/types/api";
+import type { Experience as BackendExperience } from "@/types/api";
 import type { Experience as ExperienceViewModel } from "@/features/general/Search/SearchScreen";
 import { BookingDetailScreen } from "@/features/general/bookings/BookingDetailScreen";
 import { PaymentScreen } from "@/features/general/bookings/PaymentScreen";
@@ -92,7 +93,8 @@ export type RootStackParamList = {
   };
   QRConfirmation: { booking: Booking };
   Wishlist: undefined;
-  Review: { booking: Booking; existingReview?: BackendReview };
+  ProfileEdit: undefined;
+  Review: { booking: Booking };
   MyReviews: undefined;
   Settings: undefined;
   Notifications: undefined;
@@ -128,7 +130,7 @@ export type RootStackParamList = {
   CardNewsList: undefined;
   CardNewsDetail: { news: CardNews };
   AIChat: { news: CardNews };
-  ArtisanDetail: undefined;
+  ArtisanDetail: { artisanId: number };
   MasterTodayStatus: undefined;
   QrScanner: undefined;
 };
@@ -218,6 +220,7 @@ export function RootNavigator() {
       <Stack.Screen name="BookingRequestComplete" component={BookingRequestCompleteScreen} />
       <Stack.Screen name="QRConfirmation" component={QRConfirmationScreen} />
       <Stack.Screen name="Wishlist" component={WishlistScreen} />
+      <Stack.Screen name="ProfileEdit" component={ProfileEditScreen} />
       <Stack.Screen name="Review" component={ReviewScreen} />
       <Stack.Screen name="MyReviews" component={MyReviewsScreen} />
       <Stack.Screen name="Settings" component={SettingScreen} />

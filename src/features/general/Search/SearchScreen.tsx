@@ -11,15 +11,17 @@ import {
   Platform,
   Animated,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 import { Ionicons, Feather } from "@expo/vector-icons";
-import { useRoute, RouteProp, useNavigation } from "@react-navigation/native";
+import { useRoute, RouteProp, useNavigation, useFocusEffect } from "@react-navigation/native";
 import { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
 import { DetailBottomSheet } from "./DetailBottomSheet";
 import { MainLayout } from "@/features/general/home/MainLayout";
 import { MainTabParamList } from "@/navigation/RootNavigator";
 import { getActiveExperiences } from "@/features/experiences/api/experiencesApi";
-import { addToWishlist, getMyWishlists, removeFromWishlist } from "@/features/wishlists/api/wishlistsApi";
+import { addToWishlist, removeFromWishlist, checkWishlist } from "@/features/wishlists/api/wishlistsApi";
+import type { Experience as ApiExperience } from "@/types/api";
 
 // ─── 타입 ────────────────────────────────────────────────────────────────────
 
@@ -113,13 +115,13 @@ const LEVEL_OPTIONS  = ["난이도", "입문", "초급", "중급"];
 
 // API Experience를 UI Experience로 변환
 function mapApiExperienceToUI(exp: ApiExperience): Experience {
-  const hasUpcomingSchedule = exp.activeSchedules?.some(s => {
+  const hasUpcomingSchedule = exp.schedules?.some(s => {
     const scheduledDate = new Date(s.scheduledAt);
     const today = new Date();
-    return scheduledDate >= today;
+    return s.isActive && scheduledDate >= today && s.remainingSlots > 0;
   });
 
-  const isFamilyFriendly = (exp.maxParticipants ?? 0) >= 4;
+  const isFamilyFriendly = exp.maxParticipants >= 4;
   const isForeignOk = exp.supportedLanguages?.includes('en') || exp.supportedLanguages?.includes('영어');
 
   return {
@@ -147,6 +149,7 @@ function mapApiExperienceToUI(exp: ApiExperience): Experience {
 function categoryToId(label: string): string {
   return CATEGORIES.find((c) => c.label === label)?.id ?? "etc";
 }
+
 
 // ─── 서브 컴포넌트 ─────────────────────────────────────────────────────────────
 
@@ -464,17 +467,55 @@ function TagBadge({ label }: { label: string }) {
 }
 
 /** 체험 카드 */
-function ExperienceCard({
-  item,
-  onPress,
-  liked,
-  onToggleLike,
-}: {
-  item: Experience;
-  onPress: () => void;
-  liked: boolean;
-  onToggleLike: () => void;
-}) {
+function ExperienceCard({ item, onPress, refreshTrigger }: { item: Experience; onPress: () => void; refreshTrigger?: number }) {
+  const [liked, setLiked] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  // 마운트 시 + refreshTrigger 변경 시 찜 상태 확인
+  useEffect(() => {
+    const fetchWishlistStatus = async () => {
+      try {
+        const isLiked = await checkWishlist(Number(item.id));
+        setLiked(isLiked);
+      } catch (e) {
+        console.log("찜 상태 확인 실패:", e);
+      }
+    };
+    fetchWishlistStatus();
+  }, [item.id, refreshTrigger]);
+
+  // 찜 토글 핸들러
+  const handleToggleWishlist = async () => {
+    if (loading) return;
+
+    setLoading(true);
+    const experienceId = Number(item.id);
+
+    try {
+      if (liked) {
+        await removeFromWishlist(experienceId);
+        setLiked(false);
+        console.log("✅ 찜 해제:", item.title);
+      } else {
+        await addToWishlist(experienceId);
+        setLiked(true);
+        console.log("✅ 찜 추가:", item.title);
+      }
+    } catch (error: any) {
+      console.error("❌ 찜 토글 실패:", error);
+
+      // 409 에러 (이미 찜됨) 처리
+      if (error.status === 409) {
+        console.log("⚠️ 이미 찜된 체험 - 상태 동기화");
+        setLiked(true);
+      } else {
+        Alert.alert("알림", "찜 기능을 사용할 수 없습니다.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <TouchableOpacity
       activeOpacity={0.92}
@@ -526,7 +567,7 @@ function ExperienceCard({
           <Text style={{ flex: 1, fontSize: 14, fontWeight: "700", color: "#111827", paddingRight: 6, lineHeight: 20 }} numberOfLines={2}>
             {item.title}
           </Text>
-          <TouchableOpacity onPress={onToggleLike} hitSlop={8}>
+          <TouchableOpacity onPress={handleToggleWishlist} hitSlop={8} disabled={loading}>
             <Ionicons name={liked ? "heart" : "heart-outline"} size={20} color={liked ? "#EF4444" : "#D1D5DB"} />
           </TouchableOpacity>
         </View>
@@ -611,32 +652,14 @@ export function SearchScreen() {
   const [allExperiences, setAllExperiences] = useState<Experience[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [wishedIds, setWishedIds] = useState<Set<number>>(new Set());
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-  useEffect(() => {
-    getMyWishlists()
-      .then((wishlists) => setWishedIds(new Set(wishlists.map((w) => w.experienceId))))
-      .catch((e) => console.error("찜 목록을 불러오는데 실패했습니다:", e));
-  }, []);
-
-  const handleToggleWish = async (experienceId: number) => {
-    const isCurrentlyWished = wishedIds.has(experienceId);
-    try {
-      if (isCurrentlyWished) {
-        await removeFromWishlist(experienceId);
-        setWishedIds((prev) => {
-          const next = new Set(prev);
-          next.delete(experienceId);
-          return next;
-        });
-      } else {
-        await addToWishlist(experienceId);
-        setWishedIds((prev) => new Set(prev).add(experienceId));
-      }
-    } catch (e) {
-      console.error("찜하기 처리에 실패했습니다:", e);
-    }
-  };
+  // 화면 포커스 시 찜 상태 새로고침
+  useFocusEffect(
+    React.useCallback(() => {
+      setRefreshTrigger((prev) => prev + 1);
+    }, [])
+  );
 
   // API에서 체험 목록 가져오기
   const fetchExperiences = async () => {
@@ -766,14 +789,7 @@ export function SearchScreen() {
         <FlatList
           data={results}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <ExperienceCard
-            item={item}
-            onPress={() => setSelectedExp(item)}
-            liked={wishedIds.has(Number(item.id))}
-            onToggleLike={() => handleToggleWish(Number(item.id))}
-          />
-        )}
+        renderItem={({ item }) => <ExperienceCard item={item} onPress={() => setSelectedExp(item)} refreshTrigger={refreshTrigger} />}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 24 }}
         ListEmptyComponent={<EmptyState query={query} />}

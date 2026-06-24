@@ -14,12 +14,6 @@ export interface ExperienceSchedule {
   isActive: boolean
 }
 
-export interface ExperienceImage {
-  id: number
-  imageUrl: string
-  displayOrder: number
-}
-
 export interface Experience {
   id: number
   artisanId: number
@@ -37,8 +31,6 @@ export interface Experience {
   locationLng: number
   isActive: boolean
   schedules: ExperienceSchedule[]
-  images: ExperienceImage[]
-  tags: string[]
   createdAt: string
   updatedAt: string
 }
@@ -122,20 +114,6 @@ export interface CardNews {
   createdAt: string
 }
 
-// ========== Wishlist ==========
-
-export interface Wishlist {
-  id: number
-  experienceId: number
-  experienceTitle: string
-  experienceCategory: string
-  experienceLocation: string
-  experiencePrice: number
-  experienceDurationMinutes: number
-  experienceImageUrl: string | null
-  createdAt: string
-}
-
 // ========== Review ==========
 
 export interface Review {
@@ -186,6 +164,42 @@ export interface ExplainResponse {
   relatedExperiences: RelatedExperience[]
   fallback: boolean
   message: string | null
+}
+
+// ========== Banner ==========
+
+export interface Banner {
+  id: number
+  tag: string
+  title: string
+  subtitle: string
+  imageUrl: string
+  linkUrl?: string
+}
+
+// ========== Artisan ==========
+
+export interface Artisan {
+  id: number
+  userId: number
+  name: string
+  heritageCategory: string
+  certificationNumber: string
+  bio: string
+  profileImageUrl: string
+  introVideoUrl: string | null
+  certificationStatus: string
+  verifiedAt: string | null
+  isVerified: boolean
+  isActive: boolean
+  createdAt: string
+  updatedAt: string
+  address: string | null
+  latitude: number | null
+  longitude: number | null
+  // UI에서 사용하는 추가 필드 (선택적)
+  badge?: string
+  quote?: string
 }
 
 // ========== Notification ==========
