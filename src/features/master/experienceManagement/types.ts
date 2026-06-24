@@ -14,6 +14,8 @@ export interface ExperienceRegistrationParams {
   title: string
   shortDesc: string
   detail: string
+  category: string
+  tags: string[]
   mainPhoto: ExperiencePhoto
   detailPhotos: ExperiencePhoto[]
   operationStartDate: string

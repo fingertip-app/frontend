@@ -91,6 +91,7 @@ export function Step5Location() {
         !params.title ||
         !params.shortDesc ||
         !params.detail ||
+        !params.category ||
         !params.mainPhoto ||
         !params.selectedDays ||
         !params.timeSlots ||

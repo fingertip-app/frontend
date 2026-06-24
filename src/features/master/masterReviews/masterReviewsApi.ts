@@ -24,7 +24,7 @@ export async function getMasterReviews(): Promise<MasterReviewsData> {
   const experiences = await getArtisanExperiences(artisan.id)
   const experienceById = new Map(experiences.map((experience) => [experience.id, experience]))
   const reviewLists = await Promise.all(
-    experiences.map((experience) => getExperienceReviews(experience.id)),
+    experiences.map((experience) => getExperienceReviews(experience.id).catch(() => [])),
   )
   const reviews = reviewLists.flat()
   const userIds = [...new Set(reviews.map((review) => review.userId))]
