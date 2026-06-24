@@ -30,8 +30,8 @@ export async function getMasterAccountData(): Promise<MasterAccountData> {
     getArtisanExperiences(artisan.id),
   ])
   const [reservationLists, reviewLists] = await Promise.all([
-    Promise.all(experiences.map((experience) => getExperienceReservations(experience.id))),
-    Promise.all(experiences.map((experience) => getExperienceReviews(experience.id))),
+    Promise.all(experiences.map((experience) => getExperienceReservations(experience.id).catch(() => []))),
+    Promise.all(experiences.map((experience) => getExperienceReviews(experience.id).catch(() => []))),
   ])
   const reservations = reservationLists.flat()
   const reviews = reviewLists.flat()

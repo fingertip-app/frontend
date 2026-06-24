@@ -49,7 +49,7 @@ export async function getExperienceManagementData(): Promise<ExperienceManagemen
   const artisan = await getMyArtisan()
   const experiences = await getArtisanExperiences(artisan.id)
   const reviewLists = await Promise.all(
-    experiences.map((experience) => getExperienceReviews(experience.id)),
+    experiences.map((experience) => getExperienceReviews(experience.id).catch(() => [])),
   )
   const items = experiences.map((experience, index) =>
     mapExperience(experience, reviewLists[index]),

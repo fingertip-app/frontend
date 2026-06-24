@@ -160,8 +160,8 @@ export async function getMasterHomeData(): Promise<MasterHomeData> {
   const experienceById = new Map(experiences.map((experience) => [experience.id, experience]))
 
   const [reservationLists, reviewLists] = await Promise.all([
-    Promise.all(experiences.map((experience) => getExperienceReservations(experience.id))),
-    Promise.all(experiences.map((experience) => getExperienceReviews(experience.id))),
+    Promise.all(experiences.map((experience) => getExperienceReservations(experience.id).catch(() => []))),
+    Promise.all(experiences.map((experience) => getExperienceReviews(experience.id).catch(() => []))),
   ])
   const reservations = reservationLists.flat()
   const reviews = reviewLists.flat()
