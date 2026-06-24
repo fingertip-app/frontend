@@ -231,7 +231,12 @@ export async function apiDelete(path: string): Promise<void> {
   })
 
   if (!response.ok) {
+    const payload = await response.json().catch(() => ({})) as ApiResponse<void>
     if (response.status === 401) void handleUnauthorized()
-    throw new Error(`API request failed: ${response.status}`)
+    throw new ApiError(
+      response.status,
+      payload.message ?? `API request failed: ${response.status}`,
+      payload.errorCode,
+    )
   }
 }

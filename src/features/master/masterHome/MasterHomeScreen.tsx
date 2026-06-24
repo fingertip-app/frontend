@@ -1,4 +1,4 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useEffect } from "react";
 import {
   View,
   Text,
@@ -48,7 +48,7 @@ export function MasterHomeScreen({
   onNotificationPress?: () => void;
 }) {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const { data, reload, approve, reject } = useMasterHome();
+  const { data, error, reload, approve, reject } = useMasterHome();
   const bookingRequests = data?.bookingRequests ?? [];
   const todaySchedules = data?.todaySchedules ?? [];
 
@@ -58,6 +58,11 @@ export function MasterHomeScreen({
       void reload();
     }, [reload])
   );
+
+  // 데이터가 없는 게 아니라 조회 자체가 실패한 경우를 구분해서 알려줌
+  useEffect(() => {
+    if (error) Alert.alert("오류", error.message);
+  }, [error]);
 
   const handleApprove = async (id: number) => {
     if (!(await confirmAction("예약 승인", "이 예약을 승인하시겠습니까?", "승인"))) return;
