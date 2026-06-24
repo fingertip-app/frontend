@@ -212,17 +212,3 @@ export interface Notification {
   isRead: boolean
   createdAt: string
 }
-
-// ========== Wishlist ==========
-
-export interface Wishlist {
-  id: number
-  experienceId: number
-  experienceTitle: string
-  experienceCategory: string
-  experienceLocation: string
-  experiencePrice: number
-  experienceDurationMinutes: number
-  experienceImageUrl: string | null
-  createdAt: string
-}
