@@ -110,7 +110,7 @@ export type RootStackParamList = {
   MasterExperience: undefined;
   MasterBookings: undefined;
   MasterBookingDetail: { reservationId: number };
-  MasterReviews: { repliedReviewId?: string; replyContent?: string } | undefined;
+  MasterReviews: undefined;
   MasterReviewReply: { review: any };
   MasterMyPage: undefined;
   MasterProfile: undefined;

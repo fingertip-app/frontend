@@ -11,11 +11,12 @@ import {
   Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useNavigation } from "@react-navigation/native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
 import { RootStackParamList } from "@/navigation/RootNavigator";
 import { logout } from "@/features/auth/api/authApi";
+import { useMasterAccount } from "@/features/master/hooks/useMasterAccount";
 
 const BRAND = "#3B2B26";
 const BG = "#F5F4F0";
@@ -190,8 +191,9 @@ interface ToggleRowProps {
   sub?: string;
   value: boolean;
   onChange: (val: boolean) => void;
+  disabled?: boolean;
 }
-function ToggleRow({ icon, label, sub, value, onChange }: ToggleRowProps) {
+function ToggleRow({ icon, label, sub, value, onChange, disabled }: ToggleRowProps) {
   return (
     <View style={tr.row}>
       <View style={tr.icon}>
@@ -204,6 +206,7 @@ function ToggleRow({ icon, label, sub, value, onChange }: ToggleRowProps) {
       <Switch
         value={value}
         onValueChange={onChange}
+        disabled={disabled}
         trackColor={{ false: BORDER, true: ACCENT }}
         thumbColor={CARD}
         ios_backgroundColor={BORDER}
@@ -222,25 +225,44 @@ const tr = StyleSheet.create({
 export function MasterProfileScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [isEditing, setIsEditing] = useState(false);
+  const { data, error, reload } = useMasterAccount();
 
-  const [name, setName] = useState("김도예 장인");
-  const [desc, setDesc] = useState("국가무형문화재 제105호 도예");
-  const [location, setLocation] = useState("경기도 이천시");
-  const [career, setCareer] = useState("25년 경력");
-  const [intro, setIntro] = useState(
-    "3대째 이어오는 이천 도자기 공방입니다. 전통 물레 기법을 활용하여 일상에 스며드는 따뜻한 도자기를 빚고 있습니다."
-  );
-  const [tags, setTags] = useState(["도자기", "물레성형", "전통유약", "이천도자기"]);
-  const [instagram, setInstagram] = useState("@kimdo.craft");
+  const [name, setName] = useState("");
+  const [desc, setDesc] = useState("");
+  const [location, setLocation] = useState("");
+  const [career, setCareer] = useState("");
+  const [intro, setIntro] = useState("");
+  const [tags, setTags] = useState<string[]>([]);
+  const [instagram, setInstagram] = useState("");
   const [youtube, setYoutube] = useState("");
-  const [website, setWebsite] = useState("www.kimdoye.com");
-  const [openToBooking, setOpenToBooking] = useState(true);
-  const [showReviews, setShowReviews] = useState(true);
-  const [acceptNewcomer, setAcceptNewcomer] = useState(true);
+  const [website, setWebsite] = useState("");
+  const [openToBooking, setOpenToBooking] = useState(false);
+  const [showReviews, setShowReviews] = useState(false);
+  const [acceptNewcomer, setAcceptNewcomer] = useState(false);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      void reload();
+    }, [reload])
+  );
+
+  React.useEffect(() => {
+    if (!data) return;
+    const certification = data.profile.certificationNumber
+      ? ` · ${data.profile.certificationNumber}`
+      : "";
+    setName(data.profile.name);
+    setDesc(`${data.profile.heritageCategory}${certification}`);
+    setIntro(data.profile.bio ?? "");
+    setTags(data.profile.heritageCategory ? [data.profile.heritageCategory] : []);
+  }, [data]);
+
+  React.useEffect(() => {
+    if (error) Alert.alert("오류", error.message);
+  }, [error]);
 
   const handleSave = () => {
-    setIsEditing(false);
-    Alert.alert("저장 완료", "프로필이 업데이트되었습니다.");
+    Alert.alert("알림", "장인 프로필 수정 API 구현이 필요합니다.");
   };
 
   const handleCancel = () => {
@@ -258,6 +280,10 @@ export function MasterProfileScreen() {
 
   const handleComingSoon = () => {
     Alert.alert("알림", "준비 중인 기능입니다.");
+  };
+
+  const handleUnsupportedEdit = () => {
+    Alert.alert("알림", "장인 프로필 수정 API 구현이 필요합니다.");
   };
 
   return (
@@ -280,7 +306,7 @@ export function MasterProfileScreen() {
             </View>
           ) : (
             <TouchableOpacity
-              onPress={() => setIsEditing(true)}
+              onPress={handleUnsupportedEdit}
               hitSlop={10}
               style={s.editBtnWrap}
             >
@@ -297,7 +323,7 @@ export function MasterProfileScreen() {
         <View style={s.heroSection}>
           <View style={s.imageWrap}>
             <Image
-              source={{ uri: "https://images.unsplash.com/photo-1566753323558-f4e0952af115?w=400&q=80" }}
+              source={{ uri: data?.profile.imageUrl }}
               style={s.profileImage}
             />
             {isEditing && (
@@ -312,16 +338,22 @@ export function MasterProfileScreen() {
             <View style={s.heroBadgeRow}>
               <View style={s.badge}>
                 <Ionicons name="shield-checkmark" size={12} color={GREEN} />
-                <Text style={s.badgeText}>인증완료</Text>
+                <Text style={s.badgeText}>
+                  {data?.profile.isVerified ? "인증완료" : "인증대기"}
+                </Text>
               </View>
-              <View style={[s.badge, { backgroundColor: ACCENT_LIGHT }]}>
-                <Ionicons name="location" size={12} color={ACCENT} />
-                <Text style={[s.badgeText, { color: ACCENT }]}>{location}</Text>
-              </View>
-              <View style={[s.badge, { backgroundColor: "#F0EBE8" }]}>
-                <Ionicons name="time" size={12} color={GRAY} />
-                <Text style={[s.badgeText, { color: GRAY }]}>{career}</Text>
-              </View>
+              {location ? (
+                <View style={[s.badge, { backgroundColor: ACCENT_LIGHT }]}>
+                  <Ionicons name="location" size={12} color={ACCENT} />
+                  <Text style={[s.badgeText, { color: ACCENT }]}>{location}</Text>
+                </View>
+              ) : null}
+              {career ? (
+                <View style={[s.badge, { backgroundColor: "#F0EBE8" }]}>
+                  <Ionicons name="time" size={12} color={GRAY} />
+                  <Text style={[s.badgeText, { color: GRAY }]}>{career}</Text>
+                </View>
+              ) : null}
             </View>
           </View>
         </View>
@@ -378,6 +410,7 @@ export function MasterProfileScreen() {
             sub="비활성화 시 새 예약이 차단됩니다"
             value={openToBooking}
             onChange={setOpenToBooking}
+            disabled
           />
           <View style={s.divider} />
           <ToggleRow
@@ -386,6 +419,7 @@ export function MasterProfileScreen() {
             sub="프로필에서 후기 노출 여부"
             value={showReviews}
             onChange={setShowReviews}
+            disabled
           />
           <View style={s.divider} />
           <ToggleRow
@@ -394,6 +428,7 @@ export function MasterProfileScreen() {
             sub="프로필에 초보자 환영 뱃지 표시"
             value={acceptNewcomer}
             onChange={setAcceptNewcomer}
+            disabled
           />
         </View>
 
@@ -402,10 +437,10 @@ export function MasterProfileScreen() {
           <SectionHeader icon="bar-chart-outline" title="내 활동 통계" />
           <View style={s.statGrid}>
             {[
-              { label: "누적 예약", value: "312건" },
-              { label: "누적 후기", value: "127개" },
-              { label: "평균 평점", value: "★ 4.9" },
-              { label: "응답률", value: "98%" },
+              { label: "누적 예약", value: `${data?.stats.totalReservationCount ?? 0}건` },
+              { label: "누적 후기", value: `${data?.stats.reviewCount ?? 0}개` },
+              { label: "평균 평점", value: `★ ${(data?.stats.averageRating ?? 0).toFixed(1)}` },
+              { label: "응답률", value: "-" },
             ].map((item) => (
               <View key={item.label} style={s.statItem}>
                 <Text style={s.statValue}>{item.value}</Text>
