@@ -450,6 +450,7 @@ export function HomeScreen() {
           price: Number(exp.price) || 0,
           tags: [],
           imageUri: imageUrl,
+          difficulty: exp.difficulty || "초급",
         },
       },
     });

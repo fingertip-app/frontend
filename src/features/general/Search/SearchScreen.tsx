@@ -57,6 +57,7 @@ export type Experience = {
   familyOk?: boolean;
   highlight?: string;
   highlightColor?: string;
+  difficulty: string;
 };
 
 // ─── 상수 / 데이터 ────────────────────────────────────────────────────────────
@@ -99,10 +100,36 @@ const SORT_OPTIONS: SortOption[] = [
   "리뷰 많은순",
 ];
 
-const REGION_OPTIONS = ["전체 지역", "서울", "경기", "전북", "경남", "제주"];
 const DATE_OPTIONS   = ["날짜 선택", "오늘", "이번 주말", "다음 주"];
 const TIME_OPTIONS   = ["시간 선택", "오전", "오후", "저녁"];
-const LEVEL_OPTIONS  = ["난이도", "입문", "초급", "중급"];
+
+// locationAddress의 시/도 전체 표기를 짧은 표시명으로 변환 (목록에 없으면 앞 2글자로 대체)
+const REGION_LABELS: Record<string, string> = {
+  "서울특별시": "서울",
+  "경기도": "경기",
+  "인천광역시": "인천",
+  "강원도": "강원",
+  "강원특별자치도": "강원",
+  "충청북도": "충북",
+  "충청남도": "충남",
+  "대전광역시": "대전",
+  "세종특별자치시": "세종",
+  "전라북도": "전북",
+  "전북특별자치도": "전북",
+  "전라남도": "전남",
+  "광주광역시": "광주",
+  "경상북도": "경북",
+  "경상남도": "경남",
+  "대구광역시": "대구",
+  "울산광역시": "울산",
+  "부산광역시": "부산",
+  "제주특별자치도": "제주",
+};
+
+function shortRegionOf(location: string): string {
+  const province = location.trim().split(/\s+/)[0] ?? "";
+  return REGION_LABELS[province] ?? province.slice(0, 2);
+}
 
 // API Experience를 UI Experience로 변환
 function mapApiExperienceToUI(exp: ApiExperience): Experience {
@@ -137,6 +164,7 @@ function mapApiExperienceToUI(exp: ApiExperience): Experience {
     familyOk: isFamilyFriendly,
     highlight: hasUpcomingSchedule ? "예약 가능" : undefined,
     highlightColor: "#E87B35",
+    difficulty: exp.difficulty || "초급",
   };
 }
 
@@ -691,18 +719,6 @@ export function SearchScreen() {
     }
   }, [route.params?.exp, navigation]);
 
-  // 드롭다운 설정 맵
-  const dropdownConfig: Record<
-    Exclude<DropdownKey, null>,
-    { title: string; options: string[]; selected: string; onSelect: (v: string) => void }
-  > = {
-    region: { title: "지역 선택",  options: REGION_OPTIONS, selected: region, onSelect: setRegion },
-    date:   { title: "날짜 선택",  options: DATE_OPTIONS,   selected: date,   onSelect: setDate   },
-    time:   { title: "시간 선택",  options: TIME_OPTIONS,   selected: time,   onSelect: setTime   },
-    level:  { title: "난이도 선택", options: LEVEL_OPTIONS,  selected: level,  onSelect: setLevel  },
-    sort:   { title: "정렬 기준",  options: SORT_OPTIONS,   selected: sort,   onSelect: (v) => setSort(v as SortOption) },
-  };
-
   // 체험 목록에 실제로 존재하는 분야로 카테고리 칩을 구성 (백엔드 category는 자유 텍스트라 고정 목록과 어긋날 수 있음)
   const categories = useMemo<CategoryItem[]>(() => {
     const distinctCategories = Array.from(new Set(allExperiences.map((exp) => exp.category))).sort();
@@ -716,11 +732,38 @@ export function SearchScreen() {
     ];
   }, [allExperiences]);
 
+  // 체험 목록에 실제로 존재하는 지역/난이도로 드롭다운 옵션 구성
+  const regionOptions = useMemo(() => {
+    const distinctRegions = Array.from(new Set(allExperiences.map((exp) => shortRegionOf(exp.location)))).sort();
+    return ["전체 지역", ...distinctRegions];
+  }, [allExperiences]);
+
+  const levelOptions = useMemo(() => {
+    const distinctLevels = Array.from(new Set(allExperiences.map((exp) => exp.difficulty))).sort();
+    return ["난이도", ...distinctLevels];
+  }, [allExperiences]);
+
+  // 드롭다운 설정 맵
+  const dropdownConfig: Record<
+    Exclude<DropdownKey, null>,
+    { title: string; options: string[]; selected: string; onSelect: (v: string) => void }
+  > = {
+    region: { title: "지역 선택",  options: regionOptions, selected: region, onSelect: setRegion },
+    date:   { title: "날짜 선택",  options: DATE_OPTIONS,   selected: date,   onSelect: setDate   },
+    time:   { title: "시간 선택",  options: TIME_OPTIONS,   selected: time,   onSelect: setTime   },
+    level:  { title: "난이도 선택", options: levelOptions,  selected: level,  onSelect: setLevel  },
+    sort:   { title: "정렬 기준",  options: SORT_OPTIONS,   selected: sort,   onSelect: (v) => setSort(v as SortOption) },
+  };
+
   // 필터링 + 정렬
   const results = useMemo(() => {
     let list = allExperiences.filter((exp) => {
       // 카테고리 (카테고리 id는 실제 category 값과 동일하다)
       if (activeCategory !== "all" && exp.category !== activeCategory) return false;
+      // 지역
+      if (region !== "지역" && region !== "전체 지역" && shortRegionOf(exp.location) !== region) return false;
+      // 난이도
+      if (level !== "난이도" && exp.difficulty !== level) return false;
       // 필터 칩
       if (activeFilter === "family"  && !exp.familyOk)  return false;
       if (activeFilter === "foreign" && !exp.foreignOk) return false;
@@ -741,7 +784,7 @@ export function SearchScreen() {
     if (sort === "리뷰 많은순")   list = [...list].sort((a, b) => b.reviewCount - a.reviewCount);
 
     return list;
-  }, [allExperiences, query, activeCategory, activeFilter, sort]);
+  }, [allExperiences, query, activeCategory, region, level, activeFilter, sort]);
 
   const currentDropdown = openDropdown ? dropdownConfig[openDropdown] : null;
 

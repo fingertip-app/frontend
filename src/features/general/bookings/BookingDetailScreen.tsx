@@ -284,6 +284,7 @@ export function BookingDetailScreen() {
                     price: booking.totalPrice ?? 0,
                     tags: [],
                     imageUri: booking.imageUri ?? "",
+                    difficulty: "초급",
                   },
                   dateLabel: booking.date,
                   time: booking.time,

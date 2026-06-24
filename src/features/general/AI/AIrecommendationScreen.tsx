@@ -359,6 +359,7 @@ const toExperience = (item: RecommendationCard): Experience => ({
   price: item.price,
   tags: [item.category],
   imageUri: item.imageUri,
+  difficulty: "초급",
 });
 
 // ─── 메인 스크린 ───────────────────────────────────────────────────────────────
