@@ -17,7 +17,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { MasterBottomTabs } from "../components/MasterBottomTabs";
 import { MasterHeader } from "../components/MasterHeader";
 import { useMasterBookings } from "./useMasterBookings";
-import type { MasterBookingStatus } from "./types";
+import { matchesMasterBookingFilter } from "./masterBookingsApi";
+import type { MasterBookingFilter, MasterBookingStatus } from "./types";
 
 // ─── 팔레트 ────────────────────────────────────────────────────────────────────
 const BRAND = "#3B2B26";
@@ -27,15 +28,16 @@ const GRAY = "#8A8077";
 const BORDER = "#EAE6E1";
 
 // ─── 화면 표시용 예약 타입 ───────────────────────────────────────────────────────
-const STATUS_TABS: { id: "all" | MasterBookingStatus; label: string }[] = [
+const STATUS_TABS: { id: MasterBookingFilter; label: string }[] = [
   { id: "all", label: "전체" },
   { id: "pending", label: "승인 대기" },
   { id: "confirmed", label: "예약 확정" },
   { id: "completed", label: "완료됨" },
+  { id: "cancelled", label: "취소/거절" },
 ];
 
 export function MasterBookingsScreen() {
-  const [activeTab, setActiveTab] = useState<"all" | MasterBookingStatus>("all");
+  const [activeTab, setActiveTab] = useState<MasterBookingFilter>("all");
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { data, isLoading, error, reload, approve, reject } = useMasterBookings();
   const bookings = data?.bookings ?? [];
@@ -50,8 +52,8 @@ export function MasterBookingsScreen() {
     if (error) Alert.alert("알림", error.message);
   }, [error]);
 
-  const filteredBookings = bookings.filter((b) =>
-    activeTab === "all" ? true : b.status === activeTab
+  const filteredBookings = bookings.filter((booking) =>
+    matchesMasterBookingFilter(booking.status, activeTab)
   );
 
   // 상태 뱃지 렌더링 헬퍼
@@ -66,6 +68,16 @@ export function MasterBookingsScreen() {
         textColor = "#92400E";
         label = "승인 대기";
         break;
+      case "approved":
+        bgColor = "#FFF7ED";
+        textColor = "#C2410C";
+        label = "승인 완료";
+        break;
+      case "paid":
+        bgColor = "#ECFDF5";
+        textColor = "#047857";
+        label = "결제 완료";
+        break;
       case "confirmed":
         bgColor = "#E0E7FF";
         textColor = "#1D4ED8";
@@ -76,10 +88,15 @@ export function MasterBookingsScreen() {
         textColor = "#166534";
         label = "완료됨";
         break;
+      case "rejected":
+        bgColor = "#FEE2E2";
+        textColor = "#B91C1C";
+        label = "예약 거절";
+        break;
       case "cancelled":
         bgColor = "#FEE2E2";
         textColor = "#B91C1C";
-        label = "취소됨";
+        label = "예약 취소";
         break;
     }
 

@@ -5,12 +5,23 @@ import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { RootStackParamList } from "@/navigation/RootNavigator";
 import { useMasterBookingDetail } from "./useMasterBookingDetail";
+import type { MasterBookingStatus } from "./types";
 
 const BRAND = "#3B2B26";
 const BG = "#F5F4F0";
 const CARD = "#FFFFFF";
 const GRAY = "#8A8077";
 const BORDER = "#EAE6E1";
+
+const STATUS_LABELS: Record<MasterBookingStatus, string> = {
+  pending: "승인 대기",
+  approved: "승인 완료",
+  paid: "결제 완료",
+  confirmed: "예약 확정",
+  completed: "완료됨",
+  rejected: "예약 거절",
+  cancelled: "예약 취소",
+};
 
 export function MasterBookingDetailScreen() {
   const navigation = useNavigation();
@@ -66,7 +77,7 @@ export function MasterBookingDetailScreen() {
         <View style={styles.card}>
           <View style={styles.cardHeader}>
             <Text style={styles.statusLabel}>
-              {booking.status === "pending" ? "승인 대기" : booking.status === "confirmed" ? "예약 확정" : booking.status === "completed" ? "완료됨" : "취소됨"}
+              {STATUS_LABELS[booking.status]}
             </Text>
           </View>
           <Text style={styles.title}>{booking.title}</Text>
