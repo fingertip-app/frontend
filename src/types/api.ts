@@ -166,6 +166,31 @@ export interface ExplainResponse {
   message: string | null
 }
 
+// ========== Banner ==========
+
+export interface Banner {
+  id: number
+  tag: string
+  title: string
+  subtitle: string
+  imageUrl: string
+  linkUrl?: string
+}
+
+// ========== Artisan ==========
+
+export interface Artisan {
+  id: number
+  name: string
+  badge?: string
+  quote?: string
+  imageUrl: string
+  category?: string
+  location?: string
+  lat?: number
+  lng?: number
+}
+
 // ========== Notification ==========
 
 export interface Notification {
