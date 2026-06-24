@@ -91,9 +91,9 @@ function getDistanceKm(lat1: number, lng1: number, lat2: number, lng2: number) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-function BannerCard({ item }: { item: Banner }) {
+function BannerCard({ item, onPress }: { item: Banner; onPress: () => void }) {
   return (
-    <TouchableOpacity activeOpacity={0.95} style={{ width: BANNER_WIDTH, marginRight: 16 }}>
+    <TouchableOpacity activeOpacity={0.95} style={{ width: BANNER_WIDTH, marginRight: 16 }} onPress={onPress}>
       <ImageBackground
         source={{ uri: item.imageUrl }}
         style={styles.bannerCard}
@@ -103,7 +103,7 @@ function BannerCard({ item }: { item: Banner }) {
           <Text style={styles.bannerTag}>{item.tag}</Text>
           <Text style={styles.bannerTitle}>{item.title}</Text>
           <Text style={styles.bannerSubtitle}>{item.subtitle}</Text>
-          <TouchableOpacity style={styles.bannerButton} activeOpacity={0.85}>
+          <TouchableOpacity style={styles.bannerButton} activeOpacity={0.85} onPress={onPress}>
             <Text style={styles.bannerButtonText}>체험 둘러보기</Text>
           </TouchableOpacity>
         </View>
@@ -456,6 +456,28 @@ export function HomeScreen() {
     });
   };
 
+  const openWishedExperienceDetail = (card: ExperienceCard) => {
+    navigation.navigate("MainTabs", {
+      screen: "Explore",
+      params: {
+        exp: {
+          id: card.id,
+          title: card.title,
+          category: card.category,
+          location: card.location,
+          artisan: "장인",
+          rating: card.rating,
+          reviewCount: card.reviewCount,
+          duration: card.duration,
+          price: Number(card.price.replace(/[^0-9]/g, "")) || 0,
+          tags: [],
+          imageUri: card.image,
+          difficulty: "초급",
+        },
+      },
+    });
+  };
+
   return (
     <MainLayout>
       <ScrollView
@@ -476,7 +498,11 @@ export function HomeScreen() {
             scrollEventThrottle={16}
           >
             {banners.map((banner) => (
-              <BannerCard key={banner.id} item={banner} />
+              <BannerCard
+                key={banner.id}
+                item={banner}
+                onPress={() => navigation.navigate("MainTabs", { screen: "Explore" })}
+              />
             ))}
           </ScrollView>
           {/* 페이지 인디케이터 */}

@@ -16,6 +16,7 @@ import { Experience } from "./SearchScreen";
 import { RootStackParamList } from "@/navigation/RootNavigator";
 import { getExperience } from "@/features/experiences/api/experiencesApi";
 import { getExperienceReviews } from "@/features/reviews/api/reviewsApi";
+import { addToWishlist, checkWishlist, removeFromWishlist } from "@/features/wishlists/api/wishlistsApi";
 import { formatScheduleDate } from "@/lib/scheduling";
 import type { Experience as BackendExperience, Review } from "@/types/api";
 
@@ -86,6 +87,8 @@ export function DetailBottomSheet({ exp, onClose }: Props) {
   const [experienceError, setExperienceError] = useState<string | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [isLoadingReviews, setIsLoadingReviews] = useState(true);
+  const [isWished, setIsWished] = useState(false);
+  const [isWishLoading, setIsWishLoading] = useState(false);
   const requestIdRef = useRef(0);
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
@@ -155,6 +158,52 @@ export function DetailBottomSheet({ exp, onClose }: Props) {
     };
   }, [exp.id]);
 
+  useEffect(() => {
+    const experienceId = Number(exp.id);
+    if (!Number.isFinite(experienceId)) {
+      setIsWished(false);
+      return;
+    }
+
+    let isCurrent = true;
+    checkWishlist(experienceId)
+      .then((liked) => {
+        if (isCurrent) setIsWished(liked);
+      })
+      .catch(() => {
+        if (isCurrent) setIsWished(false);
+      });
+
+    return () => {
+      isCurrent = false;
+    };
+  }, [exp.id]);
+
+  const handleToggleWishlist = async () => {
+    if (isWishLoading) return;
+    const experienceId = Number(exp.id);
+    if (!Number.isFinite(experienceId)) return;
+
+    setIsWishLoading(true);
+    try {
+      if (isWished) {
+        await removeFromWishlist(experienceId);
+        setIsWished(false);
+      } else {
+        await addToWishlist(experienceId);
+        setIsWished(true);
+      }
+    } catch (error: any) {
+      if (error?.status === 409) {
+        setIsWished(true);
+      } else {
+        Alert.alert("알림", "찜 기능을 사용할 수 없습니다.");
+      }
+    } finally {
+      setIsWishLoading(false);
+    }
+  };
+
   const reviewCount = reviews.length;
   const averageRating =
     reviewCount > 0
@@ -221,11 +270,31 @@ export function DetailBottomSheet({ exp, onClose }: Props) {
           contentContainerStyle={{ paddingBottom: 110 }}
         >
           {/* 썸네일 이미지 */}
-          <Image
-            source={{ uri: exp.imageUri }}
-            style={{ width: "100%", height: 240 }}
-            resizeMode="cover"
-          />
+          <View>
+            <Image
+              source={{ uri: exp.imageUri }}
+              style={{ width: "100%", height: 240 }}
+              resizeMode="cover"
+            />
+            <TouchableOpacity
+              onPress={handleToggleWishlist}
+              disabled={isWishLoading}
+              activeOpacity={0.8}
+              style={{
+                position: "absolute",
+                top: 16,
+                right: 16,
+                width: 40,
+                height: 40,
+                borderRadius: 20,
+                backgroundColor: "rgba(255,255,255,0.9)",
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              <Text style={{ fontSize: 18 }}>{isWished ? "❤️" : "🤍"}</Text>
+            </TouchableOpacity>
+          </View>
 
           {/* 메인 콘텐츠 */}
           <View style={{ paddingHorizontal: 20, paddingTop: 20 }}>
