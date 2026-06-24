@@ -93,7 +93,7 @@ export async function applyArtisan(
  * 로그아웃
  */
 export async function logout(): Promise<void> {
-  const { error } = await supabase.auth.signOut()
+  const { error } = await supabase.auth.signOut({ scope: 'local' })
   if (error) {
     throw new Error('로그아웃에 실패했습니다.')
   }

@@ -2,25 +2,19 @@ import { getMyArtisan } from '@/features/artisans/api/artisanApi'
 import { createExperience, getArtisanExperiences } from '@/features/experiences/api/experiencesApi'
 import { uploadImage } from '@/features/files/api/filesApi'
 import { getExperienceReviews } from '@/features/reviews/api/reviewsApi'
+import {
+  buildRecurringSchedules,
+  computeDurationMinutes,
+} from '@/features/experiences/utils/scheduleBuilder'
 import type { Experience, Review } from '@/types/api'
 import type {
   ExperienceManagementData,
   ExperienceManagementItem,
   ExperienceRegistrationParams,
-  ExperienceTimeSlot,
 } from './types'
 
 const PLACEHOLDER_IMAGE =
   'https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=600&q=80'
-const DAY_TO_WEEKDAY: Record<string, number> = {
-  일: 0,
-  월: 1,
-  화: 2,
-  수: 3,
-  목: 4,
-  금: 5,
-  토: 6,
-}
 
 function getMainImage(experience: Experience): string {
   if (!experience.images.length) return PLACEHOLDER_IMAGE
@@ -68,76 +62,6 @@ export async function getExperienceManagementData(): Promise<ExperienceManagemen
   }
 }
 
-function parseTimeLabel(label: string): { hour: number; minute: number } | null {
-  const normalized = label.trim()
-  const twelveHour = /^(\d{1,2}):(\d{2})\s*(AM|PM)$/i.exec(normalized)
-  if (twelveHour) {
-    const minute = Number(twelveHour[2])
-    if (minute > 59) return null
-    let hour = Number(twelveHour[1])
-    if (hour < 1 || hour > 12) return null
-    hour %= 12
-    if (/pm/i.test(twelveHour[3])) hour += 12
-    return { hour, minute }
-  }
-
-  const twentyFourHour = /^(\d{1,2}):(\d{2})$/.exec(normalized)
-  if (!twentyFourHour) return null
-  const hour = Number(twentyFourHour[1])
-  const minute = Number(twentyFourHour[2])
-  if (hour > 23 || minute > 59) return null
-  return { hour, minute }
-}
-
-function toLocalDateTimeString(date: Date): string {
-  const pad = (value: number) => String(value).padStart(2, '0')
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(
-    date.getHours(),
-  )}:${pad(date.getMinutes())}:00`
-}
-
-function nextOccurrence(weekday: number, hour: number, minute: number): Date {
-  const date = new Date()
-  date.setHours(hour, minute, 0, 0)
-  date.setDate(date.getDate() + 1)
-  while (date.getDay() !== weekday) date.setDate(date.getDate() + 1)
-  return date
-}
-
-function buildSchedules(
-  selectedDays: string[],
-  timeSlots: ExperienceTimeSlot[],
-  availableSlots: number,
-): { scheduledAt: string; availableSlots: number }[] {
-  const weekdays = selectedDays
-    .map((day) => DAY_TO_WEEKDAY[day])
-    .filter((day): day is number => day !== undefined)
-  const times = timeSlots.map((slot) => parseTimeLabel(slot.startTime))
-
-  if (!weekdays.length) throw new Error('운영 요일을 한 개 이상 선택해주세요.')
-  if (times.some((time) => time === null)) throw new Error('시작 시간을 올바르게 입력해주세요.')
-
-  return weekdays.flatMap((weekday) =>
-    times.map((time) => ({
-      scheduledAt: toLocalDateTimeString(nextOccurrence(weekday, time!.hour, time!.minute)),
-      availableSlots,
-    })),
-  )
-}
-
-function computeDurationMinutes(timeSlots: ExperienceTimeSlot[]): number {
-  const durations = timeSlots.map((slot) => {
-    const start = parseTimeLabel(slot.startTime)
-    const end = parseTimeLabel(slot.endTime)
-    if (!start || !end) throw new Error('운영 시간을 올바르게 입력해주세요.')
-    const duration = end.hour * 60 + end.minute - (start.hour * 60 + start.minute)
-    if (duration <= 0) throw new Error('종료 시간은 시작 시간보다 늦어야 합니다.')
-    return duration
-  })
-  if (!durations.length) throw new Error('운영 시간대를 한 개 이상 입력해주세요.')
-  return durations[0]
-}
-
 export async function createRegisteredExperience(
   params: ExperienceRegistrationParams,
   locationAddress: string,
@@ -153,6 +77,14 @@ export async function createRegisteredExperience(
     uploadImage(params.mainPhoto, 'experience'),
   ])
   const description = [params.shortDesc.trim(), params.detail.trim()].filter(Boolean).join('\n\n')
+  const schedules = buildRecurringSchedules(
+    params.operationStartDate,
+    params.operationEndDate,
+    params.selectedDays,
+    params.timeSlots,
+    params.maxGuests,
+  )
+  if (!schedules.length) throw new Error('운영 기간, 요일, 시간대를 다시 확인해주세요.')
 
   return createExperience(artisan.id, {
     title: params.title.trim(),
@@ -163,6 +95,6 @@ export async function createRegisteredExperience(
     durationMinutes: computeDurationMinutes(params.timeSlots),
     imageUrl,
     locationAddress: locationAddress.trim(),
-    schedules: buildSchedules(params.selectedDays, params.timeSlots, params.maxGuests),
+    schedules,
   })
 }

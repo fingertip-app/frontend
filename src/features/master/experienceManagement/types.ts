@@ -16,6 +16,8 @@ export interface ExperienceRegistrationParams {
   detail: string
   mainPhoto: ExperiencePhoto
   detailPhotos: ExperiencePhoto[]
+  operationStartDate: string
+  operationEndDate: string
   selectedDays: string[]
   timeSlots: ExperienceTimeSlot[]
   price: string

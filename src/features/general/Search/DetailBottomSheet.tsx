@@ -702,7 +702,7 @@ export function DetailBottomSheet({ exp, onClose }: Props) {
                   letterSpacing: -0.5,
                 }}
               >
-                35,000{" "}
+                {Number(fullExperience?.price ?? exp.price).toLocaleString("ko-KR")}{" "}
                 <Text style={{ fontSize: 14, fontWeight: "500" }}>원~</Text>
               </Text>
             </View>

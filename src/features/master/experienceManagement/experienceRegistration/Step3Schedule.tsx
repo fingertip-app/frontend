@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -8,9 +8,16 @@ import {
   ScrollView,
   Platform,
   TextInput,
+  Alert,
 } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
+import {
+  buildRecurringSchedules,
+  formatLocalDate,
+  parseLocalDate,
+  parseTimeLabel,
+} from "@/features/experiences/utils/scheduleBuilder";
 
 // ─── 팔레트 (Step1/2와 동일) ──────────────────────────────────────────────────
 const BRAND = "#3B2B26";
@@ -33,8 +40,20 @@ export function Step3Schedule() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const currentStep = 3;
+  const initialStartDate = useMemo(() => {
+    const date = new Date();
+    date.setDate(date.getDate() + 1);
+    return formatLocalDate(date);
+  }, []);
+  const initialEndDate = useMemo(() => {
+    const date = new Date();
+    date.setDate(date.getDate() + 30);
+    return formatLocalDate(date);
+  }, []);
 
-  const [selectedDays, setSelectedDays] = useState<string[]>([]);
+  const [operationStartDate, setOperationStartDate] = useState(initialStartDate);
+  const [operationEndDate, setOperationEndDate] = useState(initialEndDate);
+  const [selectedDays, setSelectedDays] = useState<string[]>(["월", "화", "수", "목", "금"]);
   const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([
     { id: "slot_1", startTime: "10:00 AM", endTime: "12:00 PM" },
     { id: "slot_2", startTime: "02:00 PM", endTime: "04:00 PM" },
@@ -67,6 +86,46 @@ export function Step3Schedule() {
     setTimeSlots((prev) =>
       prev.map((s) => (s.id === id ? { ...s, [field]: value } : s))
     );
+  };
+
+  const scheduleCount = buildRecurringSchedules(
+    operationStartDate,
+    operationEndDate,
+    selectedDays,
+    timeSlots,
+    1,
+  ).length;
+
+  const handleNext = () => {
+    const startDate = parseLocalDate(operationStartDate);
+    const endDate = parseLocalDate(operationEndDate);
+    if (!startDate || !endDate || endDate < startDate) {
+      Alert.alert("운영 기간 확인", "시작일과 종료일을 YYYY-MM-DD 형식으로 확인해주세요.");
+      return;
+    }
+    if (selectedDays.length === 0) {
+      Alert.alert("운영 요일 확인", "운영할 요일을 하나 이상 선택해주세요.");
+      return;
+    }
+    if (
+      timeSlots.length === 0 ||
+      timeSlots.some((slot) => !parseTimeLabel(slot.startTime) || !parseTimeLabel(slot.endTime))
+    ) {
+      Alert.alert("운영 시간 확인", "모든 시간대를 HH:mm 또는 HH:mm AM/PM 형식으로 입력해주세요.");
+      return;
+    }
+    if (scheduleCount === 0) {
+      Alert.alert("일정 확인", "선택한 기간 안에 생성되는 일정이 없습니다.");
+      return;
+    }
+
+    navigation.navigate("Step4Pricing", {
+      ...route.params,
+      operationStartDate,
+      operationEndDate,
+      selectedDays,
+      timeSlots,
+    });
   };
 
   return (
@@ -120,6 +179,37 @@ export function Step3Schedule() {
             장인님의 소중한 시간이 헛되지 않도록,{"\n"}
             가능한 요일과 시간대를 명확히 설정해주세요.
           </Text>
+        </View>
+
+        {/* ── 운영 기간 ── */}
+        <View style={styles.block}>
+          <View style={styles.blockTitleRow}>
+            <Ionicons name="calendar-number-outline" size={15} color={BRAND} />
+            <Text style={styles.blockTitle}>운영 기간</Text>
+          </View>
+          <View style={styles.dateRangeRow}>
+            <View style={styles.dateInputCol}>
+              <Text style={styles.dateLabel}>시작일</Text>
+              <TextInput
+                style={styles.dateInput}
+                value={operationStartDate}
+                onChangeText={setOperationStartDate}
+                placeholder="YYYY-MM-DD"
+                placeholderTextColor={PLACEHOLDER}
+              />
+            </View>
+            <Text style={styles.dateSeparator}>~</Text>
+            <View style={styles.dateInputCol}>
+              <Text style={styles.dateLabel}>종료일</Text>
+              <TextInput
+                style={styles.dateInput}
+                value={operationEndDate}
+                onChangeText={setOperationEndDate}
+                placeholder="YYYY-MM-DD"
+                placeholderTextColor={PLACEHOLDER}
+              />
+            </View>
+          </View>
         </View>
 
         {/* ── 운영 요일 선택 ── */}
@@ -209,7 +299,7 @@ export function Step3Schedule() {
             <Text style={styles.tipTitle}>일정 설정 팁</Text>
           </View>
           <Text style={styles.tipText}>
-            평균적으로 전통 체험은 2시간 내외가 가장 선호됩니다. 타임 사이의 30분~1시간 정도의 정비 시간을 두시는 것을 권장합니다.
+            선택한 운영 기간 동안 요일과 시간대가 조합되어 총 {scheduleCount}개의 예약 회차가 생성됩니다.
           </Text>
         </View>
       </ScrollView>
@@ -227,7 +317,7 @@ export function Step3Schedule() {
           style={[styles.nextBtn, timeSlots.length === 0 && styles.nextBtnDisabled]}
           activeOpacity={0.8}
           disabled={timeSlots.length === 0}
-          onPress={() => navigation.navigate("Step4Pricing", { ...route.params, selectedDays, timeSlots })}
+          onPress={handleNext}
         >
           <Text style={styles.nextBtnText}>다음 단계</Text>
         </TouchableOpacity>
@@ -285,6 +375,18 @@ const styles = StyleSheet.create({
   block: { marginBottom: 28 },
   blockTitleRow: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 14 },
   blockTitle: { fontSize: 14, fontWeight: "600", color: BRAND, flex: 1 },
+
+  // 운영 기간
+  dateRangeRow: { flexDirection: "row", alignItems: "flex-end", gap: 10 },
+  dateInputCol: { flex: 1 },
+  dateLabel: { fontSize: 11, color: GRAY, marginBottom: 6 },
+  dateInput: {
+    backgroundColor: CARD, borderRadius: 10,
+    borderWidth: 1, borderColor: BORDER,
+    paddingHorizontal: 12, paddingVertical: 11,
+    fontSize: 14, color: BRAND,
+  },
+  dateSeparator: { color: GRAY, paddingBottom: 12 },
 
   // 요일 버튼
   dayGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
