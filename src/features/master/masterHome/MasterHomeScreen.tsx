@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useCallback } from "react";
 import {
   View,
   Text,
@@ -9,7 +9,7 @@ import {
   Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useNavigation } from "@react-navigation/native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
 import { MasterBottomTabs } from "../components/MasterBottomTabs";
@@ -34,9 +34,16 @@ export function MasterHomeScreen({
   onNotificationPress?: () => void;
 }) {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const { data, approve, reject } = useMasterHome();
+  const { data, reload, approve, reject } = useMasterHome();
   const bookingRequests = data?.bookingRequests ?? [];
   const todaySchedules = data?.todaySchedules ?? [];
+
+  // 예약 관리 등 다른 화면에서 승인/거절하고 돌아왔을 때 최신 상태로 갱신
+  useFocusEffect(
+    useCallback(() => {
+      reload();
+    }, [reload])
+  );
 
   const handleApprove = (id: number) => {
     Alert.alert("예약 승인", "이 예약을 승인하시겠습니까?", [

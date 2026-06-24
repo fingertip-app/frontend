@@ -10,14 +10,14 @@ import {
   Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useNavigation } from "@react-navigation/native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "@/navigation/RootNavigator";
 import { Ionicons, Feather } from "@expo/vector-icons";
 import { MasterBottomTabs } from "../components/MasterBottomTabs";
 import { MasterHeader } from "../components/MasterHeader";
 import { logout } from "@/features/auth/api/authApi";
-import { getArtisanStats, ArtisanStats } from "@/features/general/mypage/api/mypageApi";
+import { useMasterAccount } from "@/features/master/hooks/useMasterAccount";
 
 // ─── 기존 테마 팔레트 재사용 ──────────────────────────────────────────────────
 const BG       = "#F7F4EF";
@@ -48,25 +48,17 @@ const ss = StyleSheet.create({
 // ─── 장인(Master) 메인 스크린 ──────────────────────────────────────────────────
 export function MasterMyPageScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const [stats, setStats] = React.useState<ArtisanStats | null>(null);
-  const [loading, setLoading] = React.useState(true);
+  const { data, error, reload } = useMasterAccount();
+
+  useFocusEffect(
+    React.useCallback(() => {
+      void reload();
+    }, [reload])
+  );
 
   React.useEffect(() => {
-    loadStats();
-  }, []);
-
-  const loadStats = async () => {
-    try {
-      console.log("🔵 장인 통계 로드 시작");
-      const artisanStats = await getArtisanStats();
-      console.log("🔵 장인 통계 데이터:", artisanStats);
-      setStats(artisanStats);
-    } catch (e) {
-      console.log("🔴 장인 통계 로드 실패:", e);
-    } finally {
-      setLoading(false);
-    }
-  };
+    if (error) Alert.alert("오류", error.message);
+  }, [error]);
 
   const handleLogout = async () => {
     try {
@@ -88,10 +80,14 @@ export function MasterMyPageScreen() {
         activeItem="프로필" 
         rightComponent={
           <View style={{ flexDirection: "row", alignItems: "center" }}>
-            <TouchableOpacity hitSlop={10} style={{ marginRight: 16 }}>
+            <TouchableOpacity
+              hitSlop={10}
+              style={{ marginRight: 16 }}
+              onPress={() => navigation.navigate("Notifications")}
+            >
               <Ionicons name="notifications-outline" size={23} color={TEXT} />
             </TouchableOpacity>
-            <TouchableOpacity hitSlop={10}>
+            <TouchableOpacity hitSlop={10} onPress={() => navigation.navigate("Settings")}>
               <Ionicons name="settings-outline" size={23} color={TEXT} />
             </TouchableOpacity>
           </View>
@@ -108,12 +104,12 @@ export function MasterMyPageScreen() {
         <View style={ms.profileCard}>
           <View style={ms.profileRow}>
             <Image
-              source={{ uri: "https://picsum.photos/seed/master/150/150" }}
+              source={{ uri: data?.profile.imageUrl }}
               style={ms.avatar}
             />
             <View style={{ flex: 1, marginLeft: 14 }}>
               <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 4 }}>
-                <Text style={ms.profileName}>이천 도예 공방</Text>
+                <Text style={ms.profileName}>{data?.profile.name ?? "-"}</Text>
                 <TouchableOpacity 
                   hitSlop={8} 
                   style={{ marginLeft: 6 }}
@@ -122,7 +118,11 @@ export function MasterMyPageScreen() {
                   <Feather name="edit-2" size={14} color={TEXT_S} />
                 </TouchableOpacity>
               </View>
-              <Text style={ms.profileBio}>마스터 김도예 님</Text>
+              <Text style={ms.profileBio}>
+                {data
+                  ? `${data.profile.heritageCategory} · 마스터 ${data.profile.masterName} 님`
+                  : "-"}
+              </Text>
             </View>
           </View>
         </View>
@@ -131,17 +131,21 @@ export function MasterMyPageScreen() {
         <View style={ms.statsRow}>
           <StatItem
             label="신규 예약"
-            value={`${stats?.pendingReservationCount?.toString() || "0"}건`}
+            value={`${data?.stats.pendingReservationCount ?? 0}건`}
           />
           <View style={ms.statDivider} />
           <StatItem
             label="운영 클래스"
-            value={`${stats?.activeExperienceCount?.toString() || "0"}개`}
+            value={`${data?.stats.activeExperienceCount ?? 0}개`}
           />
           <View style={ms.statDivider} />
           <StatItem
             label="이달의 수익"
-            value={stats?.monthlyRevenue ? `${(stats.monthlyRevenue / 10000).toFixed(0)}만원` : "0원"}
+            value={
+              data?.stats.monthlyRevenue
+                ? `${(data.stats.monthlyRevenue / 10000).toFixed(0)}만원`
+                : "0원"
+            }
           />
         </View>
 
@@ -164,7 +168,11 @@ export function MasterMyPageScreen() {
             <Ionicons name="hammer-outline" size={28} color={BRAND} />
             <Text style={ms.actionLabel}>클래스 관리</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={ms.actionCard} activeOpacity={0.8}>
+          <TouchableOpacity
+            style={ms.actionCard}
+            activeOpacity={0.8}
+            onPress={() => Alert.alert("알림", "정산 API 구현이 필요합니다.")}
+          >
             <Ionicons name="wallet-outline" size={28} color={BRAND} />
             <Text style={ms.actionLabel}>정산 관리</Text>
           </TouchableOpacity>

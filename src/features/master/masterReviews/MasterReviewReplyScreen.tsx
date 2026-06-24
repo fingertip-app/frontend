@@ -36,17 +36,7 @@ export function MasterReviewReplyScreen() {
       return;
     }
     
-    // TODO: 실제 서버로 답글 내용 전송 API 연동
-    Alert.alert(isEditing ? "수정 완료" : "등록 완료", isEditing ? "답글이 성공적으로 수정되었습니다." : "답글이 성공적으로 등록되었습니다.", [
-      { 
-        text: "확인", 
-        onPress: () => navigation.navigate({
-          name: "MasterReviews",
-          params: { repliedReviewId: review.id, replyContent },
-          merge: true,
-        })
-      }
-    ]);
+    Alert.alert("알림", "후기 답글 기능은 백엔드 API 구현이 필요합니다.");
   };
 
   return (
