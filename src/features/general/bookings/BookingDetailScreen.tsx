@@ -78,11 +78,18 @@ export function BookingDetailScreen() {
   };
 
   const getStatusLabel = (status: string) => {
+    if (status === "upcoming") {
+      switch (booking.reservationStatus) {
+        case "APPROVED":  return "승인완료 (결제 필요)";
+        case "PAID":      return "결제완료";
+        case "CONFIRMED": return "예약확정";
+        default:          return "승인완료";
+      }
+    }
     switch (status) {
-      case "upcoming": return "승인완료";
       case "pending":  return "승인 대기";
       case "past":     return "지난 체험";
-      case "cancelled":return "취소 내역";
+      case "cancelled":return booking.reservationStatus === "REJECTED" ? "거절됨" : "취소 내역";
       default:         return status;
     }
   };
