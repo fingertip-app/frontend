@@ -113,6 +113,11 @@ function BannerCard({ item }: { item: Banner }) {
 }
 
 function mapExperienceToCard(exp: any): ExperienceCard {
+  // images 배열에서 첫 번째 이미지 URL 추출, 없으면 기본 이미지 사용
+  const imageUrl = exp.images && exp.images.length > 0
+    ? exp.images[0].imageUrl
+    : "https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=400&q=80";
+
   return {
     id: String(exp.id),
     title: exp.title,
@@ -122,7 +127,7 @@ function mapExperienceToCard(exp: any): ExperienceCard {
     price: `${Number(exp.price).toLocaleString()}원`,
     rating: 0,
     reviewCount: 0,
-    image: "https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=400&q=80",
+    image: imageUrl,
   };
 }
 
@@ -420,6 +425,11 @@ export function HomeScreen() {
   };
 
   const openExperienceDetail = (exp: any) => {
+    // images 배열에서 첫 번째 이미지 URL 추출
+    const imageUrl = exp.images && exp.images.length > 0
+      ? exp.images[0].imageUrl
+      : "https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=400&q=80";
+
     navigation.navigate("MainTabs", {
       screen: "Explore",
       params: {
@@ -434,7 +444,7 @@ export function HomeScreen() {
           duration: exp.durationMinutes ? `${exp.durationMinutes}분` : "시간 미정",
           price: Number(exp.price) || 0,
           tags: [],
-          imageUri: "https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=400&q=80",
+          imageUri: imageUrl,
         },
       },
     });
