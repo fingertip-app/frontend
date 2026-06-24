@@ -65,15 +65,24 @@ const BRAND = "#92400E";
 const BRAND_BG = "#FEF3E2";
 const BRAND_LIGHT = "#B45309";
 
-const CATEGORIES: CategoryItem[] = [
-  { id: "all",      label: "전체",    icon: "✨" },
-  { id: "pottery",  label: "도예",    icon: "🏺" },
-  { id: "hanji",    label: "한지",    icon: "📜" },
-  { id: "woodwork", label: "목공",    icon: "🪵" },
-  { id: "dyeing",   label: "염색",    icon: "🎨" },
-  { id: "food",     label: "전통음식", icon: "🍱" },
-  { id: "etc",      label: "기타",    icon: "🪭" },
-];
+// 체험의 category는 자유 텍스트(백엔드 Experience.category)라 고정된 값 목록이 없다.
+// 알려진 분야는 보기 좋은 아이콘을 붙이고, 모르는 분야는 기본 아이콘으로 표시한다.
+const CATEGORY_ICONS: Record<string, string> = {
+  도자기: "🏺",
+  한지공예: "📜",
+  목공: "🪵",
+  염색: "🎨",
+  전통음식: "🍱",
+  모시짜기: "🧵",
+  갓일: "🎩",
+  자수: "🪡",
+  매듭공예: "🪢",
+  한복: "👘",
+  탈제작: "🎭",
+  국악: "🎶",
+  전통주: "🍶",
+};
+const DEFAULT_CATEGORY_ICON = "🪭";
 
 const FILTER_CHIPS: FilterChip[] = [
   { id: "popular",  label: "인기",       icon: "🔥" },
@@ -133,10 +142,6 @@ function mapApiExperienceToUI(exp: ApiExperience): Experience {
 
 // ─── 헬퍼 ─────────────────────────────────────────────────────────────────────
 
-function categoryToId(label: string): string {
-  return CATEGORIES.find((c) => c.label === label)?.id ?? "etc";
-}
-
 
 // ─── 서브 컴포넌트 ─────────────────────────────────────────────────────────────
 
@@ -192,9 +197,11 @@ function SearchBar({
 
 /** 카테고리 가로 스크롤 */
 function CategoryRow({
+  categories,
   selected,
   onSelect,
 }: {
+  categories: CategoryItem[];
   selected: string;
   onSelect: (id: string) => void;
 }) {
@@ -205,7 +212,7 @@ function CategoryRow({
       style={{ marginVertical: 4 }}
       contentContainerStyle={{ paddingHorizontal: 16, gap: 14 }}
     >
-      {CATEGORIES.map((cat) => {
+      {categories.map((cat) => {
         const active = selected === cat.id;
         return (
           <TouchableOpacity
@@ -696,14 +703,24 @@ export function SearchScreen() {
     sort:   { title: "정렬 기준",  options: SORT_OPTIONS,   selected: sort,   onSelect: (v) => setSort(v as SortOption) },
   };
 
+  // 체험 목록에 실제로 존재하는 분야로 카테고리 칩을 구성 (백엔드 category는 자유 텍스트라 고정 목록과 어긋날 수 있음)
+  const categories = useMemo<CategoryItem[]>(() => {
+    const distinctCategories = Array.from(new Set(allExperiences.map((exp) => exp.category))).sort();
+    return [
+      { id: "all", label: "전체", icon: "✨" },
+      ...distinctCategories.map((category) => ({
+        id: category,
+        label: category,
+        icon: CATEGORY_ICONS[category] ?? DEFAULT_CATEGORY_ICON,
+      })),
+    ];
+  }, [allExperiences]);
+
   // 필터링 + 정렬
   const results = useMemo(() => {
     let list = allExperiences.filter((exp) => {
-      // 카테고리
-      if (activeCategory !== "all") {
-        const catLabel = CATEGORIES.find((c) => c.id === activeCategory)?.label;
-        if (catLabel && exp.category !== catLabel) return false;
-      }
+      // 카테고리 (카테고리 id는 실제 category 값과 동일하다)
+      if (activeCategory !== "all" && exp.category !== activeCategory) return false;
       // 필터 칩
       if (activeFilter === "family"  && !exp.familyOk)  return false;
       if (activeFilter === "foreign" && !exp.foreignOk) return false;
@@ -783,7 +800,7 @@ export function SearchScreen() {
         ListHeaderComponent={
           <>
             {/* 카테고리 */}
-            <CategoryRow selected={activeCategory} onSelect={setCategory} />
+            <CategoryRow categories={categories} selected={activeCategory} onSelect={setCategory} />
 
             {/* 필터 칩 */}
             <FilterChips selected={activeFilter} onSelect={setFilter} />
