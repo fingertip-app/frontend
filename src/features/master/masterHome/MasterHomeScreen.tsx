@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Image,
   Alert,
+  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
@@ -25,6 +26,19 @@ const GRAY = "#8A8077";
 const BORDER = "#EAE6E1";
 const ACCENT_BG = "#F0EBE5";
 
+function confirmAction(title: string, message: string, confirmText: string): Promise<boolean> {
+  if (Platform.OS === "web") {
+    return Promise.resolve(window.confirm(`${title}\n\n${message}`));
+  }
+
+  return new Promise((resolve) => {
+    Alert.alert(title, message, [
+      { text: "취소", style: "cancel", onPress: () => resolve(false) },
+      { text: confirmText, onPress: () => resolve(true) },
+    ]);
+  });
+}
+
 // ─── 메인 컴포넌트 ─────────────────────────────────────────────────────────────
 export function MasterHomeScreen({
   onMenuPress,
@@ -41,41 +55,26 @@ export function MasterHomeScreen({
   // 예약 관리 등 다른 화면에서 승인/거절하고 돌아왔을 때 최신 상태로 갱신
   useFocusEffect(
     useCallback(() => {
-      reload();
+      void reload();
     }, [reload])
   );
 
-  const handleApprove = (id: number) => {
-    Alert.alert("예약 승인", "이 예약을 승인하시겠습니까?", [
-      { text: "취소", style: "cancel" },
-      {
-        text: "승인",
-        onPress: async () => {
-          try {
-            await approve(id);
-          } catch {
-            Alert.alert("알림", "예약 승인에 실패했습니다.");
-          }
-        },
-      },
-    ]);
+  const handleApprove = async (id: number) => {
+    if (!(await confirmAction("예약 승인", "이 예약을 승인하시겠습니까?", "승인"))) return;
+    try {
+      await approve(id);
+    } catch {
+      Alert.alert("알림", "예약 승인에 실패했습니다.");
+    }
   };
 
-  const handleReject = (id: number) => {
-    Alert.alert("예약 거절", "이 예약을 거절하시겠습니까?", [
-      { text: "취소", style: "cancel" },
-      {
-        text: "거절",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            await reject(id, "장인의 사정으로 예약을 거절했습니다.");
-          } catch {
-            Alert.alert("알림", "예약 거절에 실패했습니다.");
-          }
-        },
-      },
-    ]);
+  const handleReject = async (id: number) => {
+    if (!(await confirmAction("예약 거절", "이 예약을 거절하시겠습니까?", "거절"))) return;
+    try {
+      await reject(id, "장인의 사정으로 예약을 거절했습니다.");
+    } catch {
+      Alert.alert("알림", "예약 거절에 실패했습니다.");
+    }
   };
 
   return (

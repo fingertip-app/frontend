@@ -114,7 +114,7 @@ export type RootStackParamList = {
   MasterReviewReply: { review: any };
   MasterMyPage: undefined;
   MasterProfile: undefined;
-  MasterExperienceCreate: undefined;
+  MasterExperienceCreate: { experienceId?: number } | undefined;
   Step1BasicInfo: undefined;
   Step2Photos: { title: string; shortDesc: string; detail: string } | undefined;
   Step3Schedule: {
@@ -130,6 +130,8 @@ export type RootStackParamList = {
     detail: string;
     mainPhoto: ExperiencePhoto;
     detailPhotos: ExperiencePhoto[];
+    operationStartDate: string;
+    operationEndDate: string;
     selectedDays: string[];
     timeSlots: ExperienceTimeSlot[];
   } | undefined;
@@ -139,6 +141,8 @@ export type RootStackParamList = {
     detail: string;
     mainPhoto: ExperiencePhoto;
     detailPhotos: ExperiencePhoto[];
+    operationStartDate: string;
+    operationEndDate: string;
     selectedDays: string[];
     timeSlots: ExperienceTimeSlot[];
     price: string;

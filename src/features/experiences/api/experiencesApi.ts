@@ -1,4 +1,4 @@
-import { apiGet, apiPost } from '@/services/api'
+import { apiGet, apiPost, apiPut } from '@/services/api'
 import type { Experience } from '@/types/api'
 
 export interface CreateExperienceRequest {
@@ -63,4 +63,15 @@ export async function createExperience(
   request: CreateExperienceRequest,
 ): Promise<Experience> {
   return apiPost<CreateExperienceRequest, Experience>(`/experiences?artisanId=${artisanId}`, request)
+}
+
+/**
+ * 체험 수정 (장인용)
+ * PUT /experiences/{experienceId}
+ */
+export async function updateExperience(
+  experienceId: number,
+  request: CreateExperienceRequest,
+): Promise<Experience> {
+  return apiPut<CreateExperienceRequest, Experience>(`/experiences/${experienceId}`, request)
 }

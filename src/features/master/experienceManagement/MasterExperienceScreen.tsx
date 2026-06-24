@@ -54,14 +54,13 @@ export function MasterExperienceScreen({
 
   const handleMorePress = (id: number) => {
     Alert.alert("체험 관리", undefined, [
-      { text: "수정", onPress: handleUnsupportedMutation },
+      {
+        text: "수정",
+        onPress: () => navigation.navigate("MasterExperienceCreate", { experienceId: id }),
+      },
       { text: "비활성화", onPress: () => toggleActive(id) },
       { text: "취소", style: "cancel" },
     ]);
-  };
-
-  const handleUnsupportedMutation = () => {
-    Alert.alert("알림", "백엔드 체험 수정 API 구현이 필요합니다.");
   };
 
   const toggleActive = (_id: string | number) => {
@@ -148,7 +147,9 @@ export function MasterExperienceScreen({
                   <TouchableOpacity
                     style={styles.actionBtn}
                     hitSlop={6}
-                    onPress={handleUnsupportedMutation}
+                    onPress={() =>
+                      navigation.navigate("MasterExperienceCreate", { experienceId: item.id })
+                    }
                   >
                     <Ionicons name="pencil-outline" size={14} color={GRAY} />
                     <Text style={styles.actionBtnText}>수정</Text>
