@@ -18,6 +18,11 @@ import { MainLayout } from "@/features/general/home/MainLayout";
 import { apiPost } from "@/services/api";
 import { MainTabParamList } from "@/navigation/RootNavigator";
 import { Experience } from "@/features/general/Search/SearchScreen";
+import {
+  extractInfoFromMessages,
+  getNextStep,
+  hasMinimumInfoForRecommendation,
+} from "./smart-flow-helper";
 
 // ─── 팔레트 (기존 유지) ────────────────────────────────────────────────────────
 const BG        = "#F5F0EA";
@@ -462,9 +467,26 @@ export function AIrecommendationScreen() {
       return;
     }
 
-    const nextStep = FLOW[currentStep]?.nextStep;
+    // 🆕 스마트 흐름: 사용자 답변에서 정보 추출
+    const userAnswers = nextMessages.filter((m) => m.role === "user").map((m) => m.text);
+    const extractedInfo = extractInfoFromMessages(userAnswers);
+    const smartNextStep = getNextStep(extractedInfo);
 
     setTimeout(() => {
+      // 충분한 정보가 있으면 바로 추천
+      if (smartNextStep === "recommend" || hasMinimumInfoForRecommendation(extractedInfo)) {
+        fetchRecommendations(nextMessages).then((finalMsg) => {
+          setMessages((prev) => [...prev, finalMsg]);
+          setCurrentStep("done");
+          setIsTyping(false);
+          setChipsDisabled(false);
+          scrollToBottom();
+        });
+        return;
+      }
+
+      // 정보가 부족하면 다음 단계 질문
+      const nextStep = FLOW[currentStep]?.nextStep;
       if (nextStep && nextStep !== "done") {
         const node = FLOW[nextStep];
         const aiMsg: Message = {
