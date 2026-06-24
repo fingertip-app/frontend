@@ -39,24 +39,6 @@ type FilterChip = {
 
 type SortOption = "추천순" | "가격 낮은순" | "가격 높은순" | "별점순" | "리뷰 많은순";
 
-/** Backend API 응답 타입 */
-interface ApiExperience {
-  id: number;
-  title: string;
-  category?: string;
-  locationAddress?: string;
-  price: number;
-  rating?: number;
-  reviewCount?: number;
-  imageUrl?: string;
-  durationMinutes?: number;
-  maxParticipants?: number;
-  supportedLanguages?: string[];
-  activeSchedules?: { scheduledAt: string }[];
-  createdAt: string;
-  artisanName?: string;
-}
-
 export type Experience = {
   id: string;
   title: string;
@@ -139,7 +121,7 @@ function mapApiExperienceToUI(exp: ApiExperience): Experience {
     reviewCount: 0, // TODO: 리뷰 개수 연동 필요
     duration: exp.durationMinutes ? `${exp.durationMinutes}분` : "시간 미정",
     price: exp.price || 0,
-    tags: [],
+    tags: exp.tags ?? [],
     imageUri: imageUrl,
     todayBooking: hasUpcomingSchedule,
     foreignOk: isForeignOk,
