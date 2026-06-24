@@ -13,6 +13,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { getUserNotifications, markNotificationAsRead, markAllNotificationsAsRead } from "./api/notificationsApi";
+import { getCurrentProfile } from "@/features/auth/api/authApi";
 import type { Notification } from "@/types/api";
 
 const BRAND = "#3D1F0D";
@@ -27,16 +28,20 @@ export function NotificationsScreen() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
-
-  // TODO: 실제 사용자 ID 가져오기 (현재는 Mock)
-  const userId = 1;
+  const [userId, setUserId] = useState<number | null>(null);
 
   const loadNotifications = async (isRefresh: boolean = false) => {
     if (isRefresh) setIsRefreshing(true);
     else setIsLoading(true);
 
     try {
-      const data = await getUserNotifications(userId);
+      const profile = await getCurrentProfile();
+      if (!profile) {
+        setNotifications([]);
+        return;
+      }
+      setUserId(profile.id);
+      const data = await getUserNotifications(profile.id);
       setNotifications(data);
     } catch (error) {
       console.error("Failed to load notifications:", error);
@@ -67,6 +72,8 @@ export function NotificationsScreen() {
   };
 
   const handleMarkAllAsRead = async () => {
+    if (!userId) return;
+
     const unreadCount = notifications.filter(n => !n.isRead).length;
     if (unreadCount === 0) {
       Alert.alert("안내", "읽지 않은 알림이 없습니다.");
