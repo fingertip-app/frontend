@@ -124,6 +124,11 @@ function mapApiExperienceToUI(exp: ApiExperience): Experience {
   const isFamilyFriendly = exp.maxParticipants >= 4;
   const isForeignOk = exp.supportedLanguages?.includes('en') || exp.supportedLanguages?.includes('영어');
 
+  // images 배열에서 첫 번째 이미지 URL 추출
+  const imageUrl = exp.images && exp.images.length > 0
+    ? exp.images[0].imageUrl
+    : "https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=400&q=80";
+
   return {
     id: String(exp.id),
     title: exp.title,
@@ -135,7 +140,7 @@ function mapApiExperienceToUI(exp: ApiExperience): Experience {
     duration: exp.durationMinutes ? `${exp.durationMinutes}분` : "시간 미정",
     price: exp.price || 0,
     tags: [],
-    imageUri: "https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=400&q=80",
+    imageUri: imageUrl,
     todayBooking: hasUpcomingSchedule,
     foreignOk: isForeignOk,
     familyOk: isFamilyFriendly,
