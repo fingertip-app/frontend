@@ -118,7 +118,6 @@ export function GeneralSignUpScreen() {
 
         {/* 입력 폼 영역 */}
         <View style={styles.formSection}>
-          
           {/* 이름 입력 */}
           <Text style={styles.inputLabel}>이름</Text>
           <View style={styles.inputContainer}>
@@ -145,16 +144,15 @@ export function GeneralSignUpScreen() {
               <Text style={styles.duplicateCheckBtnText}>중복확인</Text>
             </TouchableOpacity>
           </View>
-          {nicknameCheckMessage && (
+          {nicknameCheckMessage ? (
             <Text style={isNicknameChecked ? styles.successText : styles.errorText}>
               {nicknameCheckMessage}
             </Text>
-          )}
+          ) : null}
 
           {/* 휴대폰 번호 입력 */}
           <Text style={styles.inputLabel}>휴대폰 번호</Text>
           <View style={styles.inputContainer}>
-           
             <TextInput
               style={styles.input}
               placeholder="010-0000-0000"
@@ -178,16 +176,16 @@ export function GeneralSignUpScreen() {
               keyboardType="email-address"
               autoCapitalize="none"
             />
-        <TouchableOpacity style={styles.duplicateCheckBtn} onPress={handleCheckEmailDuplicate} activeOpacity={0.7}>
-          <Text style={styles.duplicateCheckBtnText}>중복확인</Text>
-        </TouchableOpacity>
+            <TouchableOpacity style={styles.duplicateCheckBtn} onPress={handleCheckEmailDuplicate} activeOpacity={0.7}>
+              <Text style={styles.duplicateCheckBtnText}>중복확인</Text>
+            </TouchableOpacity>
           </View>
 
-          {emailCheckMessage && (
+          {emailCheckMessage ? (
             <Text style={isEmailChecked ? styles.successText : styles.errorText}>
               {emailCheckMessage}
             </Text>
-          )}
+          ) : null}
 
           {/* 비밀번호 입력 */}
           <Text style={styles.inputLabel}>비밀번호</Text>
@@ -218,9 +216,9 @@ export function GeneralSignUpScreen() {
           </TouchableOpacity>
           </View>
 
-          {password.length > 0 && !/^(?=.*[a-zA-Z])(?=.*\d)(?=.*[\W_])[^\s]{8,}$/.test(password) && (
+          {password.length > 0 && !/^(?=.*[a-zA-Z])(?=.*\d)(?=.*[\W_])[^\s]{8,}$/.test(password) ? (
             <Text style={styles.errorText}>영문, 숫자, 특수문자를 포함해 8자 이상 입력해주세요.</Text>
-          )}
+          ) : null}
 
           {/* 비밀번호 확인 입력 */}
           <Text style={styles.inputLabel}>비밀번호 확인</Text>
@@ -250,10 +248,10 @@ export function GeneralSignUpScreen() {
               )}
             </TouchableOpacity>
           </View>
-          
-          {passwordConfirm.length > 0 && password !== passwordConfirm && (
+
+          {passwordConfirm.length > 0 && password !== passwordConfirm ? (
             <Text style={styles.errorText}>비밀번호가 일치하지 않습니다.</Text>
-          )}
+          ) : null}
         </View>
 
         {/* 약관 동의 영역 */}
@@ -322,7 +320,7 @@ export function GeneralSignUpScreen() {
 
             setIsLoading(true);
             try {
-              const { needsEmailVerification } = await signUp(email, password, nickname, name);
+              const { needsEmailVerification } = await signUp(email, password, nickname, name, phone);
               if (needsEmailVerification) {
                 Alert.alert(
                   "이메일 인증 필요",

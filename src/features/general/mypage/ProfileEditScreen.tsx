@@ -174,6 +174,11 @@ export function ProfileEditScreen() {
           placeholderTextColor={TEXT_S}
         />
 
+        <Text style={styles.label}>이메일</Text>
+        <View style={[styles.input, styles.inputDisabled]}>
+          <Text style={styles.disabledText}>{profile?.email || ""}</Text>
+        </View>
+
         <Text style={styles.label}>전화번호</Text>
         <TextInput
           style={styles.input}
@@ -244,6 +249,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: TEXT,
     backgroundColor: "#FFFFFF",
+  },
+  inputDisabled: {
+    backgroundColor: "#F5F5F5",
+    justifyContent: "center",
+  },
+  disabledText: {
+    fontSize: 14,
+    color: TEXT_S,
   },
   chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   chip: {

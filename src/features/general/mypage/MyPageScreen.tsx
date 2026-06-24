@@ -15,8 +15,9 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "@/navigation/RootNavigator";
 import { Ionicons, Feather } from "@expo/vector-icons";
 import { MainLayout } from "@/features/general/home/MainLayout";
-import { logout, getCurrentProfile } from "@/features/auth/api/authApi";
+import { logout, getCurrentProfile, deleteAccount } from "@/features/auth/api/authApi";
 import { UserProfile } from "@/features/auth/types";
+import { getUserStats, UserStats } from "@/features/general/mypage/api/mypageApi";
 
 // ─── 팔레트 ────────────────────────────────────────────────────────────────────
 const BG       = "#F7F4EF";   // 크림 배경
@@ -131,10 +132,12 @@ const ac = StyleSheet.create({
 export function MyPageScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [stats, setStats] = useState<UserStats | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadProfile();
+    loadStats();
   }, []);
 
   const loadProfile = async () => {
@@ -151,6 +154,17 @@ export function MyPageScreen() {
     }
   };
 
+  const loadStats = async () => {
+    try {
+      console.log("🔵 통계 로드 시작");
+      const userStats = await getUserStats();
+      console.log("🔵 통계 데이터:", userStats);
+      setStats(userStats);
+    } catch (e) {
+      console.log("🔴 통계 로드 실패:", e);
+    }
+  };
+
   const handleLogout = async () => {
     try {
       await logout();
@@ -158,6 +172,28 @@ export function MyPageScreen() {
     } catch {
       Alert.alert('오류', '로그아웃에 실패했습니다.');
     }
+  };
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      '회원 탈퇴',
+      '정말로 탈퇴하시겠습니까?\n탈퇴 시 모든 데이터가 삭제되며 복구할 수 없습니다.',
+      [
+        { text: '취소', style: 'cancel' },
+        {
+          text: '탈퇴',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteAccount();
+              navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+            } catch {
+              Alert.alert('오류', '회원 탈퇴에 실패했습니다.');
+            }
+          },
+        },
+      ]
+    );
   };
 
   if (loading) {
@@ -218,13 +254,28 @@ export function MyPageScreen() {
 
         {/* ── 통계 4개 ── */}
         <View style={ms.statsRow}>
-          <StatItem label="찜한 체험"   value="0" onPress={() => navigation.navigate("Wishlist")} />
+          <StatItem
+            label="찜한 체험"
+            value={stats?.wishlistCount?.toString() || "0"}
+            onPress={() => navigation.navigate("Wishlist")}
+          />
           <View style={ms.statDivider} />
-          <StatItem label="작성한 후기" value="0" onPress={() => navigation.navigate("MyReviews")} />
+          <StatItem
+            label="작성한 후기"
+            value={stats?.reviewCount?.toString() || "0"}
+            onPress={() => navigation.navigate("MyReviews")}
+          />
           <View style={ms.statDivider} />
-          <StatItem label="쿠폰함"      value="0" />
+          <StatItem
+            label="쿠폰함"
+            value={stats?.couponCount?.toString() || "0"}
+          />
           <View style={ms.statDivider} />
-          <StatItem label="포인트"      value="0P" isLast />
+          <StatItem
+            label="포인트"
+            value={`${stats?.pointBalance?.toString() || "0"}P`}
+            isLast
+          />
         </View>
 
         {/* ── 섹션 타이틀 ── */}
@@ -244,17 +295,24 @@ export function MyPageScreen() {
 
         {/* ── 기타 메뉴 리스트 ── */}
         <View style={ms.menuSection}>
-          {["공지사항", "자주 묻는 질문", "이용약관", "로그아웃"].map((item) => (
+          {["공지사항", "자주 묻는 질문", "이용약관", "로그아웃", "회원탈퇴"].map((item) => (
             <TouchableOpacity
               key={item}
               style={ms.menuItem}
               activeOpacity={0.7}
-              onPress={item === "로그아웃" ? handleLogout : undefined}
+              onPress={
+                item === "로그아웃" ? handleLogout :
+                item === "회원탈퇴" ? handleDeleteAccount :
+                undefined
+              }
             >
-              <Text style={[ms.menuItemText, item === "로그아웃" && { color: "#EF4444" }]}>
+              <Text style={[
+                ms.menuItemText,
+                (item === "로그아웃" || item === "회원탈퇴") && { color: "#EF4444" }
+              ]}>
                 {item}
               </Text>
-              {item !== "로그아웃" && (
+              {item !== "로그아웃" && item !== "회원탈퇴" && (
                 <Ionicons name="chevron-forward" size={18} color="#D4CDC4" />
               )}
             </TouchableOpacity>

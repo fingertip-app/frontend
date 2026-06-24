@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase'
-import { apiGet, apiPost, apiPostWithToken, apiPatch } from '@/services/api'
+import { apiGet, apiPost, apiPostWithToken, apiPatch, apiDelete } from '@/services/api'
 import { UserProfile } from '@/features/auth/types'
 
 export interface LoginResult {
@@ -46,12 +46,12 @@ export async function login(email: string, password: string): Promise<LoginResul
  * 일반 회원가입
  * Supabase에 계정 생성 (백엔드 user는 첫 로그인 시 자동 생성됨)
  */
-export async function signUp(email: string, password: string, nickname: string, name: string): Promise<SignUpResult> {
+export async function signUp(email: string, password: string, nickname: string, name: string, phone: string): Promise<SignUpResult> {
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
-      data: { nickname, name },
+      data: { nickname, name, phone },
     },
   })
 
@@ -93,6 +93,20 @@ export async function applyArtisan(
  * 로그아웃
  */
 export async function logout(): Promise<void> {
+  const { error } = await supabase.auth.signOut()
+  if (error) {
+    throw new Error('로그아웃에 실패했습니다.')
+  }
+}
+
+/**
+ * 회원 탈퇴
+ */
+export async function deleteAccount(): Promise<void> {
+  // 백엔드에서 계정 비활성화
+  await apiDelete('/users/me')
+
+  // Supabase 세션 삭제
   const { error } = await supabase.auth.signOut()
   if (error) {
     throw new Error('로그아웃에 실패했습니다.')
