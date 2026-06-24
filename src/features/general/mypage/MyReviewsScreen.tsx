@@ -21,6 +21,7 @@ import { getCurrentProfile } from "@/features/auth/api/authApi";
 import { getMyReservations } from "@/features/reservations/api/reservationsApi";
 import { getExperience } from "@/features/experiences/api/experiencesApi";
 import { getUserReviews, deleteReview } from "@/features/reviews/api/reviewsApi";
+import { formatScheduleDate } from "@/lib/scheduling";
 import type { Review } from "@/types/api";
 
 const BRAND = "#3B2B26";
@@ -29,12 +30,6 @@ const BORDER = "#EAE6E1";
 const GRAY = "#8A8077";
 const FALLBACK_IMAGE = "https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=400&q=80";
 const { width: SCREEN_W } = Dimensions.get("window");
-
-function formatDate(iso: string | null): string {
-  if (!iso) return "-";
-  const d = new Date(iso);
-  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
-}
 
 interface PastExperienceItem {
   id: string;
@@ -92,7 +87,7 @@ export function MyReviewsScreen() {
                 id: String(r.id),
                 reservationId: r.id,
                 experienceId: r.experienceId,
-                date: formatDate(r.reservedDateTime),
+                date: formatScheduleDate(r.reservedDateTime),
                 title: exp.title,
                 artisan: exp.locationAddress || "위치 미정",
                 imageUri: exp.images?.[0]?.imageUrl || FALLBACK_IMAGE,
@@ -106,7 +101,7 @@ export function MyReviewsScreen() {
                 id: String(rv.id),
                 title: exp.title,
                 rating: rv.rating,
-                date: formatDate(rv.createdAt),
+                date: formatScheduleDate(rv.createdAt),
                 content: rv.content,
                 imageUri: exp.images?.[0]?.imageUrl || FALLBACK_IMAGE,
                 experienceId: rv.experienceId,
