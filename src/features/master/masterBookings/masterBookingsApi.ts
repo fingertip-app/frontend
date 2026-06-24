@@ -10,6 +10,7 @@ import { getUser } from '@/features/users/api/usersApi'
 import type { Reservation, ReservationStatus } from '@/types/api'
 import type {
   MasterBookingDetail,
+  MasterBookingFilter,
   MasterBookingListItem,
   MasterBookingsData,
   MasterBookingStatus,
@@ -20,14 +21,30 @@ export function toMasterBookingStatus(status: ReservationStatus): MasterBookingS
     case 'PENDING':
       return 'pending'
     case 'APPROVED':
+      return 'approved'
     case 'PAID':
+      return 'paid'
     case 'CONFIRMED':
       return 'confirmed'
     case 'COMPLETED':
       return 'completed'
-    default:
+    case 'REJECTED':
+      return 'rejected'
+    case 'CANCELLED':
       return 'cancelled'
   }
+}
+
+export function matchesMasterBookingFilter(
+  status: MasterBookingStatus,
+  filter: MasterBookingFilter,
+): boolean {
+  if (filter === 'all') return true
+  if (filter === 'confirmed') {
+    return status === 'approved' || status === 'paid' || status === 'confirmed'
+  }
+  if (filter === 'cancelled') return status === 'rejected' || status === 'cancelled'
+  return status === filter
 }
 
 function parseDate(value: string | null): Date | null {

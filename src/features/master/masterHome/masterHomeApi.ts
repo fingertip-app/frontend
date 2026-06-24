@@ -19,12 +19,18 @@ const DEFAULT_PROFILE_IMAGE =
 const DEFAULT_EXPERIENCE_IMAGE =
   'https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=200&q=80'
 
-const ACTIVE_RESERVATION_STATUSES = new Set<Reservation['status']>([
+const TODAY_COUNT_STATUSES = new Set<Reservation['status']>([
   'PENDING',
   'APPROVED',
   'PAID',
   'CONFIRMED',
   'COMPLETED',
+])
+
+const TODAY_SCHEDULE_STATUSES = new Set<Reservation['status']>([
+  'APPROVED',
+  'PAID',
+  'CONFIRMED',
 ])
 
 const REVENUE_STATUSES = new Set<Reservation['status']>(['PAID', 'CONFIRMED', 'COMPLETED'])
@@ -115,7 +121,7 @@ function mapTodaySchedules(
       return (
         reservedAt !== null &&
         isSameDay(reservedAt, now) &&
-        ACTIVE_RESERVATION_STATUSES.has(reservation.status)
+        TODAY_SCHEDULE_STATUSES.has(reservation.status)
       )
     })
     .sort((left, right) => {
@@ -178,7 +184,7 @@ export async function getMasterHomeData(): Promise<MasterHomeData> {
     return (
       reservedAt !== null &&
       isSameDay(reservedAt, now) &&
-      ACTIVE_RESERVATION_STATUSES.has(reservation.status)
+      TODAY_COUNT_STATUSES.has(reservation.status)
     )
   }).length
 

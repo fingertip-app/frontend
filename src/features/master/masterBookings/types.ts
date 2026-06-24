@@ -1,6 +1,15 @@
 import type { ReservationStatus } from '@/types/api'
 
-export type MasterBookingStatus = 'pending' | 'confirmed' | 'completed' | 'cancelled'
+export type MasterBookingStatus =
+  | 'pending'
+  | 'approved'
+  | 'paid'
+  | 'confirmed'
+  | 'completed'
+  | 'rejected'
+  | 'cancelled'
+
+export type MasterBookingFilter = 'all' | 'pending' | 'confirmed' | 'completed' | 'cancelled'
 
 export interface MasterBookingListItem {
   id: number

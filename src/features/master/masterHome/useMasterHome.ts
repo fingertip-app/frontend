@@ -44,32 +44,18 @@ export function useMasterHome(): UseMasterHomeResult {
     async (reservationId: number) => {
       if (!data) throw new Error('장인 정보를 먼저 불러와야 합니다.')
       await approveMasterReservation(reservationId, data.artisanId)
-      setData((current) =>
-        current
-          ? {
-              ...current,
-              bookingRequests: current.bookingRequests.filter((item) => item.id !== reservationId),
-            }
-          : current,
-      )
+      await reload()
     },
-    [data],
+    [data, reload],
   )
 
   const reject = useCallback(
     async (reservationId: number, rejectionReason: string) => {
       if (!data) throw new Error('장인 정보를 먼저 불러와야 합니다.')
       await rejectMasterReservation(reservationId, data.artisanId, rejectionReason)
-      setData((current) =>
-        current
-          ? {
-              ...current,
-              bookingRequests: current.bookingRequests.filter((item) => item.id !== reservationId),
-            }
-          : current,
-      )
+      await reload()
     },
-    [data],
+    [data, reload],
   )
 
   return { data, isLoading, error, reload, approve, reject }
