@@ -61,3 +61,22 @@ export async function getUserReviews(userId: number): Promise<Review[]> {
 export async function deleteReview(reviewId: number): Promise<void> {
   return apiDelete(`/reviews/${reviewId}`)
 }
+
+/**
+ * 리뷰 AI 요약
+ * POST /reviews/summarize
+ */
+export interface ReviewSummaryRequest {
+  content: string
+  locale?: string
+}
+
+export interface ReviewSummaryResponse {
+  summary: string
+  sentimentScore: number
+  keywords: string[]
+}
+
+export async function summarizeReview(req: ReviewSummaryRequest): Promise<ReviewSummaryResponse> {
+  return apiPost<ReviewSummaryRequest, ReviewSummaryResponse>('/reviews/summarize', req)
+}
