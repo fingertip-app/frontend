@@ -7,13 +7,24 @@ import { RootStackParamList } from "@/navigation/RootNavigator";
 import Svg, { Path, Circle } from "react-native-svg";
 import { login } from "@/features/auth/api/authApi";
 
+type LoginMode = "USER" | "ARTISAN";
+
 export function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [loginMode, setLoginMode] = useState<LoginMode>("USER");
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+
+  const goToHomeByRole = (role: string) => {
+    if (role === "ARTISAN") {
+      navigation.reset({ index: 0, routes: [{ name: "MasterHome" }] });
+    } else {
+      navigation.reset({ index: 0, routes: [{ name: "MainTabs" }] });
+    }
+  };
 
   const handleLogin = async () => {
     setErrorMessage("");
@@ -24,10 +35,19 @@ export function LoginScreen() {
     setIsLoading(true);
     try {
       const { profile } = await login(email, password);
-      if (profile.role === "ARTISAN") {
-        navigation.reset({ index: 0, routes: [{ name: "MasterHome" }] });
+      const isMismatch =
+        (loginMode === "ARTISAN" && profile.role !== "ARTISAN") ||
+        (loginMode === "USER" && profile.role === "ARTISAN");
+
+      if (isMismatch) {
+        const actualModeLabel = profile.role === "ARTISAN" ? "장인" : "일반";
+        Alert.alert(
+          "계정 유형이 달라요",
+          `선택하신 모드와 다른 계정이에요. 이 계정은 '${actualModeLabel}' 계정입니다. 다시 선택해주세요.`,
+          [{ text: "확인" }]
+        );
       } else {
-        navigation.reset({ index: 0, routes: [{ name: "MainTabs" }] });
+        goToHomeByRole(profile.role);
       }
     } catch (e) {
       setErrorMessage(e instanceof Error ? e.message : "로그인에 실패했습니다.");
@@ -74,7 +94,25 @@ export function LoginScreen() {
           <Text style={styles.welcomeDesc}>로그인하고 다양한 전통 공예 체험을 만나보세요.</Text>
         </View>
 
-        {/* 회원 타입 탭 제거됨: role은 백엔드에서 자동 판별 */}
+        {/* 일반 / 장인 로그인 모드 토글 */}
+        <View style={styles.tabContainer}>
+          <View style={styles.tabBackground}>
+            <TouchableOpacity
+              style={[styles.tabButton, loginMode === "USER" && styles.activeTab]}
+              activeOpacity={0.8}
+              onPress={() => setLoginMode("USER")}
+            >
+              <Text style={[styles.tabText, loginMode === "USER" && styles.activeTabText]}>일반</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.tabButton, loginMode === "ARTISAN" && styles.activeTab]}
+              activeOpacity={0.8}
+              onPress={() => setLoginMode("ARTISAN")}
+            >
+              <Text style={[styles.tabText, loginMode === "ARTISAN" && styles.activeTabText]}>장인</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
 
         {/* 입력 폼 영역 */}
         <View style={styles.formSection}>
@@ -256,16 +294,19 @@ const styles = StyleSheet.create({
   // Welcome Section
   welcomeSection: {
     marginBottom: 30,
+    alignItems: 'center',
   },
   welcomeTitle: {
     fontSize: 24,
     fontWeight: 'bold',
     color: '#3B2B26',
     marginBottom: 8,
+    textAlign: 'center',
   },
   welcomeDesc: {
     fontSize: 13,
     color: '#6E665F',
+    textAlign: 'center',
   },
 
   // Tabs (일반 회원 / 장인 회원)
