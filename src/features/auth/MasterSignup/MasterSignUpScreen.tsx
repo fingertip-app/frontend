@@ -71,7 +71,7 @@ export function MasterSignUpScreen() {
 
     setIsLoading(true);
     try {
-      const { needsEmailVerification, accessToken } = await signUp(email, password, nickname, masterName);
+      const { needsEmailVerification, accessToken } = await signUp(email, password, nickname, masterName, phoneNumber);
 
       if (needsEmailVerification) {
         Alert.alert(

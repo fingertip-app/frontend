@@ -17,6 +17,7 @@ import { Ionicons, Feather } from "@expo/vector-icons";
 import { MainLayout } from "@/features/general/home/MainLayout";
 import { logout, getCurrentProfile } from "@/features/auth/api/authApi";
 import { UserProfile } from "@/features/auth/types";
+import { getUserStats, UserStats } from "@/features/general/mypage/api/mypageApi";
 
 // ─── 팔레트 ────────────────────────────────────────────────────────────────────
 const BG       = "#F7F4EF";   // 크림 배경
@@ -131,10 +132,12 @@ const ac = StyleSheet.create({
 export function MyPageScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [stats, setStats] = useState<UserStats | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadProfile();
+    loadStats();
   }, []);
 
   const loadProfile = async () => {
@@ -148,6 +151,17 @@ export function MyPageScreen() {
       Alert.alert("알림", "프로필 정보를 불러오지 못했습니다.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadStats = async () => {
+    try {
+      console.log("🔵 통계 로드 시작");
+      const userStats = await getUserStats();
+      console.log("🔵 통계 데이터:", userStats);
+      setStats(userStats);
+    } catch (e) {
+      console.log("🔴 통계 로드 실패:", e);
     }
   };
 
@@ -218,13 +232,28 @@ export function MyPageScreen() {
 
         {/* ── 통계 4개 ── */}
         <View style={ms.statsRow}>
-          <StatItem label="찜한 체험"   value="0" onPress={() => navigation.navigate("Wishlist")} />
+          <StatItem
+            label="찜한 체험"
+            value={stats?.wishlistCount?.toString() || "0"}
+            onPress={() => navigation.navigate("Wishlist")}
+          />
           <View style={ms.statDivider} />
-          <StatItem label="작성한 후기" value="0" onPress={() => navigation.navigate("MyReviews")} />
+          <StatItem
+            label="작성한 후기"
+            value={stats?.reviewCount?.toString() || "0"}
+            onPress={() => navigation.navigate("MyReviews")}
+          />
           <View style={ms.statDivider} />
-          <StatItem label="쿠폰함"      value="0" />
+          <StatItem
+            label="쿠폰함"
+            value={stats?.couponCount?.toString() || "0"}
+          />
           <View style={ms.statDivider} />
-          <StatItem label="포인트"      value="0P" isLast />
+          <StatItem
+            label="포인트"
+            value={`${stats?.pointBalance?.toString() || "0"}P`}
+            isLast
+          />
         </View>
 
         {/* ── 섹션 타이틀 ── */}

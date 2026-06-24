@@ -46,12 +46,12 @@ export async function login(email: string, password: string): Promise<LoginResul
  * 일반 회원가입
  * Supabase에 계정 생성 (백엔드 user는 첫 로그인 시 자동 생성됨)
  */
-export async function signUp(email: string, password: string, nickname: string, name: string): Promise<SignUpResult> {
+export async function signUp(email: string, password: string, nickname: string, name: string, phone: string): Promise<SignUpResult> {
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
-      data: { nickname, name },
+      data: { nickname, name, phone },
     },
   })
 

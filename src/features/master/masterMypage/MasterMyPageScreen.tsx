@@ -17,6 +17,7 @@ import { Ionicons, Feather } from "@expo/vector-icons";
 import { MasterBottomTabs } from "../components/MasterBottomTabs";
 import { MasterHeader } from "../components/MasterHeader";
 import { logout } from "@/features/auth/api/authApi";
+import { getArtisanStats, ArtisanStats } from "@/features/general/mypage/api/mypageApi";
 
 // ─── 기존 테마 팔레트 재사용 ──────────────────────────────────────────────────
 const BG       = "#F7F4EF";
@@ -47,6 +48,25 @@ const ss = StyleSheet.create({
 // ─── 장인(Master) 메인 스크린 ──────────────────────────────────────────────────
 export function MasterMyPageScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const [stats, setStats] = React.useState<ArtisanStats | null>(null);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    loadStats();
+  }, []);
+
+  const loadStats = async () => {
+    try {
+      console.log("🔵 장인 통계 로드 시작");
+      const artisanStats = await getArtisanStats();
+      console.log("🔵 장인 통계 데이터:", artisanStats);
+      setStats(artisanStats);
+    } catch (e) {
+      console.log("🔴 장인 통계 로드 실패:", e);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleLogout = async () => {
     try {
@@ -109,11 +129,20 @@ export function MasterMyPageScreen() {
 
         {/* ── 요약 통계 ── */}
         <View style={ms.statsRow}>
-          <StatItem label="신규 예약" value="3건" />
+          <StatItem
+            label="신규 예약"
+            value={`${stats?.pendingReservationCount?.toString() || "0"}건`}
+          />
           <View style={ms.statDivider} />
-          <StatItem label="운영 클래스" value="2개" />
+          <StatItem
+            label="운영 클래스"
+            value={`${stats?.activeExperienceCount?.toString() || "0"}개`}
+          />
           <View style={ms.statDivider} />
-          <StatItem label="이달의 수익" value="1.2M" />
+          <StatItem
+            label="이달의 수익"
+            value={stats?.monthlyRevenue ? `${(stats.monthlyRevenue / 10000).toFixed(0)}만원` : "0원"}
+          />
         </View>
 
         {/* ── 공방 관리 메뉴 (버튼형) ── */}
