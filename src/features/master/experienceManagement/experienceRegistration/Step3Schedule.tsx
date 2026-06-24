@@ -114,6 +114,16 @@ export function Step3Schedule() {
       Alert.alert("운영 시간 확인", "모든 시간대를 HH:mm 또는 HH:mm AM/PM 형식으로 입력해주세요.");
       return;
     }
+    if (
+      timeSlots.some((slot) => {
+        const start = parseTimeLabel(slot.startTime)!;
+        const end = parseTimeLabel(slot.endTime)!;
+        return end.hour * 60 + end.minute <= start.hour * 60 + start.minute;
+      })
+    ) {
+      Alert.alert("운영 시간 확인", "종료 시간은 시작 시간보다 늦어야 합니다.");
+      return;
+    }
     if (scheduleCount === 0) {
       Alert.alert("일정 확인", "선택한 기간 안에 생성되는 일정이 없습니다.");
       return;
