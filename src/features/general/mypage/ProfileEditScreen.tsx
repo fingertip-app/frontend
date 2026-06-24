@@ -16,7 +16,8 @@ import * as ImagePicker from "expo-image-picker";
 import { Ionicons, Feather } from "@expo/vector-icons";
 import { RootStackParamList } from "@/navigation/RootNavigator";
 import { MainLayout } from "@/features/general/home/MainLayout";
-import { getCurrentProfile, updateProfile, uploadImage } from "@/features/auth/api/authApi";
+import { getCurrentProfile, updateProfile } from "@/features/auth/api/authApi";
+import { uploadImage } from "@/features/files/api/filesApi";
 import { UserProfile } from "@/features/auth/types";
 
 const BG       = "#F7F4EF";
@@ -86,9 +87,10 @@ export function ProfileEditScreen() {
 
     try {
       const asset = result.assets[0];
-      const response = await fetch(asset.uri);
-      const blob = await response.blob();
-      const uploadedUrl = await uploadImage(blob, "profile");
+      const uploadedUrl = await uploadImage(
+        { uri: asset.uri, fileName: asset.fileName, mimeType: asset.mimeType },
+        "profile"
+      );
       setProfileImageUrl(uploadedUrl);
     } catch (e) {
       console.error("이미지 업로드 실패:", e);
