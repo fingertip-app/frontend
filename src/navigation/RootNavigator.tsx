@@ -49,6 +49,7 @@ import { CardNewsListScreen } from "@/features/general/cardnews/CardNewsListScre
 import { CardNewsDetailScreen } from "@/features/general/cardnews/CardNewsDetailScreen";
 import { AIChatScreen } from "@/features/general/AI/AIChatScreen";
 import { ArtisanDetailScreen } from "@/features/general/home/ArtisanDetailScreen";
+import { ExperienceReviewsScreen } from "@/features/general/Search/ExperienceReviewsScreen";
 import { MasterTodayStatusScreen } from "@/features/master/todayStatus/MasterTodayStatusScreen";
 import { MasterProfileScreen } from "@/features/master/masterProfile/MasterProfileScreen";
 import { NotificationsScreen } from "@/features/notifications/NotificationsScreen";
@@ -131,6 +132,7 @@ export type RootStackParamList = {
   CardNewsDetail: { news: CardNews };
   AIChat: { news: CardNews };
   ArtisanDetail: { artisanId: number };
+  ExperienceReviews: { experienceId: number; title: string };
   MasterTodayStatus: undefined;
   QrScanner: undefined;
 };
@@ -242,6 +244,7 @@ export function RootNavigator() {
       <Stack.Screen name="CardNewsDetail" component={CardNewsDetailScreen} />
       <Stack.Screen name="AIChat" component={AIChatScreen} />
       <Stack.Screen name="ArtisanDetail" component={ArtisanDetailScreen} />
+      <Stack.Screen name="ExperienceReviews" component={ExperienceReviewsScreen} />
       <Stack.Screen name="MasterTodayStatus" component={MasterTodayStatusScreen} />
       <Stack.Screen name="Notifications" component={NotificationsScreen} />
       <Stack.Screen name="QrScanner" component={QrScannerScreen} />

@@ -15,7 +15,9 @@ import { Ionicons } from "@expo/vector-icons";
 import { Experience } from "./SearchScreen";
 import { RootStackParamList } from "@/navigation/RootNavigator";
 import { getExperience } from "@/features/experiences/api/experiencesApi";
-import type { Experience as BackendExperience } from "@/types/api";
+import { getExperienceReviews } from "@/features/reviews/api/reviewsApi";
+import { formatScheduleDate } from "@/lib/scheduling";
+import type { Experience as BackendExperience, Review } from "@/types/api";
 
 const BRAND = "#3D1F0D";
 const BRAND_BUTTON = "#3D1F0D";
@@ -82,6 +84,8 @@ export function DetailBottomSheet({ exp, onClose }: Props) {
   const [fullExperience, setFullExperience] = useState<BackendExperience | null>(null);
   const [isLoadingExperience, setIsLoadingExperience] = useState(true);
   const [experienceError, setExperienceError] = useState<string | null>(null);
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [isLoadingReviews, setIsLoadingReviews] = useState(true);
   const requestIdRef = useRef(0);
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
@@ -124,6 +128,38 @@ export function DetailBottomSheet({ exp, onClose }: Props) {
       requestIdRef.current += 1;
     };
   }, [loadExperience]);
+
+  useEffect(() => {
+    const experienceId = Number(exp.id);
+    if (!Number.isFinite(experienceId)) {
+      setReviews([]);
+      setIsLoadingReviews(false);
+      return;
+    }
+
+    let isCurrent = true;
+    setIsLoadingReviews(true);
+    getExperienceReviews(experienceId)
+      .then((data) => {
+        if (isCurrent) setReviews(data);
+      })
+      .catch(() => {
+        if (isCurrent) setReviews([]);
+      })
+      .finally(() => {
+        if (isCurrent) setIsLoadingReviews(false);
+      });
+
+    return () => {
+      isCurrent = false;
+    };
+  }, [exp.id]);
+
+  const reviewCount = reviews.length;
+  const averageRating =
+    reviewCount > 0
+      ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviewCount
+      : 0;
 
   const hasSchedules = !!fullExperience?.schedules?.some(
     (schedule) => schedule.isActive && schedule.remainingSlots > 0
@@ -221,9 +257,9 @@ export function DetailBottomSheet({ exp, onClose }: Props) {
               <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
                 <Ionicons name="star" size={14} color="#F59E0B" />
                 <Text style={{ fontSize: 14, fontWeight: "600", color: "#1C1107" }}>
-                  4.9
+                  {reviewCount > 0 ? averageRating.toFixed(1) : "0.0"}
                 </Text>
-                <Text style={{ fontSize: 13, color: "#8C7B6E" }}>(128)</Text>
+                <Text style={{ fontSize: 13, color: "#8C7B6E" }}>({reviewCount})</Text>
               </View>
             </View>
 
@@ -416,6 +452,108 @@ export function DetailBottomSheet({ exp, onClose }: Props) {
                 label="음료 제공"
               />
             </View>
+
+            {/* 구분선 */}
+            <View
+              style={{ height: 1, backgroundColor: "#EDE8E2", marginTop: 24, marginBottom: 24 }}
+            />
+
+            {/* 후기 */}
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 6,
+                marginBottom: 14,
+              }}
+            >
+              <Text style={{ fontSize: 17, fontWeight: "700", color: "#1C1107" }}>
+                후기
+              </Text>
+              {reviewCount > 0 && (
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                  <Ionicons name="star" size={14} color="#F59E0B" />
+                  <Text style={{ fontSize: 14, fontWeight: "600", color: "#1C1107" }}>
+                    {averageRating.toFixed(1)}
+                  </Text>
+                  <Text style={{ fontSize: 13, color: "#8C7B6E" }}>({reviewCount})</Text>
+                </View>
+              )}
+            </View>
+
+            {isLoadingReviews ? (
+              <ActivityIndicator color={BRAND} />
+            ) : reviewCount === 0 ? (
+              <Text style={{ fontSize: 14, color: "#8C7B6E" }}>
+                아직 등록된 후기가 없습니다.
+              </Text>
+            ) : (
+              reviews.slice(0, 3).map((review) => (
+                <View
+                  key={review.id}
+                  style={{
+                    backgroundColor: "#FFFFFF",
+                    borderRadius: 16,
+                    padding: 16,
+                    marginBottom: 12,
+                    shadowColor: "#000",
+                    shadowOffset: { width: 0, height: 1 },
+                    shadowOpacity: 0.06,
+                    shadowRadius: 6,
+                    elevation: 2,
+                  }}
+                >
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      marginBottom: 8,
+                    }}
+                  >
+                    <View style={{ flexDirection: "row", alignItems: "center" }}>
+                      {[1, 2, 3, 4, 5].map((s) => (
+                        <Ionicons
+                          key={s}
+                          name={s <= review.rating ? "star" : "star-outline"}
+                          size={13}
+                          color="#F59E0B"
+                        />
+                      ))}
+                    </View>
+                    <Text style={{ fontSize: 12, color: "#8C7B6E" }}>
+                      {formatScheduleDate(review.createdAt)}
+                    </Text>
+                  </View>
+                  <Text style={{ fontSize: 14, color: "#4B3D33", lineHeight: 21 }}>
+                    {review.content}
+                  </Text>
+                </View>
+              ))
+            )}
+
+            {reviewCount > 3 && (
+              <TouchableOpacity
+                onPress={() =>
+                  navigation.navigate("ExperienceReviews", {
+                    experienceId: Number(exp.id),
+                    title: exp.title,
+                  })
+                }
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 4,
+                  paddingVertical: 12,
+                }}
+              >
+                <Text style={{ fontSize: 14, color: BRAND, fontWeight: "600" }}>
+                  리뷰 전체보기 ({reviewCount})
+                </Text>
+                <Ionicons name="chevron-forward" size={14} color={BRAND} />
+              </TouchableOpacity>
+            )}
 
             {/* 구분선 */}
             <View
