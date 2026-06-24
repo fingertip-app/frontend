@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { redirectToLogin } from '@/navigation/navigationRef'
 
 const rawApiBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL?.trim() || 'http://localhost:8080'
 // API_BASE_URL는 항상 '/api'로 끝나도록 정규화합니다.
@@ -31,6 +32,23 @@ async function getAuthHeader(): Promise<Record<string, string>> {
   return token ? { Authorization: `Bearer ${token}` } : {}
 }
 
+// 세션 만료(401) 응답을 받으면 Supabase 세션을 정리하고 로그인 화면으로 보낸다.
+// 동시에 여러 요청이 401을 받아도 한 번만 처리하도록 가드.
+let isHandlingUnauthorized = false
+async function handleUnauthorized(): Promise<void> {
+  if (isHandlingUnauthorized) return
+  isHandlingUnauthorized = true
+  try {
+    await supabase.auth.signOut()
+  } catch {
+    // 로그아웃 자체가 실패해도 화면 이동은 진행
+  }
+  redirectToLogin()
+  setTimeout(() => {
+    isHandlingUnauthorized = false
+  }, 2000)
+}
+
 export async function apiGet<T>(path: string): Promise<T> {
   const authHeader = await getAuthHeader()
   const url = `${API_BASE_URL}${path}`
@@ -42,6 +60,7 @@ export async function apiGet<T>(path: string): Promise<T> {
   if (!response.ok) {
     const payload = await response.json().catch(() => ({})) as ApiResponse<T>
     console.log('🔴 API Error payload:', payload)
+    if (response.status === 401) void handleUnauthorized()
     throw new ApiError(
       response.status,
       payload.message ?? `API request failed: ${response.status}`,
@@ -110,6 +129,7 @@ export async function apiPost<TRequest, TResponse>(
   if (!response.ok) {
     const payload = await response.json().catch(() => ({})) as ApiResponse<TResponse>
     console.log('🔴 API Error payload:', payload)
+    if (response.status === 401) void handleUnauthorized()
     throw new ApiError(
       response.status,
       payload.message ?? `API request failed: ${response.status}`,
@@ -152,6 +172,7 @@ export async function apiPatch<TRequest, TResponse>(
   if (!response.ok) {
     const payload = await response.json().catch(() => ({})) as ApiResponse<TResponse>
     console.log('🔴 API Error payload:', payload)
+    if (response.status === 401) void handleUnauthorized()
     throw new ApiError(
       response.status,
       payload.message ?? `API request failed: ${response.status}`,
@@ -186,6 +207,7 @@ export async function apiPut<TRequest, TResponse>(
 
   if (!response.ok) {
     const payload = await response.json().catch(() => ({})) as ApiResponse<TResponse>
+    if (response.status === 401) void handleUnauthorized()
     throw new ApiError(
       response.status,
       payload.message ?? `API request failed: ${response.status}`,
@@ -209,6 +231,7 @@ export async function apiDelete(path: string): Promise<void> {
   })
 
   if (!response.ok) {
+    if (response.status === 401) void handleUnauthorized()
     throw new Error(`API request failed: ${response.status}`)
   }
 }

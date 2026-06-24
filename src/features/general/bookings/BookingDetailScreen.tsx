@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -16,6 +16,9 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
 import { RootStackParamList } from "@/navigation/RootNavigator";
 import { cancelReservation } from "@/features/reservations/api/reservationsApi";
+import { getCurrentProfile } from "@/features/auth/api/authApi";
+import { getUserReviews } from "@/features/reviews/api/reviewsApi";
+import type { Review } from "@/types/api";
 
 const BRAND = "#3D1F0D";
 const GRAY = "#8A8077";
@@ -28,6 +31,22 @@ export function BookingDetailScreen() {
   const route = useRoute<RouteProp<RootStackParamList, "BookingDetail">>();
   const { booking } = route.params;
   const [isCancelling, setIsCancelling] = useState(false);
+  const [existingReview, setExistingReview] = useState<Review | null>(null);
+
+  useEffect(() => {
+    if (booking.status !== "past") return;
+    let isCurrent = true;
+    (async () => {
+      const profile = await getCurrentProfile().catch(() => null);
+      if (!profile) return;
+      const reviews = await getUserReviews(profile.id).catch(() => []);
+      const mine = reviews.find((r) => r.reservationId === booking.reservationId) ?? null;
+      if (isCurrent) setExistingReview(mine);
+    })();
+    return () => {
+      isCurrent = false;
+    };
+  }, [booking.status, booking.reservationId]);
 
   console.log("📋 [BookingDetailScreen] 렌더링됨", {
     status: booking.status,
@@ -78,11 +97,18 @@ export function BookingDetailScreen() {
   };
 
   const getStatusLabel = (status: string) => {
+    if (status === "upcoming") {
+      switch (booking.reservationStatus) {
+        case "APPROVED":  return "승인완료 (결제 필요)";
+        case "PAID":      return "결제완료";
+        case "CONFIRMED": return "예약확정";
+        default:          return "승인완료";
+      }
+    }
     switch (status) {
-      case "upcoming": return "승인완료";
       case "pending":  return "승인 대기";
       case "past":     return "지난 체험";
-      case "cancelled":return "취소 내역";
+      case "cancelled":return booking.reservationStatus === "REJECTED" ? "거절됨" : "취소 내역";
       default:         return status;
     }
   };
@@ -204,36 +230,36 @@ export function BookingDetailScreen() {
           </View>
         )}
 
-        {/* ── 결제 정보 카드 ── */}
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>결제 정보</Text>
+        {/* ── 결제 정보 카드 (실제 결제 완료된 예약만 노출) ── */}
+        {!!booking.paidAt && (
+          <View style={styles.card}>
+            <Text style={styles.sectionTitle}>결제 정보</Text>
 
-          <View style={styles.payRow}>
-            <Text style={styles.payLabel}>주문 번호</Text>
-            <Text style={styles.payValue}>{booking.orderNo ?? "R20240615-9921"}</Text>
-          </View>
-          <View style={styles.payRow}>
-            <Text style={styles.payLabel}>결제 일시</Text>
-            <Text style={styles.payValue}>{booking.paidAt ?? "2024년 5월 20일 오후 3:45"}</Text>
-          </View>
-          <View style={styles.payRow}>
-            <Text style={styles.payLabel}>결제 수단</Text>
-            <Text style={styles.payValue}>{booking.payMethod ?? "신용카드 (현대 4402)"}</Text>
-          </View>
+            <View style={styles.payRow}>
+              <Text style={styles.payLabel}>주문 번호</Text>
+              <Text style={styles.payValue}>{booking.orderNo ?? "정보 없음"}</Text>
+            </View>
+            <View style={styles.payRow}>
+              <Text style={styles.payLabel}>결제 일시</Text>
+              <Text style={styles.payValue}>{booking.paidAt}</Text>
+            </View>
+            <View style={styles.payRow}>
+              <Text style={styles.payLabel}>결제 수단</Text>
+              <Text style={styles.payValue}>{booking.payMethod ?? "정보 없음"}</Text>
+            </View>
 
-          <View style={styles.divider} />
+            <View style={styles.divider} />
 
-          <View style={styles.payRow}>
-            <Text style={[styles.payLabel, { fontSize: 15, fontWeight: "600", color: "#1C1107" }]}>
-              총 결제 금액
-            </Text>
-            <Text style={styles.totalAmount}>
-              {booking.totalPrice
-                ? `${Number(booking.totalPrice).toLocaleString()}원`
-                : "70,000원"}
-            </Text>
+            <View style={styles.payRow}>
+              <Text style={[styles.payLabel, { fontSize: 15, fontWeight: "600", color: "#1C1107" }]}>
+                총 결제 금액
+              </Text>
+              <Text style={styles.totalAmount}>
+                {booking.totalPrice ? `${Number(booking.totalPrice).toLocaleString()}원` : "-"}
+              </Text>
+            </View>
           </View>
-        </View>
+        )}
 
         {/* ── 준비물 및 유의사항 카드 ── */}
         <View style={styles.card}>
@@ -390,13 +416,18 @@ export function BookingDetailScreen() {
             <TouchableOpacity style={styles.cancelBtn} activeOpacity={0.8}>
               <Text style={styles.cancelBtnText}>문의하기</Text>
             </TouchableOpacity>
-            <TouchableOpacity 
-              style={styles.chatBtn} 
+            <TouchableOpacity
+              style={styles.chatBtn}
               activeOpacity={0.85}
-              onPress={() => navigation.navigate("Review", { booking })}
+              onPress={() =>
+                navigation.navigate("Review", {
+                  booking,
+                  existingReview: existingReview ?? undefined,
+                })
+              }
             >
               <Ionicons name="pencil-outline" size={17} color="#FFFFFF" style={{ marginRight: 6 }} />
-              <Text style={styles.chatBtnText}>리뷰 쓰기</Text>
+              <Text style={styles.chatBtnText}>{existingReview ? "리뷰 수정" : "리뷰 쓰기"}</Text>
             </TouchableOpacity>
           </View>
         ) : (
