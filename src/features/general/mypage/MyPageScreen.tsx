@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -10,7 +10,7 @@ import {
   Alert,
   ActivityIndicator,
 } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "@/navigation/RootNavigator";
 import { Ionicons, Feather } from "@expo/vector-icons";
@@ -135,10 +135,12 @@ export function MyPageScreen() {
   const [stats, setStats] = useState<UserStats | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadProfile();
-    loadStats();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      loadProfile();
+      loadStats();
+    }, [])
+  );
 
   const loadProfile = async () => {
     try {
@@ -264,16 +266,6 @@ export function MyPageScreen() {
             label="작성한 후기"
             value={stats?.reviewCount?.toString() || "0"}
             onPress={() => navigation.navigate("MyReviews")}
-          />
-          <View style={ms.statDivider} />
-          <StatItem
-            label="쿠폰함"
-            value={stats?.couponCount?.toString() || "0"}
-          />
-          <View style={ms.statDivider} />
-          <StatItem
-            label="포인트"
-            value={`${stats?.pointBalance?.toString() || "0"}P`}
             isLast
           />
         </View>
@@ -303,6 +295,9 @@ export function MyPageScreen() {
               onPress={
                 item === "로그아웃" ? handleLogout :
                 item === "회원탈퇴" ? handleDeleteAccount :
+                item === "공지사항" ? () => navigation.navigate("Notice") :
+                item === "자주 묻는 질문" ? () => navigation.navigate("FAQ") :
+                item === "이용약관" ? () => navigation.navigate("Terms") :
                 undefined
               }
             >
