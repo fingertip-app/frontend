@@ -11,14 +11,16 @@ import {
   Platform,
   Animated,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 import { Ionicons, Feather } from "@expo/vector-icons";
-import { useRoute, RouteProp, useNavigation } from "@react-navigation/native";
+import { useRoute, RouteProp, useNavigation, useFocusEffect } from "@react-navigation/native";
 import { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
 import { DetailBottomSheet } from "./DetailBottomSheet";
 import { MainLayout } from "@/features/general/home/MainLayout";
 import { MainTabParamList } from "@/navigation/RootNavigator";
 import { getActiveExperiences } from "@/features/experiences/api/experiencesApi";
+import { addToWishlist, removeFromWishlist, checkWishlist } from "@/features/wishlists/api/wishlistsApi";
 import type { Experience as ApiExperience } from "@/types/api";
 
 // ─── 타입 ────────────────────────────────────────────────────────────────────
@@ -36,24 +38,6 @@ type FilterChip = {
 };
 
 type SortOption = "추천순" | "가격 낮은순" | "가격 높은순" | "별점순" | "리뷰 많은순";
-
-/** Backend API 응답 타입 */
-interface ApiExperience {
-  id: number;
-  title: string;
-  category?: string;
-  locationAddress?: string;
-  price: number;
-  rating?: number;
-  reviewCount?: number;
-  imageUrl?: string;
-  durationMinutes?: number;
-  maxParticipants?: number;
-  supportedLanguages?: string[];
-  activeSchedules?: { scheduledAt: string }[];
-  createdAt: string;
-  artisanName?: string;
-}
 
 export type Experience = {
   id: string;
@@ -122,6 +106,11 @@ function mapApiExperienceToUI(exp: ApiExperience): Experience {
   const isFamilyFriendly = exp.maxParticipants >= 4;
   const isForeignOk = exp.supportedLanguages?.includes('en') || exp.supportedLanguages?.includes('영어');
 
+  // images 배열에서 첫 번째 이미지 URL 추출
+  const imageUrl = exp.images && exp.images.length > 0
+    ? exp.images[0].imageUrl
+    : "https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=400&q=80";
+
   return {
     id: String(exp.id),
     title: exp.title,
@@ -132,8 +121,8 @@ function mapApiExperienceToUI(exp: ApiExperience): Experience {
     reviewCount: 0, // TODO: 리뷰 개수 연동 필요
     duration: exp.durationMinutes ? `${exp.durationMinutes}분` : "시간 미정",
     price: exp.price || 0,
-    tags: [],
-    imageUri: "https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=400&q=80",
+    tags: exp.tags ?? [],
+    imageUri: imageUrl,
     todayBooking: hasUpcomingSchedule,
     foreignOk: isForeignOk,
     familyOk: isFamilyFriendly,
@@ -148,39 +137,6 @@ function categoryToId(label: string): string {
   return CATEGORIES.find((c) => c.label === label)?.id ?? "etc";
 }
 
-/**
- * Backend API 응답(ApiExperience)을 UI 타입(Experience)으로 변환
- * - 필드 매핑 및 기본값 처리
- * - 자동 판별: 가족체험, 외국인 가능, 오늘 예약 가능 여부
- */
-function mapApiExperienceToUI(exp: ApiExperience): Experience {
-  return {
-    id: String(exp.id),
-    title: exp.title,
-    category: exp.category || "기타",
-    location: exp.locationAddress || "위치 미정",
-    artisan: exp.artisanName || "장인",
-    // 평점/리뷰 수: Backend에서 제공되지 않으면 0으로 표시
-    rating: exp.rating ?? 0,
-    reviewCount: exp.reviewCount ?? 0,
-    duration: exp.durationMinutes ? `${exp.durationMinutes}분` : "시간 미정",
-    price: Number(exp.price) || 0,
-    tags: [],
-    imageUri: exp.imageUrl || "https://picsum.photos/seed/experience/300/200",
-    // 자동 판별: 최대 참가 인원이 4명 이상이면 가족 체험으로 표시
-    familyOk: (exp.maxParticipants ?? 0) >= 4,
-    // 자동 판별: 지원 언어에 'en' 또는 '영어' 포함되면 외국인 가능으로 표시
-    foreignOk: exp.supportedLanguages?.some(lang =>
-      lang.toLowerCase().includes('en') || lang.includes('영어')
-    ),
-    // 자동 판별: 오늘 활성 스케줄이 있으면 오늘 예약 가능으로 표시
-    todayBooking: exp.activeSchedules?.some(schedule => {
-      const scheduleDate = new Date(schedule.scheduledAt);
-      const today = new Date();
-      return scheduleDate.toDateString() === today.toDateString();
-    }),
-  };
-}
 
 // ─── 서브 컴포넌트 ─────────────────────────────────────────────────────────────
 
@@ -498,8 +454,54 @@ function TagBadge({ label }: { label: string }) {
 }
 
 /** 체험 카드 */
-function ExperienceCard({ item, onPress }: { item: Experience; onPress: () => void }) {
+function ExperienceCard({ item, onPress, refreshTrigger }: { item: Experience; onPress: () => void; refreshTrigger?: number }) {
   const [liked, setLiked] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  // 마운트 시 + refreshTrigger 변경 시 찜 상태 확인
+  useEffect(() => {
+    const fetchWishlistStatus = async () => {
+      try {
+        const isLiked = await checkWishlist(Number(item.id));
+        setLiked(isLiked);
+      } catch (e) {
+        console.log("찜 상태 확인 실패:", e);
+      }
+    };
+    fetchWishlistStatus();
+  }, [item.id, refreshTrigger]);
+
+  // 찜 토글 핸들러
+  const handleToggleWishlist = async () => {
+    if (loading) return;
+
+    setLoading(true);
+    const experienceId = Number(item.id);
+
+    try {
+      if (liked) {
+        await removeFromWishlist(experienceId);
+        setLiked(false);
+        console.log("✅ 찜 해제:", item.title);
+      } else {
+        await addToWishlist(experienceId);
+        setLiked(true);
+        console.log("✅ 찜 추가:", item.title);
+      }
+    } catch (error: any) {
+      console.error("❌ 찜 토글 실패:", error);
+
+      // 409 에러 (이미 찜됨) 처리
+      if (error.status === 409) {
+        console.log("⚠️ 이미 찜된 체험 - 상태 동기화");
+        setLiked(true);
+      } else {
+        Alert.alert("알림", "찜 기능을 사용할 수 없습니다.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <TouchableOpacity
@@ -552,7 +554,7 @@ function ExperienceCard({ item, onPress }: { item: Experience; onPress: () => vo
           <Text style={{ flex: 1, fontSize: 14, fontWeight: "700", color: "#111827", paddingRight: 6, lineHeight: 20 }} numberOfLines={2}>
             {item.title}
           </Text>
-          <TouchableOpacity onPress={() => setLiked((p) => !p)} hitSlop={8}>
+          <TouchableOpacity onPress={handleToggleWishlist} hitSlop={8} disabled={loading}>
             <Ionicons name={liked ? "heart" : "heart-outline"} size={20} color={liked ? "#EF4444" : "#D1D5DB"} />
           </TouchableOpacity>
         </View>
@@ -637,6 +639,14 @@ export function SearchScreen() {
   const [allExperiences, setAllExperiences] = useState<Experience[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  // 화면 포커스 시 찜 상태 새로고침
+  useFocusEffect(
+    React.useCallback(() => {
+      setRefreshTrigger((prev) => prev + 1);
+    }, [])
+  );
 
   // API에서 체험 목록 가져오기
   const fetchExperiences = async () => {
@@ -766,7 +776,7 @@ export function SearchScreen() {
         <FlatList
           data={results}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <ExperienceCard item={item} onPress={() => setSelectedExp(item)} />}
+        renderItem={({ item }) => <ExperienceCard item={item} onPress={() => setSelectedExp(item)} refreshTrigger={refreshTrigger} />}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 24 }}
         ListEmptyComponent={<EmptyState query={query} />}

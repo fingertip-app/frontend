@@ -1,18 +1,5 @@
 import { apiGet } from '@/services/api'
-
-export interface Artisan {
-  id: number
-  userId: number
-  name: string
-  heritageCategory: string
-  certificationNumber: string | null
-  bio: string | null
-  profileImageUrl: string | null
-  introVideoUrl: string | null
-  certificationStatus: string
-  isVerified: boolean
-  isActive: boolean
-}
+import type { Artisan } from '@/types/api'
 
 /**
  * 현재 로그인한 장인 정보 조회

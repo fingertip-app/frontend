@@ -25,17 +25,25 @@ export function AIChatScreen() {
 
   // 초기 진입 시 카드뉴스 제목으로 자동 질문
   useEffect(() => {
+    if (!news.title || news.title.trim().length === 0) {
+      console.warn('⚠️ news.title is empty, skipping initial question');
+      return;
+    }
     const initQuestion = `${news.title}에 대해 알려주세요`;
     handleAskQuestion(initQuestion, true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // news는 route params로 불변, handleAskQuestion은 재생성되므로 의도적으로 빈 배열
 
   const handleAskQuestion = async (question: string, isInitial: boolean = false) => {
-    if (!isInitial && question.trim().length === 0) return;
+    const trimmedQuestion = question.trim();
+    if (trimmedQuestion.length === 0) {
+      console.warn('⚠️ Question is empty, skipping');
+      return;
+    }
 
     const userMessage: Message = {
       id: Date.now().toString(),
-      text: question,
+      text: trimmedQuestion,
       sender: 'user',
     };
 
@@ -44,7 +52,7 @@ export function AIChatScreen() {
     setIsLoading(true);
 
     try {
-      const response = await explainCulture(question);
+      const response = await explainCulture(trimmedQuestion);
 
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),

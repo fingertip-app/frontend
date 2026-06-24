@@ -29,8 +29,18 @@ export function BookingDetailScreen() {
   const { booking } = route.params;
   const [isCancelling, setIsCancelling] = useState(false);
 
+  console.log("📋 [BookingDetailScreen] 렌더링됨", {
+    status: booking.status,
+    paymentRequired: booking.paymentRequired,
+    artisan: booking.artisan,
+    reservationId: booking.reservationId,
+  });
+
   const handleCancelReservation = async () => {
+    console.log("🔴 [예약 취소] 버튼 클릭됨", { reservationId: booking.reservationId });
+
     if (!booking.reservationId) {
+      console.log("🔴 [예약 취소] 예약 ID 없음");
       Alert.alert("오류", "예약 정보를 찾을 수 없습니다.");
       return;
     }
@@ -44,9 +54,11 @@ export function BookingDetailScreen() {
           text: "예, 취소합니다",
           style: "destructive",
           onPress: async () => {
+            console.log("🔴 [예약 취소] 확인 버튼 클릭 - API 호출 시작", booking.reservationId);
             setIsCancelling(true);
             try {
-              await cancelReservation(booking.reservationId!, "사용자 요청으로 취소");
+              const result = await cancelReservation(booking.reservationId!, "사용자 요청으로 취소");
+              console.log("✅ [예약 취소] API 성공:", result);
               Alert.alert("취소 완료", "예약이 취소되었습니다.", [
                 {
                   text: "확인",
@@ -54,6 +66,7 @@ export function BookingDetailScreen() {
                 },
               ]);
             } catch (error) {
+              console.error("❌ [예약 취소] API 실패:", error);
               Alert.alert("취소 실패", error instanceof Error ? error.message : "예약 취소에 실패했습니다.");
             } finally {
               setIsCancelling(false);
@@ -158,6 +171,22 @@ export function BookingDetailScreen() {
               </TouchableOpacity>
             </View>
           </View>
+
+          {/* QR 확인서 (upcoming 상태이고 결제 완료 시에만) */}
+          {booking.status === "upcoming" && !booking.paymentRequired && (
+            <>
+              <View style={styles.divider} />
+              <TouchableOpacity
+                style={styles.qrBtn}
+                activeOpacity={0.8}
+                onPress={() => navigation.navigate("QRConfirmation", { booking })}
+              >
+                <Ionicons name="qr-code-outline" size={20} color={BRAND} />
+                <Text style={styles.qrBtnText}>QR 확인서 보기</Text>
+                <Ionicons name="chevron-forward" size={16} color={BRAND} />
+              </TouchableOpacity>
+            </>
+          )}
         </View>
 
         {/* ── 결제 정보 카드 ── */}
@@ -216,6 +245,14 @@ export function BookingDetailScreen() {
 
       {/* ── 하단 버튼 영역 ── */}
       <View style={styles.footer}>
+        {(() => {
+          console.log("🎯 [Footer 렌더링] 조건 체크", {
+            status: booking.status,
+            paymentRequired: booking.paymentRequired,
+            condition: `upcoming && paymentRequired = ${booking.status === "upcoming" && booking.paymentRequired}`,
+          });
+          return null;
+        })()}
         {booking.status === "upcoming" && booking.paymentRequired ? (
           <View style={styles.footerRow}>
             <TouchableOpacity
@@ -265,12 +302,33 @@ export function BookingDetailScreen() {
             <TouchableOpacity
               style={styles.cancelBtn}
               activeOpacity={0.8}
-              onPress={() => navigation.navigate("QRConfirmation", { booking })}
+              onPress={handleCancelReservation}
+              disabled={isCancelling}
             >
-              <Ionicons name="qr-code-outline" size={17} color="#1C1107" style={{ marginRight: 6 }} />
-              <Text style={styles.cancelBtnText}>QR 확인서</Text>
+              {isCancelling ? (
+                <ActivityIndicator color="#1C1107" />
+              ) : (
+                <Text style={styles.cancelBtnText}>예약 취소</Text>
+              )}
             </TouchableOpacity>
-            <TouchableOpacity style={styles.chatBtn} activeOpacity={0.85}>
+            <TouchableOpacity
+              style={styles.chatBtn}
+              activeOpacity={0.85}
+              onPress={() => {
+                console.log("💬 [장인에게 메시지] 버튼 클릭됨", { artisan: booking.artisan });
+                if (!booking.artisan) {
+                  console.log("💬 [장인에게 메시지] 장인 정보 없음");
+                  Alert.alert("알림", "장인 정보를 찾을 수 없습니다.");
+                  return;
+                }
+                // TODO: 채팅 화면 구현 후 연결
+                console.log("💬 [장인에게 메시지] Alert 표시");
+                Alert.alert(
+                  "준비 중",
+                  `${booking.artisan}님에게 메시지를 보낼 수 있는 기능을 준비 중입니다.`
+                );
+              }}
+            >
               <Ionicons name="chatbubble-ellipses-outline" size={17} color="#FFFFFF" style={{ marginRight: 6 }} />
               <Text style={styles.chatBtnText}>장인에게 메시지 보내기</Text>
             </TouchableOpacity>
@@ -289,7 +347,24 @@ export function BookingDetailScreen() {
                 <Text style={styles.cancelBtnText}>예약 취소</Text>
               )}
             </TouchableOpacity>
-            <TouchableOpacity style={styles.chatBtn} activeOpacity={0.85}>
+            <TouchableOpacity
+              style={styles.chatBtn}
+              activeOpacity={0.85}
+              onPress={() => {
+                console.log("💬 [장인에게 메시지] 버튼 클릭됨", { artisan: booking.artisan });
+                if (!booking.artisan) {
+                  console.log("💬 [장인에게 메시지] 장인 정보 없음");
+                  Alert.alert("알림", "장인 정보를 찾을 수 없습니다.");
+                  return;
+                }
+                // TODO: 채팅 화면 구현 후 연결
+                console.log("💬 [장인에게 메시지] Alert 표시");
+                Alert.alert(
+                  "준비 중",
+                  `${booking.artisan}님에게 메시지를 보낼 수 있는 기능을 준비 중입니다.`
+                );
+              }}
+            >
               <Ionicons name="chatbubble-ellipses-outline" size={17} color="#FFFFFF" style={{ marginRight: 6 }} />
               <Text style={styles.chatBtnText}>장인에게 메시지 보내기</Text>
             </TouchableOpacity>
@@ -309,7 +384,21 @@ export function BookingDetailScreen() {
             </TouchableOpacity>
           </View>
         ) : (
-          <TouchableOpacity style={styles.chatBtnFull} activeOpacity={0.85}>
+          <TouchableOpacity
+            style={styles.chatBtnFull}
+            activeOpacity={0.85}
+            onPress={() => {
+              if (!booking.artisan) {
+                Alert.alert("알림", "장인 정보를 찾을 수 없습니다.");
+                return;
+              }
+              // TODO: 채팅 화면 구현 후 연결
+              Alert.alert(
+                "준비 중",
+                `${booking.artisan}님에게 메시지를 보낼 수 있는 기능을 준비 중입니다.`
+              );
+            }}
+          >
             <Ionicons name="chatbubble-ellipses-outline" size={17} color="#FFFFFF" style={{ marginRight: 6 }} />
             <Text style={styles.chatBtnText}>장인에게 메시지 보내기</Text>
           </TouchableOpacity>
@@ -406,6 +495,18 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   mapBtnText: { fontSize: 13, color: BRAND, fontWeight: "600" },
+
+  qrBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#F5F0EB",
+    paddingVertical: 14,
+    borderRadius: 12,
+    gap: 8,
+    marginTop: 4,
+  },
+  qrBtnText: { fontSize: 14, color: BRAND, fontWeight: "700" },
 
   sectionTitle: { fontSize: 16, fontWeight: "700", color: "#1C1107", marginBottom: 14 },
 

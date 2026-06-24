@@ -15,33 +15,29 @@ export interface CreateReservationRequest {
 
 /**
  * 예약 생성
- * POST /reservations?userId={userId}
+ * POST /reservations
  *
- * ⚠️ userId는 query param으로 전달!
+ * userId는 JWT 토큰에서 자동 추출
  */
 export async function createReservation(
-  userId: number,
   req: CreateReservationRequest
 ): Promise<Reservation> {
   return apiPost<CreateReservationRequest, Reservation>(
-    `/reservations?userId=${userId}`,
+    `/reservations`,
     req
   )
 }
 
 /**
  * 내 예약 목록 조회 (상태 필터)
- * GET /reservations?userId={userId}&status={status}
+ * GET /reservations?status={status}
  *
- * ⚠️ status는 단일 enum 값만 가능 (comma list 불가)
+ * userId는 JWT 토큰에서 자동 추출
  */
 export async function getMyReservations(
-  userId: number,
   status?: ReservationStatus
 ): Promise<Reservation[]> {
-  const query = status
-    ? `?userId=${userId}&status=${status}`
-    : `?userId=${userId}`
+  const query = status ? `?status=${status}` : ''
   return apiGet<Reservation[]>(`/reservations${query}`)
 }
 
@@ -126,8 +122,10 @@ export async function cancelReservation(
   reservationId: number,
   cancellationReason?: string
 ): Promise<Reservation> {
+  console.log("🔴 [cancelReservation API] 호출됨", { reservationId, cancellationReason });
   const query = cancellationReason
     ? `?cancellationReason=${encodeURIComponent(cancellationReason)}`
     : ''
+  console.log("🔴 [cancelReservation API] 요청 URL:", `/reservations/${reservationId}/cancel${query}`);
   return apiPost<void, Reservation>(`/reservations/${reservationId}/cancel${query}`)
 }

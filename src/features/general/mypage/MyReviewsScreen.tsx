@@ -22,60 +22,11 @@ const BORDER = "#EAE6E1";
 const GRAY = "#8A8077";
 const { width: SCREEN_W } = Dimensions.get("window");
 
-// --- 더미 데이터 ---
-const PAST_EXPERIENCES = [
-  {
-    id: "1",
-    title: "Seoul Woodworking Class",
-    artisan: "목공 장인과 함께하는 달항아리 깎기",
-    date: "2023년 10월 14일 체험",
-    imageUri: "https://picsum.photos/seed/wood1/300/200",
-  },
-  {
-    id: "2",
-    title: "Boseong Green Tea Tea Ceremony",
-    artisan: "장인과 함께하는 다도 및 찻잎 따기",
-    date: "2023년 9월 28일 체험",
-    imageUri: "https://picsum.photos/seed/tea2/300/200",
-  },
-  {
-    id: "3",
-    title: "Jeonju Hanji Making Workshop",
-    artisan: "전통 한지 제작 및 공예 체험",
-    date: "2023년 8월 12일 체험",
-    imageUri: "https://picsum.photos/seed/hanji3/300/200",
-  },
-];
-
-const MY_REVIEWS = [
-  {
-    id: "1",
-    title: "이천 도자기 물레 체험",
-    rating: 5,
-    date: "2024.05.30",
-    content:
-      "도자기 물레 체험은 처음이었는데, 장인님께서 정말 친절하게 가르쳐 주셔서 멋진 결과물을 얻을 수 있습니다. 흙의 감촉이 너무 좋았고 마음이 편안해지는 시간이었어요.",
-    imageUri: "https://picsum.photos/seed/pottery1/300/200",
-  },
-  {
-    id: "2",
-    title: "전주 한지 공예 체험",
-    rating: 5,
-    date: "2024.04.15",
-    content:
-      "한지 만드는 과정이 이렇게 정성이 많이 들어가는 줄 몰랐요. 직접 만든 한지로 소품을 접어보니 정말 뜻깊은 시간이었습니다. 장소도 너무 고즈넉하고 여유로웠어요.",
-    imageUri: "https://picsum.photos/seed/hanji1/300/200",
-  },
-  {
-    id: "3",
-    title: "서울 목공에 원데이 클래스",
-    rating: 4,
-    date: "2024.03.10",
-    content:
-      "나무 냄새가 가득한 공방에서 나만의 도마를 만드는 경험이 정말 즐거웠습니다. 초보자도 쉽게 따라할 수 있게 세심하게 봐주셔서 감사했어요. 다음에는 조금 더 긴 수업도 들어보고 싶어요.",
-    imageUri: "https://picsum.photos/seed/wood2/300/200",
-  },
-];
+// TODO: 백엔드 API 연동 필요
+// - PAST_EXPERIENCES: 완료된 예약 목록에서 리뷰 미작성 건
+// - MY_REVIEWS: 내가 작성한 리뷰 목록
+const PAST_EXPERIENCES: any[] = [];
+const MY_REVIEWS: any[] = [];
 
 export function MyReviewsScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();

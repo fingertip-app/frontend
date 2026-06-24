@@ -8,13 +8,15 @@ import {
   Image,
   Platform,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "@/navigation/RootNavigator";
 import { Ionicons, Feather } from "@expo/vector-icons";
 import { MainLayout } from "@/features/general/home/MainLayout";
-import { logout } from "@/features/auth/api/authApi";
+import { logout, getCurrentProfile } from "@/features/auth/api/authApi";
+import { UserProfile } from "@/features/auth/types";
 
 // ─── 팔레트 ────────────────────────────────────────────────────────────────────
 const BG       = "#F7F4EF";   // 크림 배경
@@ -128,7 +130,7 @@ const ac = StyleSheet.create({
 // ─── 메인 스크린 ──────────────────────────────────────────────────────────────
 export function MyPageScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const [profile, setProfile] = useState<any>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -137,9 +139,12 @@ export function MyPageScreen() {
 
   const loadProfile = async () => {
     try {
+      console.log("🔵 프로필 로드 시작");
       const currentProfile = await getCurrentProfile();
+      console.log("🔵 프로필 데이터:", currentProfile);
       setProfile(currentProfile);
-    } catch {
+    } catch (e) {
+      console.log("🔴 프로필 로드 실패:", e);
       Alert.alert("알림", "프로필 정보를 불러오지 못했습니다.");
     } finally {
       setLoading(false);
@@ -176,19 +181,28 @@ export function MyPageScreen() {
         <View style={ms.profileCard}>
           <View style={ms.profileRow}>
             {/* 아바타 */}
-            <Image
-              source={{ uri: profile?.profileImageUrl || "https://i.pravatar.cc/150?img=47" }}
-              style={ms.avatar}
-            />
+            {profile?.profileImageUrl ? (
+              <Image
+                source={{ uri: profile.profileImageUrl }}
+                style={ms.avatar}
+              />
+            ) : (
+              <View style={[ms.avatar, { backgroundColor: ICON_BG, alignItems: "center", justifyContent: "center" }]}>
+                <Ionicons name="person" size={32} color={TEXT_S} />
+              </View>
+            )}
             {/* 이름 + 소개 */}
             <View style={{ flex: 1, marginLeft: 14 }}>
               <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 4 }}>
-                <Text style={ms.profileName}>{profile?.name || "사용자"} 님</Text>
-                <TouchableOpacity hitSlop={8} style={{ marginLeft: 6 }}>
+                <Text style={ms.profileName}>{profile?.name || profile?.nickname || "사용자"} 님</Text>
+                <TouchableOpacity hitSlop={8} style={{ marginLeft: 6 }} onPress={() => navigation.navigate("ProfileEdit")}>
                   <Feather name="edit-2" size={14} color={TEXT_S} />
                 </TouchableOpacity>
               </View>
-              <Text style={ms.profileBio}>{profile?.bio || "전통문화를 사랑하는 여행자"}</Text>
+              <Text style={ms.profileBio}>{profile?.email || ""}</Text>
+              {profile?.phone && (
+                <Text style={ms.profileBio}>{profile.phone}</Text>
+              )}
             </View>
           </View>
 

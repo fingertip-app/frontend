@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase'
-import { apiGet, apiPost, apiPostWithToken } from '@/services/api'
+import { apiGet, apiPost, apiPostWithToken, apiPatch } from '@/services/api'
 import { UserProfile } from '@/features/auth/types'
 
 export interface LoginResult {
@@ -108,7 +108,10 @@ export async function getCurrentProfile(): Promise<UserProfile | null> {
 
   try {
     return await apiPost<undefined, UserProfile>('/auth/login')
-  } catch {
+  } catch (error) {
+    // 토큰이 만료되었거나 유효하지 않으면 세션 삭제
+    console.warn('[Auth] 토큰 만료 또는 유효하지 않음, 로그아웃 처리:', error)
+    await supabase.auth.signOut()
     return null
   }
 }
@@ -125,6 +128,47 @@ export async function checkEmailAvailable(email: string): Promise<boolean> {
  */
 export async function checkNicknameAvailable(nickname: string): Promise<boolean> {
   return apiGet<boolean>(`/users/check/nickname?nickname=${encodeURIComponent(nickname)}`)
+}
+
+/**
+ * 프로필 수정
+ */
+export async function updateProfile(
+  name: string,
+  nickname: string,
+  phone: string | null,
+  profileImageUrl: string | null,
+  preferredCategories: string[]
+): Promise<UserProfile> {
+  return apiPatch<
+    { name: string; nickname: string; phone: string | null; profileImageUrl: string | null; preferredCategories: string[] },
+    UserProfile
+  >('/users/me', { name, nickname, phone, profileImageUrl, preferredCategories })
+}
+
+/**
+ * 이미지 업로드
+ */
+export async function uploadImage(file: File | Blob, type: string = 'profile'): Promise<string> {
+  const formData = new FormData()
+  formData.append('file', file)
+  formData.append('type', type)
+
+  const { data } = await supabase.auth.getSession()
+  const token = data.session?.access_token
+
+  const response = await fetch(`${process.env.EXPO_PUBLIC_API_BASE_URL}/api/files/upload`, {
+    method: 'POST',
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: formData,
+  })
+
+  if (!response.ok) {
+    throw new Error('이미지 업로드에 실패했습니다.')
+  }
+
+  const result = await response.json()
+  return result.data.url
 }
 
 function mapSupabaseError(message: string): string {

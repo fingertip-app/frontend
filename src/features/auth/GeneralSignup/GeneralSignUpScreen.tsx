@@ -11,6 +11,8 @@ export function GeneralSignUpScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [isNicknameChecked, setIsNicknameChecked] = useState(false);
   const [isEmailChecked, setIsEmailChecked] = useState(false);
+  const [nicknameCheckMessage, setNicknameCheckMessage] = useState("");
+  const [emailCheckMessage, setEmailCheckMessage] = useState("");
   const [name, setName] = useState("");
   const [nickname, setNickname] = useState("");
   const [phone, setPhone] = useState("");
@@ -44,38 +46,63 @@ export function GeneralSignUpScreen() {
   };
 
   const handleCheckNicknameDuplicate = async () => {
-    if (!nickname) return Alert.alert("알림", "닉네임을 먼저 입력해주세요.");
-    if (nickname.length < 2) return Alert.alert("알림", "닉네임은 2자 이상 입력해주세요.");
+    console.log("🔵 닉네임 중복확인 버튼 클릭됨");
+    if (!nickname) {
+      setNicknameCheckMessage("닉네임을 먼저 입력해주세요.");
+      return;
+    }
+    if (nickname.length < 2) {
+      setNicknameCheckMessage("닉네임은 2자 이상 입력해주세요.");
+      return;
+    }
     try {
+      console.log("🔵 닉네임 중복확인 API 호출:", nickname);
       const available = await checkNicknameAvailable(nickname);
+      console.log("🔵 닉네임 중복확인 API 응답:", available, typeof available);
       if (available) {
         setIsNicknameChecked(true);
-        Alert.alert("중복확인", "사용 가능한 닉네임입니다.");
+        setNicknameCheckMessage("✓ 사용 가능한 닉네임입니다. 가입 버튼을 눌러주세요.");
       } else {
         setIsNicknameChecked(false);
-        Alert.alert("중복확인", "이미 사용 중인 닉네임입니다.\n다른 닉네임을 사용해주세요.");
+        setNicknameCheckMessage("이미 사용 중인 닉네임입니다. 다른 닉네임을 사용해주세요.");
       }
     } catch (e) {
-      console.log("닉네임 확인 실패:", e);
-      Alert.alert("오류", "닉네임 확인에 실패했습니다. 다시 시도해주세요.");
+      console.log("🔴 닉네임 확인 실패:", e);
+      setIsNicknameChecked(false);
+      setNicknameCheckMessage("닉네임 확인에 실패했습니다. 다시 시도해주세요.");
     }
   };
 
   const handleCheckEmailDuplicate = async () => {
-    if (!email) return Alert.alert("알림", "이메일을 먼저 입력해주세요.");
+    console.log("🔵 이메일 중복확인 버튼 클릭됨");
+    if (!email) {
+      setEmailCheckMessage("이메일을 먼저 입력해주세요.");
+      return;
+    }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) return Alert.alert("알림", "올바른 이메일 형식을 입력해주세요.");
+    if (!emailRegex.test(email)) {
+      setEmailCheckMessage("올바른 이메일 형식을 입력해주세요.");
+      return;
+    }
     try {
+      console.log("🔵 이메일 중복확인 API 호출:", email);
       const available = await checkEmailAvailable(email);
-      if (available) {
+      console.log("🔵 이메일 중복확인 API 응답:", available, typeof available);
+      console.log("🔵 available === true?", available === true);
+      console.log("🔵 available === false?", available === false);
+      if (available === true) {
+        console.log("🟢 사용 가능한 이메일 처리");
         setIsEmailChecked(true);
-        Alert.alert("중복확인", "사용 가능한 이메일입니다.");
+        setEmailCheckMessage("✓ 사용 가능한 이메일입니다. 가입 버튼을 눌러주세요.");
       } else {
+        console.log("🔴 중복된 이메일 처리");
         setIsEmailChecked(false);
-        Alert.alert("중복확인", "이미 가입된 이메일입니다.\n다른 이메일을 사용해주세요.");
+        setEmailCheckMessage("이미 가입된 이메일입니다. 다른 이메일을 사용해주세요.");
       }
-    } catch {
-      Alert.alert("오류", "이메일 확인에 실패했습니다. 다시 시도해주세요.");
+    } catch (e) {
+      console.log("🔴 이메일 확인 실패:", e);
+      setIsEmailChecked(false);
+      setEmailCheckMessage("이메일 확인에 실패했습니다. 다시 시도해주세요.");
     }
   };
 
@@ -112,12 +139,17 @@ export function GeneralSignUpScreen() {
               placeholder="사용하실 닉네임을 입력해주세요"
               placeholderTextColor="#A39B92"
               value={nickname}
-              onChangeText={(v) => { setNickname(v); setIsNicknameChecked(false); }}
+              onChangeText={(v) => { setNickname(v); setIsNicknameChecked(false); setNicknameCheckMessage(""); }}
             />
             <TouchableOpacity style={styles.duplicateCheckBtn} onPress={handleCheckNicknameDuplicate} activeOpacity={0.7}>
               <Text style={styles.duplicateCheckBtnText}>중복확인</Text>
             </TouchableOpacity>
           </View>
+          {nicknameCheckMessage && (
+            <Text style={isNicknameChecked ? styles.successText : styles.errorText}>
+              {nicknameCheckMessage}
+            </Text>
+          )}
 
           {/* 휴대폰 번호 입력 */}
           <Text style={styles.inputLabel}>휴대폰 번호</Text>
@@ -142,7 +174,7 @@ export function GeneralSignUpScreen() {
               placeholder="example@email.com"
               placeholderTextColor="#A39B92"
               value={email}
-              onChangeText={(v) => { setEmail(v); setIsEmailChecked(false); }}
+              onChangeText={(v) => { setEmail(v); setIsEmailChecked(false); setEmailCheckMessage(""); }}
               keyboardType="email-address"
               autoCapitalize="none"
             />
@@ -151,8 +183,10 @@ export function GeneralSignUpScreen() {
         </TouchableOpacity>
           </View>
 
-          {email.length > 0 && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) && (
-            <Text style={styles.errorText}>올바른 이메일 형식이 아닙니다.</Text>
+          {emailCheckMessage && (
+            <Text style={isEmailChecked ? styles.successText : styles.errorText}>
+              {emailCheckMessage}
+            </Text>
           )}
 
           {/* 비밀번호 입력 */}
@@ -260,15 +294,26 @@ export function GeneralSignUpScreen() {
           activeOpacity={0.8}
           disabled={isLoading}
           onPress={async () => {
+            console.log("🟢 가입완료 버튼 클릭됨");
+            console.log("🟢 중복확인 상태 - 닉네임:", isNicknameChecked, "이메일:", isEmailChecked);
             if (!name) return Alert.alert("알림", "이름을 입력해주세요.");
             if (!nickname) return Alert.alert("알림", "닉네임을 입력해주세요.");
-            if (!isNicknameChecked) return Alert.alert("알림", "닉네임 중복확인을 해주세요.");
+            if (!isNicknameChecked) {
+              setNicknameCheckMessage("닉네임 중복확인을 해주세요.");
+              return;
+            }
             if (!phone) return Alert.alert("알림", "휴대폰 번호를 입력해주세요.");
             if (phone.length < 12) return Alert.alert("알림", "올바른 휴대폰 번호를 입력해주세요.");
             if (!email) return Alert.alert("알림", "아이디(이메일)를 입력해주세요.");
-            if (!isEmailChecked) return Alert.alert("알림", "이메일 중복확인을 해주세요.");
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!emailRegex.test(email)) return Alert.alert("알림", "올바른 이메일 형식을 입력해주세요.");
+            if (!emailRegex.test(email)) {
+              setEmailCheckMessage("올바른 이메일 형식을 입력해주세요.");
+              return;
+            }
+            if (!isEmailChecked) {
+              setEmailCheckMessage("이메일 중복확인을 해주세요.");
+              return;
+            }
             if (!password) return Alert.alert("알림", "비밀번호를 입력해주세요.");
             const passwordRegex = /^(?=.*[a-zA-Z])(?=.*\d)(?=.*[\W_])[^\s]{8,}$/;
             if (!passwordRegex.test(password)) return Alert.alert("알림", "비밀번호는 영문, 숫자, 특수문자를 포함하여 8자 이상이어야 합니다.");
@@ -375,6 +420,20 @@ const styles = StyleSheet.create({
   },
   errorText: {
     color: '#D04040',
+    fontSize: 12,
+    marginLeft: 4,
+    marginTop: -12,
+    marginBottom: 16,
+  },
+  successText: {
+    color: '#2D8659',
+    fontSize: 12,
+    marginLeft: 4,
+    marginTop: -12,
+    marginBottom: 16,
+  },
+  warningText: {
+    color: '#D97706',
     fontSize: 12,
     marginLeft: 4,
     marginTop: -12,

@@ -72,41 +72,8 @@ const FLOW: Record<Step, ConversationNode> = {
 };
 
 // ─── 추천 결과 ─────────────────────────────────────────────────────────────────
-const MOCK_RECOMMENDATIONS = [
-  {
-    id: "1",
-    title: "이천 도자기 물레 체험",
-    category: "도예",
-    location: "경기 이천시",
-    rating: 4.9,
-    reviewCount: 128,
-    price: 35000,
-    imageUri: "https://picsum.photos/seed/pottery/300/200",
-    reason: "같이 집중해서 만들기에 완벽한 도예 체험이에요!",
-  },
-  {
-    id: "2",
-    title: "전통 매듭 공예 원데이 클래스",
-    category: "공예",
-    location: "서울 종로구",
-    rating: 4.8,
-    reviewCount: 96,
-    price: 38000,
-    imageUri: "https://picsum.photos/seed/knot/300/200",
-    reason: "후기에서 \"둘 다 집중했다\"는 말이 가장 많은 클래스예요.",
-  },
-  {
-    id: "3",
-    title: "전통 한지 공예 체험",
-    category: "한지",
-    location: "전북 전주시",
-    rating: 4.7,
-    reviewCount: 74,
-    price: 28000,
-    imageUri: "https://picsum.photos/seed/hanji/300/200",
-    reason: "예산 범위 안에서 가장 만족도가 높은 체험이에요.",
-  },
-];
+// TODO: 백엔드 AI 추천 API 연동 필요
+const MOCK_RECOMMENDATIONS: any[] = [];
 
 // ─── 타입 ──────────────────────────────────────────────────────────────────────
 type CompanionType = "ALONE" | "FRIEND" | "FAMILY" | "COUPLE" | "KIDS" | "FOREIGN_GUEST" | "OTHER";

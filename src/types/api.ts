@@ -14,6 +14,12 @@ export interface ExperienceSchedule {
   isActive: boolean
 }
 
+export interface ExperienceImage {
+  id: number
+  imageUrl: string
+  displayOrder: number
+}
+
 export interface Experience {
   id: number
   artisanId: number
@@ -31,6 +37,8 @@ export interface Experience {
   locationLng: number
   isActive: boolean
   schedules: ExperienceSchedule[]
+  images: ExperienceImage[]
+  tags: string[]
   createdAt: string
   updatedAt: string
 }
@@ -170,21 +178,39 @@ export interface ExplainResponse {
 
 export interface Banner {
   id: number
-  tag: string
   title: string
   subtitle: string
+  tag: string
   imageUrl: string
-  linkUrl?: string
+  bannerType: string
+  displayOrder: number
+  createdAt: string
 }
 
 // ========== Artisan ==========
 
 export interface Artisan {
   id: number
+  userId: number
   name: string
+  heritageCategory: string
+  certificationNumber: string
+  bio: string
+  profileImageUrl: string
+  introVideoUrl: string | null
+  certificationStatus: string
+  verifiedAt: string | null
+  isVerified: boolean
+  isActive: boolean
+  createdAt: string
+  updatedAt: string
+  address: string | null
+  latitude: number | null
+  longitude: number | null
+  // TODO: 백엔드에 /artisans/recommended, /artisans/nearby 엔드포인트 추가 시 정식 필드로 교체
   badge?: string
   quote?: string
-  imageUrl: string
+  imageUrl?: string
   category?: string
   location?: string
   lat?: number
@@ -199,19 +225,5 @@ export interface Notification {
   title: string
   body: string
   isRead: boolean
-  createdAt: string
-}
-
-// ========== Wishlist ==========
-
-export interface Wishlist {
-  id: number
-  experienceId: number
-  experienceTitle: string
-  experienceCategory: string
-  experienceLocation: string
-  experiencePrice: number
-  experienceDurationMinutes: number
-  experienceImageUrl: string | null
   createdAt: string
 }

@@ -5,9 +5,12 @@ export interface UserProfile {
   email: string
   provider: string
   providerId: string
+  name: string
   nickname: string
+  phone: string | null
   role: UserRole
   profileImageUrl: string | null
+  preferredCategories?: string[]
   isActive: boolean
   createdAt: string
   updatedAt: string
