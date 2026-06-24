@@ -15,7 +15,7 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "@/navigation/RootNavigator";
 import { Ionicons, Feather } from "@expo/vector-icons";
 import { MainLayout } from "@/features/general/home/MainLayout";
-import { logout, getCurrentProfile } from "@/features/auth/api/authApi";
+import { logout, getCurrentProfile, deleteAccount } from "@/features/auth/api/authApi";
 import { UserProfile } from "@/features/auth/types";
 import { getUserStats, UserStats } from "@/features/general/mypage/api/mypageApi";
 
@@ -174,6 +174,28 @@ export function MyPageScreen() {
     }
   };
 
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      '회원 탈퇴',
+      '정말로 탈퇴하시겠습니까?\n탈퇴 시 모든 데이터가 삭제되며 복구할 수 없습니다.',
+      [
+        { text: '취소', style: 'cancel' },
+        {
+          text: '탈퇴',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteAccount();
+              navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+            } catch {
+              Alert.alert('오류', '회원 탈퇴에 실패했습니다.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   if (loading) {
     return (
       <MainLayout>
@@ -273,17 +295,24 @@ export function MyPageScreen() {
 
         {/* ── 기타 메뉴 리스트 ── */}
         <View style={ms.menuSection}>
-          {["공지사항", "자주 묻는 질문", "이용약관", "로그아웃"].map((item) => (
+          {["공지사항", "자주 묻는 질문", "이용약관", "로그아웃", "회원탈퇴"].map((item) => (
             <TouchableOpacity
               key={item}
               style={ms.menuItem}
               activeOpacity={0.7}
-              onPress={item === "로그아웃" ? handleLogout : undefined}
+              onPress={
+                item === "로그아웃" ? handleLogout :
+                item === "회원탈퇴" ? handleDeleteAccount :
+                undefined
+              }
             >
-              <Text style={[ms.menuItemText, item === "로그아웃" && { color: "#EF4444" }]}>
+              <Text style={[
+                ms.menuItemText,
+                (item === "로그아웃" || item === "회원탈퇴") && { color: "#EF4444" }
+              ]}>
                 {item}
               </Text>
-              {item !== "로그아웃" && (
+              {item !== "로그아웃" && item !== "회원탈퇴" && (
                 <Ionicons name="chevron-forward" size={18} color="#D4CDC4" />
               )}
             </TouchableOpacity>

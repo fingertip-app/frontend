@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase'
-import { apiGet, apiPost, apiPostWithToken, apiPatch } from '@/services/api'
+import { apiGet, apiPost, apiPostWithToken, apiPatch, apiDelete } from '@/services/api'
 import { UserProfile } from '@/features/auth/types'
 
 export interface LoginResult {
@@ -93,6 +93,20 @@ export async function applyArtisan(
  * 로그아웃
  */
 export async function logout(): Promise<void> {
+  const { error } = await supabase.auth.signOut()
+  if (error) {
+    throw new Error('로그아웃에 실패했습니다.')
+  }
+}
+
+/**
+ * 회원 탈퇴
+ */
+export async function deleteAccount(): Promise<void> {
+  // 백엔드에서 계정 비활성화
+  await apiDelete('/users/me')
+
+  // Supabase 세션 삭제
   const { error } = await supabase.auth.signOut()
   if (error) {
     throw new Error('로그아웃에 실패했습니다.')
