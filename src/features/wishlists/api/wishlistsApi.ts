@@ -59,16 +59,15 @@ export async function removeFromWishlist(experienceId: number): Promise<void> {
  * @throws Error 네트워크 에러, 인증 에러 (401)
  *
  * 참고:
- * - 백엔드 응답: ApiResponse<Boolean> = { success: true, data: boolean }
+ * - 백엔드 응답: ApiResponse<{ isInWishlist: boolean }> = { success: true, data: { isInWishlist: boolean } }
  * - 에러 발생 시 안전한 기본값(false)을 반환하여 UI 렌더링 정상 진행
  */
 export async function checkWishlist(experienceId: number): Promise<boolean> {
   try {
-    const response = await apiGet<boolean>(
+    const response = await apiGet<{ isInWishlist: boolean }>(
       `/wishlists/check/${experienceId}`
     );
-    // apiGet은 이미 .data를 unwrap하므로 boolean 값이 직접 반환됨
-    return response ?? false;
+    return response?.isInWishlist ?? false;
   } catch (error) {
     console.error(`[WishlistAPI] 위시리스트 확인 실패 (experienceId=${experienceId}):`, error);
     // 에러 발생 시 찜되지 않은 것으로 처리 (안전한 기본값)

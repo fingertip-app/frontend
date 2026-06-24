@@ -288,19 +288,24 @@ export function HomeScreen() {
   };
 
   useEffect(() => {
-    const fetchBannersAndArtisan = async () => {
+    const fetchBanners = async () => {
       try {
-        const [bannersData, artisanData] = await Promise.all([
-          getHeroBanners(),
-          getRecommendedArtisan(),
-        ]);
+        const bannersData = await getHeroBanners();
         setBanners(bannersData);
-        setRecommendedArtisan(artisanData);
       } catch (e) {
-        console.error("[Home] 배너/장인 로드 실패:", e);
+        console.error("[Home] 배너 로드 실패:", e);
       }
     };
-    fetchBannersAndArtisan();
+    const fetchRecommendedArtisan = async () => {
+      try {
+        const artisanData = await getRecommendedArtisan();
+        setRecommendedArtisan(artisanData);
+      } catch (e) {
+        console.error("[Home] 오늘의 장인 로드 실패:", e);
+      }
+    };
+    fetchBanners();
+    fetchRecommendedArtisan();
   }, []);
 
   useEffect(() => {
