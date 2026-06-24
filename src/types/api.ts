@@ -14,6 +14,12 @@ export interface ExperienceSchedule {
   isActive: boolean
 }
 
+export interface ExperienceImage {
+  id: number
+  imageUrl: string
+  displayOrder: number
+}
+
 export interface Experience {
   id: number
   artisanId: number
@@ -31,6 +37,8 @@ export interface Experience {
   locationLng: number
   isActive: boolean
   schedules: ExperienceSchedule[]
+  images: ExperienceImage[]
+  tags: string[]
   createdAt: string
   updatedAt: string
 }
@@ -199,6 +207,14 @@ export interface Artisan {
   address: string | null
   latitude: number | null
   longitude: number | null
+  // TODO: 백엔드에 /artisans/recommended, /artisans/nearby 엔드포인트 추가 시 정식 필드로 교체
+  badge?: string
+  quote?: string
+  imageUrl?: string
+  category?: string
+  location?: string
+  lat?: number
+  lng?: number
 }
 
 // ========== Notification ==========
