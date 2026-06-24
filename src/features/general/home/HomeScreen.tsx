@@ -1,7 +1,7 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import {
   ScrollView, Text, View, StyleSheet, TouchableOpacity,
-  Image, ImageBackground, FlatList, NativeSyntheticEvent,
+  Image, ImageBackground, NativeSyntheticEvent,
   NativeScrollEvent, Dimensions, ActivityIndicator, Alert,
 } from "react-native";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";

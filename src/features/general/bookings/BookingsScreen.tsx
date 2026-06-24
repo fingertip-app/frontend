@@ -135,7 +135,7 @@ export function BookingsScreen() {
         setBookings([]);
         return;
       }
-      const reservations = await getMyReservations(profile.id);
+      const reservations = await getMyReservations();
       const mapped = await Promise.all(reservations.map(toBooking));
       setBookings(mapped);
     } catch {
