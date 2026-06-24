@@ -221,8 +221,7 @@ export function DetailBottomSheet({ exp, onClose }: Props) {
         ? "날짜 선택하기"
         : "예약 가능한 일정 없음";
 
-  const shortDesc =
-    "흙을 만지고, 나만의 그릇을 만들어보는 시간. 장인의 친절한 지도로 누구나 쉽게 즐길 수 있습니다. 이천의 고요한 공방에서 전통 물레의 리듬을 느끼며 일상의 복잡함을 잊어보세요.";
+  const shortDesc = fullExperience?.description || "체험 소개가 아직 등록되지 않았습니다.";
 
   return (
     <View
