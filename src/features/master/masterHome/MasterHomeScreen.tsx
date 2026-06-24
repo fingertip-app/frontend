@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import {
   View,
   Text,
@@ -6,7 +6,6 @@ import {
   ScrollView,
   TouchableOpacity,
   Image,
-  Platform,
   Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -16,14 +15,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { MasterBottomTabs } from "../components/MasterBottomTabs";
 import { MasterHeader } from "../components/MasterHeader";
 import { RootStackParamList } from "@/navigation/RootNavigator";
-import { getMyArtisan } from "@/features/artisans/api/artisanApi";
-import { getArtisanExperiences } from "@/features/experiences/api/experiencesApi";
-import {
-  approveReservation,
-  getExperienceReservations,
-  rejectReservation,
-} from "@/features/reservations/api/reservationsApi";
-import { getUser } from "@/features/users/api/usersApi";
+import { useMasterHome } from "./useMasterHome";
 
 // ─── 팔레트 ────────────────────────────────────────────────────────────────────
 const BRAND = "#3B2B26";
@@ -32,41 +24,6 @@ const CARD = "#FFFFFF";
 const GRAY = "#8A8077";
 const BORDER = "#EAE6E1";
 const ACCENT_BG = "#F0EBE5";
-
-interface BookingRequest {
-  id: number;
-  title: string;
-  date: string;
-  time: string;
-  guests: string;
-  name: string;
-  image: string;
-}
-
-function formatRequestDate(iso: string | null) {
-  if (!iso) return "-";
-  const d = new Date(iso);
-  const weekday = ["일", "월", "화", "수", "목", "금", "토"][d.getDay()];
-  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")} (${weekday})`;
-}
-
-function formatRequestTime(iso: string | null) {
-  if (!iso) return "-";
-  const d = new Date(iso);
-  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
-}
-
-const TODAY_SCHEDULES = [
-  {
-    id: "1",
-    title: "도자기 핸드빌딩 체험",
-    date: "2024.05.29 (수)",
-    time: "11:00",
-    guests: "4명",
-    location: "경기도 이천시 신둔면 도자예술로 62",
-    image: "https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=200&q=80",
-  },
-];
 
 // ─── 메인 컴포넌트 ─────────────────────────────────────────────────────────────
 export function MasterHomeScreen({
@@ -77,43 +34,9 @@ export function MasterHomeScreen({
   onNotificationPress?: () => void;
 }) {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const [bookingRequests, setBookingRequests] = useState<BookingRequest[]>([]);
-  const [artisanId, setArtisanId] = useState<number | null>(null);
-
-  useEffect(() => {
-    (async () => {
-      try {
-        const artisan = await getMyArtisan();
-        setArtisanId(artisan.id);
-
-        const experiences = await getArtisanExperiences(artisan.id);
-        const experienceById = new Map(experiences.map((exp) => [exp.id, exp]));
-
-        const reservationLists = await Promise.all(
-          experiences.map((exp) => getExperienceReservations(exp.id))
-        );
-        const pending = reservationLists.flat().filter((r) => r.status === "PENDING");
-
-        const requests = await Promise.all(
-          pending.map(async (r) => {
-            const user = await getUser(r.userId).catch(() => null);
-            return {
-              id: r.id,
-              title: experienceById.get(r.experienceId)?.title ?? "체험",
-              date: formatRequestDate(r.reservedDateTime),
-              time: formatRequestTime(r.reservedDateTime),
-              guests: `${r.numberOfParticipants}명`,
-              name: user?.nickname ?? "알 수 없음",
-              image: "",
-            };
-          })
-        );
-        setBookingRequests(requests);
-      } catch {
-        // 예약 요청 조회 실패 시 빈 목록으로 유지
-      }
-    })();
-  }, []);
+  const { data, approve, reject } = useMasterHome();
+  const bookingRequests = data?.bookingRequests ?? [];
+  const todaySchedules = data?.todaySchedules ?? [];
 
   const handleApprove = (id: number) => {
     Alert.alert("예약 승인", "이 예약을 승인하시겠습니까?", [
@@ -122,8 +45,7 @@ export function MasterHomeScreen({
         text: "승인",
         onPress: async () => {
           try {
-            await approveReservation(id, artisanId ?? undefined);
-            setBookingRequests((prev) => prev.filter((b) => b.id !== id));
+            await approve(id);
           } catch {
             Alert.alert("알림", "예약 승인에 실패했습니다.");
           }
@@ -140,8 +62,7 @@ export function MasterHomeScreen({
         style: "destructive",
         onPress: async () => {
           try {
-            await rejectReservation(id, "장인의 사정으로 예약을 거절했습니다.", artisanId ?? undefined);
-            setBookingRequests((prev) => prev.filter((b) => b.id !== id));
+            await reject(id, "장인의 사정으로 예약을 거절했습니다.");
           } catch {
             Alert.alert("알림", "예약 거절에 실패했습니다.");
           }
@@ -164,18 +85,18 @@ export function MasterHomeScreen({
         {/* ── 프로필 카드 ── */}
         <View style={styles.profileCard}>
           <Image
-            source={{ uri: "https://images.unsplash.com/photo-1566753323558-f4e0952af115?w=200&q=80" }}
+            source={{ uri: data?.profile.imageUrl }}
             style={styles.avatar}
           />
           <View style={styles.profileInfo}>
             <View style={styles.profileNameRow}>
-              <Text style={styles.profileName}>김도예 장인</Text>
+              <Text style={styles.profileName}>{data?.profile.name ?? "-"}</Text>
               <View style={styles.certBadge}>
-                <Text style={styles.certText}>인증완료</Text>
+                <Text style={styles.certText}>{data?.profile.certificationLabel ?? "-"}</Text>
               </View>
             </View>
-            <Text style={styles.profileDesc}>국가무형문화재 제105호 도예</Text>
-            <Text style={styles.profileDesc}>경기도 이천시</Text>
+            <Text style={styles.profileDesc}>{data?.profile.description ?? "-"}</Text>
+            <Text style={styles.profileDesc}>{data?.profile.detail ?? "-"}</Text>
             <TouchableOpacity 
               style={styles.profileLinkRow}
               onPress={() => navigation.navigate("MasterProfile")}
@@ -201,13 +122,13 @@ export function MasterHomeScreen({
           <View style={[styles.statCard, { marginRight: 8 }]}>
             <Text style={styles.statLabel}>오늘 예약</Text>
             <Text style={styles.statValue}>
-              3<Text style={styles.statUnit}>건</Text>
+              {data?.stats.todayReservationCount ?? 0}<Text style={styles.statUnit}>건</Text>
             </Text>
           </View>
           <View style={styles.statCard}>
             <Text style={styles.statLabel}>이번 달 수익</Text>
             <Text style={[styles.statValue, { fontSize: 22 }]}>
-              1,230,000<Text style={styles.statUnit}>원</Text>
+              {(data?.stats.monthlyRevenue ?? 0).toLocaleString("ko-KR")}<Text style={styles.statUnit}>원</Text>
             </Text>
           </View>
         </View>
@@ -216,13 +137,15 @@ export function MasterHomeScreen({
             <Text style={styles.statLabel}>평균 평점</Text>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: 6 }}>
               <Ionicons name="star" size={18} color={BRAND} />
-              <Text style={[styles.statValue, { marginTop: 0 }]}>4.9</Text>
+              <Text style={[styles.statValue, { marginTop: 0 }]}>
+                {(data?.stats.averageRating ?? 0).toFixed(1)}
+              </Text>
             </View>
           </View>
           <View style={styles.statCard}>
             <Text style={styles.statLabel}>누적 후기</Text>
             <Text style={styles.statValue}>
-              127<Text style={styles.statUnit}>개</Text>
+              {data?.stats.reviewCount ?? 0}<Text style={styles.statUnit}>개</Text>
             </Text>
           </View>
         </View>
@@ -278,7 +201,7 @@ export function MasterHomeScreen({
           </TouchableOpacity>
         </View>
 
-        {TODAY_SCHEDULES.map((item) => (
+        {todaySchedules.map((item) => (
           <TouchableOpacity key={item.id} style={styles.scheduleCard} activeOpacity={0.8}>
             <Image source={{ uri: item.image }} style={styles.scheduleImage} />
             <View style={styles.scheduleInfo}>

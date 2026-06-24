@@ -12,6 +12,8 @@ import {
 } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
+import type { ExperiencePhoto } from "../types";
 
 // ─── 팔레트 (Step1과 동일) ─────────────────────────────────────────────────────
 const BRAND = "#3B2B26";
@@ -32,13 +34,34 @@ export function Step2Photos() {
   const currentStep = 2;
 
   // 대표 사진: 1장
-  const [mainPhoto, setMainPhoto] = useState<string | null>(null);
+  const [mainPhoto, setMainPhoto] = useState<ExperiencePhoto | null>(null);
   // 상세 사진: 최대 10장
-  const [detailPhotos, setDetailPhotos] = useState<string[]>([]);
+  const [detailPhotos, setDetailPhotos] = useState<ExperiencePhoto[]>([]);
 
-  const handleAddMain = () => {
-    // TODO: expo-image-picker 연결
-    setMainPhoto(`mock_main_${Date.now()}`);
+  const requestPhotoPermission = async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert("권한 필요", "체험 사진을 선택하려면 사진 접근 권한이 필요합니다.");
+      return false;
+    }
+    return true;
+  };
+
+  const toPhoto = (asset: ImagePicker.ImagePickerAsset): ExperiencePhoto => ({
+    uri: asset.uri,
+    fileName: asset.fileName,
+    mimeType: asset.mimeType,
+  });
+
+  const handleAddMain = async () => {
+    if (!(await requestPhotoPermission())) return;
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.9,
+    });
+    if (!result.canceled && result.assets[0]) setMainPhoto(toPhoto(result.assets[0]));
   };
 
   const handleRemoveMain = () => {
@@ -48,12 +71,24 @@ export function Step2Photos() {
     ]);
   };
 
-  const handleAddDetail = () => {
+  const handleAddDetail = async () => {
     if (detailPhotos.length >= MAX_DETAIL) {
       Alert.alert("알림", `상세 사진은 최대 ${MAX_DETAIL}장까지 첨부할 수 있습니다.`);
       return;
     }
-    setDetailPhotos([...detailPhotos, `mock_detail_${Date.now()}`]);
+    if (!(await requestPhotoPermission())) return;
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsMultipleSelection: true,
+      selectionLimit: MAX_DETAIL - detailPhotos.length,
+      quality: 0.9,
+    });
+    if (!result.canceled) {
+      setDetailPhotos((current) => [
+        ...current,
+        ...result.assets.map(toPhoto).slice(0, MAX_DETAIL - current.length),
+      ]);
+    }
   };
 
   const handleRemoveDetail = (idx: number) => {
@@ -121,10 +156,7 @@ export function Step2Photos() {
 
           {mainPhoto ? (
             <View style={styles.mainPhotoBox}>
-              {/* 실제 이미지 없으므로 placeholder */}
-              <View style={styles.mainPhotoPlaceholder}>
-                <Ionicons name="image-outline" size={40} color={PLACEHOLDER} />
-              </View>
+              <Image source={{ uri: mainPhoto.uri }} style={styles.mainPhotoPlaceholder} />
               <View style={styles.mainPhotoOverlay}>
                 <Text style={styles.mainPhotoLabel}>현재 대표 사진으로 설정됨</Text>
               </View>
@@ -155,11 +187,9 @@ export function Step2Photos() {
 
           <View style={styles.detailGrid}>
             {/* 등록된 사진들 */}
-            {detailPhotos.map((uri, i) => (
-              <View key={uri} style={styles.detailCell}>
-                <View style={styles.detailPlaceholder}>
-                  <Ionicons name="image-outline" size={24} color={PLACEHOLDER} />
-                </View>
+            {detailPhotos.map((photo, i) => (
+              <View key={`${photo.uri}-${i}`} style={styles.detailCell}>
+                <Image source={{ uri: photo.uri }} style={styles.detailPlaceholder} />
                 <TouchableOpacity
                   style={styles.detailRemoveBtn}
                   onPress={() => handleRemoveDetail(i)}
@@ -216,7 +246,9 @@ export function Step2Photos() {
           style={[styles.nextBtn, !mainPhoto && styles.nextBtnDisabled]}
           activeOpacity={0.8}
           disabled={!mainPhoto}
-          onPress={() => navigation.navigate("Step3Schedule", route.params)}
+          onPress={() =>
+            navigation.navigate("Step3Schedule", { ...route.params, mainPhoto, detailPhotos })
+          }
         >
           <Text style={styles.nextBtnText}>다음 단계</Text>
         </TouchableOpacity>

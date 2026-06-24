@@ -30,6 +30,7 @@ export interface Booking {
   reservationId?: number;
   experienceId?: number;
   status: TabType;
+  reservationStatus?: ReservationStatus;
   title: string;
   artisan: string;
   date: string;
@@ -92,6 +93,7 @@ async function toBooking(reservation: Reservation): Promise<Booking> {
     reservationId: reservation.id,
     experienceId: reservation.experienceId,
     status: toTabType(reservation.status),
+    reservationStatus: reservation.status,
     title: experience?.title ?? "체험",
     artisan: artisan?.name ?? "장인",
     date: formatDate(reservation.reservedDateTime),
@@ -211,7 +213,7 @@ export function BookingsScreen() {
   };
 
   return (
-    <MainLayout>
+    <MainLayout activeItem="예약내역">
       {/* 탭 네비게이션 (가로 스크롤) */}
       <View style={styles.tabContainer}>
         <ScrollView

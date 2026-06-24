@@ -10,7 +10,7 @@ import {
   useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, NavigationProp } from "@react-navigation/native";
 import { RootStackParamList, MainTabParamList } from "@/navigation/RootNavigator";
 
@@ -25,14 +25,18 @@ interface CustomDrawerProps {
 type DrawerNavigationProp = NavigationProp<RootStackParamList & MainTabParamList>;
 
 const MAIN_MENU = [
-  { key: "홈",       label: "홈",       icon: "home",     route: "Home" },
-  { key: "탐색",     label: "탐색",     icon: "compass",  route: "Explore" },
-  { key: "예약내역", label: "예약 내역", icon: "calendar", route: "Bookings" },
-  { key: "찜한체험", label: "찜한 체험", icon: "bookmark", route: "Wishlist" },
-  { key: "AI추천",   label: "AI 추천",  icon: "sparkles", route: "AIRecommend" },
+  { key: "홈",         label: "홈",         icon: "home",          route: "Home" },
+  { key: "탐색",       label: "탐색",       icon: "compass",       route: "Explore" },
+  { key: "예약내역",   label: "예약 내역",   icon: "calendar",      route: "Bookings" },
+  { key: "찜한체험",   label: "찜한 체험",   icon: "bookmark",      route: "Wishlist" },
+  { key: "AI추천",     label: "AI 추천",    icon: "sparkles",      route: "AIRecommend" },
+  { key: "카드뉴스",   label: "한물결 카드뉴스", icon: "newspaper", route: "CardNewsList" },
+  { key: "알림",       label: "알림",       icon: "notifications", route: "Notifications" },
+  { key: "마이페이지", label: "마이페이지", icon: "person",        route: "MyPage" },
 ];
 
-const CATEGORY_MENU = ["도예", "목공", "염색", "전통음식"];
+// 실제 체험 데이터에 존재하는 분야 중 자주 찾는 항목만 빠른 진입용으로 노출
+const CATEGORY_MENU = ["도자기", "한지공예", "모시짜기", "전통주"];
 
 const MASTER_MENU = [
   { key: "홈",       label: "장인 홈",   icon: "home",          route: "MasterHome" },
@@ -44,7 +48,6 @@ const MASTER_MENU = [
 
 const BOTTOM_MENU = [
   { key: "설정",   label: "설정",   icon: "settings", route: "Settings" },
-  { key: "고객센터", label: "고객센터", icon: "headset-outline", lib: "Ionicons" },
 ];
 
 function MenuIcon({ name, size, color }: { name: string; size: number; color: string }) {
@@ -96,6 +99,12 @@ export function CustomDrawer({
     if (route) {
       navigation.navigate(route as any);
     }
+  };
+
+  const handleCategoryPress = (category: string) => {
+    onItemPress?.(category);
+    onClose();
+    navigation.navigate("Explore", { category });
   };
 
   return (
@@ -163,7 +172,7 @@ export function CustomDrawer({
                     <TouchableOpacity
                       key={cat}
                       style={styles.categoryItem}
-                      onPress={() => handlePress(cat)}
+                      onPress={() => handleCategoryPress(cat)}
                       activeOpacity={0.7}
                     >
                       <Text style={styles.categoryLabel}>{cat}</Text>

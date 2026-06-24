@@ -10,21 +10,14 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useNavigation } from "@react-navigation/native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "@/navigation/RootNavigator";
 import { Ionicons } from "@expo/vector-icons";
 import { MasterBottomTabs } from "../components/MasterBottomTabs";
 import { MasterHeader } from "../components/MasterHeader";
-import { getMyArtisan } from "@/features/artisans/api/artisanApi";
-import { getArtisanExperiences } from "@/features/experiences/api/experiencesApi";
-import {
-  approveReservation,
-  getExperienceReservations,
-  rejectReservation,
-} from "@/features/reservations/api/reservationsApi";
-import { getUser } from "@/features/users/api/usersApi";
-import type { Reservation, ReservationStatus } from "@/types/api";
+import { useMasterBookings } from "./useMasterBookings";
+import type { MasterBookingStatus } from "./types";
 
 // ─── 팔레트 ────────────────────────────────────────────────────────────────────
 const BRAND = "#3B2B26";
@@ -34,115 +27,35 @@ const GRAY = "#8A8077";
 const BORDER = "#EAE6E1";
 
 // ─── 화면 표시용 예약 타입 ───────────────────────────────────────────────────────
-type DisplayStatus = "pending" | "confirmed" | "completed" | "cancelled";
-
-interface DisplayBooking {
-  id: number;
-  status: DisplayStatus;
-  title: string;
-  date: string;
-  time: string;
-  bookerName: string;
-  guests: number;
-  price: number;
-}
-
-const STATUS_TABS: { id: "all" | DisplayStatus; label: string }[] = [
+const STATUS_TABS: { id: "all" | MasterBookingStatus; label: string }[] = [
   { id: "all", label: "전체" },
   { id: "pending", label: "승인 대기" },
   { id: "confirmed", label: "예약 확정" },
   { id: "completed", label: "완료됨" },
 ];
 
-// 백엔드 ReservationStatus → 화면 표시용 상태 매핑
-function toDisplayStatus(status: ReservationStatus): DisplayStatus {
-  switch (status) {
-    case "PENDING":
-      return "pending";
-    case "APPROVED":
-    case "PAID":
-    case "CONFIRMED":
-      return "confirmed";
-    case "COMPLETED":
-      return "completed";
-    default:
-      return "cancelled";
-  }
-}
-
-function formatDate(iso: string | null) {
-  if (!iso) return "-";
-  const d = new Date(iso);
-  const weekday = ["일", "월", "화", "수", "목", "금", "토"][d.getDay()];
-  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")} (${weekday})`;
-}
-
-function formatTime(iso: string | null) {
-  if (!iso) return "-";
-  const d = new Date(iso);
-  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
-}
-
 export function MasterBookingsScreen() {
-  const [activeTab, setActiveTab] = useState<"all" | DisplayStatus>("all");
-  const [bookings, setBookings] = useState<DisplayBooking[]>([]);
-  const [reservationsById, setReservationsById] = useState<Record<number, Reservation>>({});
-  const [artisanId, setArtisanId] = useState<number | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<"all" | MasterBookingStatus>("all");
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { data, isLoading, error, reload, approve, reject } = useMasterBookings();
+  const bookings = data?.bookings ?? [];
 
-  const loadBookings = useCallback(async () => {
-    setLoading(true);
-    try {
-      const artisan = await getMyArtisan();
-      setArtisanId(artisan.id);
-
-      const experiences = await getArtisanExperiences(artisan.id);
-      const experienceById = new Map(experiences.map((exp) => [exp.id, exp]));
-
-      const reservationLists = await Promise.all(
-        experiences.map((exp) => getExperienceReservations(exp.id))
-      );
-      const reservations = reservationLists.flat();
-
-      const userIds = [...new Set(reservations.map((r) => r.userId))];
-      const users = await Promise.all(userIds.map((id) => getUser(id).catch(() => null)));
-      const nicknameByUserId = new Map(
-        users.map((user, idx) => [userIds[idx], user?.nickname ?? "알 수 없음"])
-      );
-
-      setReservationsById(
-        Object.fromEntries(reservations.map((r) => [r.id, r]))
-      );
-      setBookings(
-        reservations.map((r) => ({
-          id: r.id,
-          status: toDisplayStatus(r.status),
-          title: experienceById.get(r.experienceId)?.title ?? "체험",
-          date: formatDate(r.reservedDateTime),
-          time: formatTime(r.reservedDateTime),
-          bookerName: nicknameByUserId.get(r.userId) ?? "알 수 없음",
-          guests: r.numberOfParticipants,
-          price: r.totalPrice,
-        }))
-      );
-    } catch {
-      Alert.alert("알림", "예약 목록을 불러오지 못했습니다.");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      void reload();
+    }, [reload])
+  );
 
   useEffect(() => {
-    loadBookings();
-  }, [loadBookings]);
+    if (error) Alert.alert("알림", error.message);
+  }, [error]);
 
   const filteredBookings = bookings.filter((b) =>
     activeTab === "all" ? true : b.status === activeTab
   );
 
   // 상태 뱃지 렌더링 헬퍼
-  const renderStatusBadge = (status: DisplayStatus) => {
+  const renderStatusBadge = (status: MasterBookingStatus) => {
     let bgColor = "#F3F4F6";
     let textColor = "#4B5563";
     let label = "";
@@ -185,12 +98,12 @@ export function MasterBookingsScreen() {
         text: "승인",
         onPress: async () => {
           try {
-            const updated = await approveReservation(id, artisanId ?? undefined);
-            setBookings((prev) =>
-              prev.map((b) => (b.id === id ? { ...b, status: toDisplayStatus(updated.status) } : b))
+            await approve(id);
+          } catch (approveError) {
+            Alert.alert(
+              "알림",
+              approveError instanceof Error ? approveError.message : "예약 승인에 실패했습니다.",
             );
-          } catch {
-            Alert.alert("알림", "예약 승인에 실패했습니다.");
           }
         },
       },
@@ -206,16 +119,12 @@ export function MasterBookingsScreen() {
         style: "destructive",
         onPress: async () => {
           try {
-            const updated = await rejectReservation(
-              id,
-              "장인의 사정으로 예약을 거절했습니다.",
-              artisanId ?? undefined
+            await reject(id, "장인의 사정으로 예약을 거절했습니다.");
+          } catch (rejectError) {
+            Alert.alert(
+              "알림",
+              rejectError instanceof Error ? rejectError.message : "예약 거절에 실패했습니다.",
             );
-            setBookings((prev) =>
-              prev.map((b) => (b.id === id ? { ...b, status: toDisplayStatus(updated.status) } : b))
-            );
-          } catch {
-            Alert.alert("알림", "예약 거절에 실패했습니다.");
           }
         },
       },
@@ -250,7 +159,7 @@ export function MasterBookingsScreen() {
       </View>
 
       {/* ── 예약 리스트 ── */}
-      {loading ? (
+      {isLoading ? (
         <View style={styles.emptyContainer}>
           <ActivityIndicator color={BRAND} />
         </View>
@@ -261,8 +170,8 @@ export function MasterBookingsScreen() {
           keyExtractor={(item) => String(item.id)}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
-          onRefresh={loadBookings}
-          refreshing={loading}
+          onRefresh={() => void reload()}
+          refreshing={isLoading}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
               <Ionicons name="calendar-clear-outline" size={48} color="#D4CDC4" />
@@ -275,16 +184,7 @@ export function MasterBookingsScreen() {
               activeOpacity={0.8}
               onPress={() =>
                 navigation.navigate("MasterBookingDetail", {
-                  booking: {
-                    id: String(item.id),
-                    status: item.status,
-                    title: item.title,
-                    date: item.date,
-                    time: item.time,
-                    bookerName: item.bookerName,
-                    guests: item.guests,
-                    price: item.price,
-                  },
+                  reservationId: item.id,
                 })
               }
             >

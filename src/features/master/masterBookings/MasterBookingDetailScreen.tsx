@@ -1,9 +1,10 @@
 import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Linking, Alert } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Linking, Alert, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { RootStackParamList } from "@/navigation/RootNavigator";
+import { useMasterBookingDetail } from "./useMasterBookingDetail";
 
 const BRAND = "#3B2B26";
 const BG = "#F5F4F0";
@@ -14,9 +15,13 @@ const BORDER = "#EAE6E1";
 export function MasterBookingDetailScreen() {
   const navigation = useNavigation();
   const route = useRoute<RouteProp<RootStackParamList, "MasterBookingDetail">>();
-  const { booking } = route.params;
+  const { booking, isLoading, error } = useMasterBookingDetail(route.params.reservationId);
 
-  const phoneNumber = booking.bookerPhone;
+  React.useEffect(() => {
+    if (error) Alert.alert("알림", error.message);
+  }, [error]);
+
+  const phoneNumber = booking?.bookerPhone;
 
   // 전화 걸기 핸들러
   const handleCall = () => {
@@ -51,6 +56,11 @@ export function MasterBookingDetailScreen() {
         <View style={{ width: 24 }} />
       </View>
 
+      {isLoading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator color={BRAND} />
+        </View>
+      ) : booking ? (
       <ScrollView contentContainerStyle={styles.content}>
         {/* ── 상세 정보 카드 ── */}
         <View style={styles.card}>
@@ -68,6 +78,10 @@ export function MasterBookingDetailScreen() {
             <Text style={styles.value}>{booking.bookerName}</Text>
           </View>
           <View style={styles.row}>
+            <Text style={styles.label}>연락처</Text>
+            <Text style={styles.value}>{booking.bookerPhone ?? "-"}</Text>
+          </View>
+          <View style={styles.row}>
             <Text style={styles.label}>예약 인원</Text>
             <Text style={styles.value}>{booking.guests}명</Text>
           </View>
@@ -79,6 +93,20 @@ export function MasterBookingDetailScreen() {
             <Text style={styles.label}>결제 금액</Text>
             <Text style={styles.value}>{booking.price.toLocaleString()}원</Text>
           </View>
+          {booking.requestMessage ? (
+            <View style={styles.row}>
+              <Text style={styles.label}>요청 사항</Text>
+              <Text style={styles.value}>{booking.requestMessage}</Text>
+            </View>
+          ) : null}
+          {booking.rejectionReason || booking.cancellationReason ? (
+            <View style={styles.row}>
+              <Text style={styles.label}>처리 사유</Text>
+              <Text style={styles.value}>
+                {booking.rejectionReason ?? booking.cancellationReason}
+              </Text>
+            </View>
+          ) : null}
           
           {/* ── 연락처 버튼 영역 ── */}
           <View style={styles.actionBtnRow}>
@@ -93,12 +121,18 @@ export function MasterBookingDetailScreen() {
           </View>
         </View>
       </ScrollView>
+      ) : (
+        <View style={styles.loadingContainer}>
+          <Text style={styles.label}>예약 정보를 불러오지 못했습니다.</Text>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: BG },
+  loadingContainer: { flex: 1, alignItems: "center", justifyContent: "center" },
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingVertical: 14, backgroundColor: BG, borderBottomWidth: 1, borderBottomColor: BORDER },
   headerTitle: { fontSize: 17, fontWeight: "700", color: BRAND },
   

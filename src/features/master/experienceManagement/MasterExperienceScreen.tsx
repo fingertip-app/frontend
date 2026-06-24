@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect } from "react";
 import {
   View,
   Text,
@@ -18,9 +18,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { MasterBottomTabs } from "../components/MasterBottomTabs";
 import { RootStackParamList } from "@/navigation/RootNavigator";
 import { MasterHeader } from "../components/MasterHeader";
-import { getMyArtisan } from "@/features/artisans/api/artisanApi";
-import { getArtisanExperiences } from "@/features/experiences/api/experiencesApi";
-import type { Experience } from "@/types/api";
+import { useExperienceManagement } from "./useExperienceManagement";
 
 // ─── 팔레트 ────────────────────────────────────────────────────────────────────
 const BRAND = "#3B2B26";
@@ -29,21 +27,6 @@ const CARD = "#FFFFFF";
 const GRAY = "#8A8077";
 const BORDER = "#EAE6E1";
 
-const PLACEHOLDER_IMAGE = "https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=600&q=80";
-
-function mapExperienceToListItem(exp: Experience) {
-  const bookings = exp.schedules?.reduce((sum, s) => sum + (s.bookedSlots ?? 0), 0) ?? 0;
-  return {
-    id: String(exp.id),
-    title: exp.title,
-    bookings: bookings > 0 ? bookings : null,
-    rating: 0,
-    active: exp.isActive,
-    imageUri: PLACEHOLDER_IMAGE,
-    statusLabel: exp.isActive ? "ACTIVE" : "INACTIVE",
-  };
-}
-
 export function MasterExperienceScreen({
   onMenuPress,
   onNotificationPress,
@@ -51,53 +34,38 @@ export function MasterExperienceScreen({
   onMenuPress?: () => void;
   onNotificationPress?: () => void;
 }) {
-  const [experiences, setExperiences] = useState<ReturnType<typeof mapExperienceToListItem>[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-
-  const loadExperiences = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const artisan = await getMyArtisan();
-      const myExperiences = await getArtisanExperiences(artisan.id);
-      setExperiences(myExperiences.map(mapExperienceToListItem));
-    } catch {
-      Alert.alert("오류", "체험 목록을 불러오지 못했습니다.");
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+  const { data, isLoading, error, reload } = useExperienceManagement();
+  const experiences = data?.experiences ?? [];
 
   useFocusEffect(
     useCallback(() => {
-      loadExperiences();
-    }, [loadExperiences])
+      void reload();
+    }, [reload])
   );
+
+  useEffect(() => {
+    if (error) Alert.alert("오류", error.message);
+  }, [error]);
 
   const handleComingSoon = () => {
     Alert.alert("알림", "준비 중인 기능입니다.");
   };
 
-  const handleMorePress = (id: string) => {
+  const handleMorePress = (id: number) => {
     Alert.alert("체험 관리", undefined, [
-      { text: "수정", onPress: () => navigation.navigate("MasterExperienceCreate") },
+      { text: "수정", onPress: handleUnsupportedMutation },
       { text: "비활성화", onPress: () => toggleActive(id) },
       { text: "취소", style: "cancel" },
     ]);
   };
 
-  const toggleActive = (id: string) => {
-    setExperiences((prev) =>
-      prev.map((e) =>
-        e.id === id
-          ? {
-              ...e,
-              active: !e.active,
-              statusLabel: !e.active ? "ACTIVE" : "INACTIVE",
-            }
-          : e
-      )
-    );
+  const handleUnsupportedMutation = () => {
+    Alert.alert("알림", "백엔드 체험 수정 API 구현이 필요합니다.");
+  };
+
+  const toggleActive = (_id: string | number) => {
+    Alert.alert("알림", "백엔드 체험 활성 상태 변경 API 구현이 필요합니다.");
   };
 
   return (
@@ -114,11 +82,11 @@ export function MasterExperienceScreen({
         <View style={styles.statsRow}>
           <View style={[styles.statCard, { marginRight: 8 }]}>
             <Text style={styles.statLabel}>운영 승인 체험</Text>
-            <Text style={styles.statValue}>8</Text>
+            <Text style={styles.statValue}>{data?.activeExperienceCount ?? 0}</Text>
           </View>
           <View style={styles.statCard}>
             <Text style={styles.statLabel}>총 후기 수</Text>
-            <Text style={styles.statValue}>124</Text>
+            <Text style={styles.statValue}>{data?.reviewCount ?? 0}</Text>
           </View>
         </View>
 
@@ -169,7 +137,7 @@ export function MasterExperienceScreen({
 
               {/* 예약 건수 · 평점 */}
               <Text style={styles.cardMeta}>
-                {item.bookings != null
+                {item.bookings > 0
                   ? `예약 ${item.bookings}건 | 평점 ${item.rating}`
                   : `최근 진행 없음 | 평점 ${item.rating}`}
               </Text>
@@ -180,7 +148,7 @@ export function MasterExperienceScreen({
                   <TouchableOpacity
                     style={styles.actionBtn}
                     hitSlop={6}
-                    onPress={() => navigation.navigate("MasterExperienceCreate")}
+                    onPress={handleUnsupportedMutation}
                   >
                     <Ionicons name="pencil-outline" size={14} color={GRAY} />
                     <Text style={styles.actionBtnText}>수정</Text>

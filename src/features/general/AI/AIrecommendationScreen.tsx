@@ -580,7 +580,7 @@ export function AIrecommendationScreen() {
   };
 
   return (
-    <MainLayout>
+    <MainLayout activeItem="AI추천">
       <KeyboardAvoidingView
         style={{ flex: 1, backgroundColor: BG }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}

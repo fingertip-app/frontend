@@ -479,7 +479,7 @@ export function HomeScreen() {
   };
 
   return (
-    <MainLayout>
+    <MainLayout activeItem="홈">
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContainer}

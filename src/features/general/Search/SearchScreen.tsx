@@ -719,6 +719,14 @@ export function SearchScreen() {
     }
   }, [route.params?.exp, navigation]);
 
+  // 드로어 메뉴 등 다른 화면에서 특정 분야로 바로 필터링하도록 넘겨준 경우
+  useEffect(() => {
+    if (route.params?.category) {
+      setCategory(route.params.category);
+      navigation.setParams({ category: undefined });
+    }
+  }, [route.params?.category, navigation]);
+
   // 체험 목록에 실제로 존재하는 분야로 카테고리 칩을 구성 (백엔드 category는 자유 텍스트라 고정 목록과 어긋날 수 있음)
   const categories = useMemo<CategoryItem[]>(() => {
     const distinctCategories = Array.from(new Set(allExperiences.map((exp) => exp.category))).sort();
@@ -791,7 +799,7 @@ export function SearchScreen() {
   // 로딩 중 표시
   if (isLoading) {
     return (
-      <MainLayout>
+      <MainLayout activeItem="탐색">
         <View style={{ flex: 1, backgroundColor: "#F9FAFB", justifyContent: "center", alignItems: "center" }}>
           <ActivityIndicator size="large" color={BRAND} />
           <Text style={{ marginTop: 12, fontSize: 14, color: "#6B7280" }}>체험 목록을 불러오는 중...</Text>
@@ -803,7 +811,7 @@ export function SearchScreen() {
   // 에러 표시
   if (error) {
     return (
-      <MainLayout>
+      <MainLayout activeItem="탐색">
         <View style={{ flex: 1, backgroundColor: "#F9FAFB", justifyContent: "center", alignItems: "center", paddingHorizontal: 24 }}>
           <Text style={{ fontSize: 40 }}>⚠️</Text>
           <Text style={{ marginTop: 12, fontSize: 16, fontWeight: "700", color: "#374151" }}>{error}</Text>
@@ -825,7 +833,7 @@ export function SearchScreen() {
   }
 
   return (
-    <MainLayout>
+    <MainLayout activeItem="탐색">
       <View style={{ flex: 1, backgroundColor: "#F9FAFB" }}>
         <StatusBar barStyle="dark-content" backgroundColor="#F9FAFB" />
 
