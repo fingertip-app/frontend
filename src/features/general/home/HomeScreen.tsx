@@ -225,7 +225,7 @@ function NearbyArtisanCard({
 }) {
   return (
     <TouchableOpacity style={styles.nearbyCard} activeOpacity={0.9} onPress={onPress}>
-      <Image source={{ uri: item.profileImageUrl }} style={styles.nearbyImage} />
+      <Image source={{ uri: item.profileImageUrl || undefined }} style={styles.nearbyImage} />
       <View style={styles.nearbyInfo}>
         <Text style={styles.nearbyName} numberOfLines={1}>{item.name}</Text>
         <Text style={styles.nearbyMeta}>{item.heritageCategory} · {item.address || "위치 정보 없음"}</Text>
@@ -552,7 +552,7 @@ export function HomeScreen() {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>오늘의 장인</Text>
             <TouchableOpacity style={styles.artisanCard} activeOpacity={0.9}>
-              <Image source={{ uri: recommendedArtisan.profileImageUrl }} style={styles.artisanImage} />
+              <Image source={{ uri: recommendedArtisan.profileImageUrl || undefined }} style={styles.artisanImage} />
               <View style={styles.artisanInfo}>
                 {recommendedArtisan.heritageCategory && (
                   <View style={styles.artisanBadgeWrap}>

@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   View,
   Text,
@@ -10,29 +10,141 @@ import {
   ScrollView,
   Dimensions,
   Animated,
+  ActivityIndicator,
+  Alert,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "@/navigation/RootNavigator";
+import { getCurrentProfile } from "@/features/auth/api/authApi";
+import { getMyReservations } from "@/features/reservations/api/reservationsApi";
+import { getExperience } from "@/features/experiences/api/experiencesApi";
+import { getUserReviews, deleteReview } from "@/features/reviews/api/reviewsApi";
+import type { Review } from "@/types/api";
 
 const BRAND = "#3B2B26";
 const BG = "#F5F4F0";
 const BORDER = "#EAE6E1";
 const GRAY = "#8A8077";
+const FALLBACK_IMAGE = "https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=400&q=80";
 const { width: SCREEN_W } = Dimensions.get("window");
 
-// TODO: 백엔드 API 연동 필요
-// - PAST_EXPERIENCES: 완료된 예약 목록에서 리뷰 미작성 건
-// - MY_REVIEWS: 내가 작성한 리뷰 목록
-const PAST_EXPERIENCES: any[] = [];
-const MY_REVIEWS: any[] = [];
+function formatDate(iso: string | null): string {
+  if (!iso) return "-";
+  const d = new Date(iso);
+  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
+}
+
+interface PastExperienceItem {
+  id: string;
+  reservationId: number;
+  experienceId: number;
+  date: string;
+  title: string;
+  artisan: string;
+  imageUri: string;
+}
+
+interface MyReviewItem {
+  id: string;
+  title: string;
+  rating: number;
+  date: string;
+  content: string;
+  imageUri: string;
+  experienceId: number;
+  review: Review;
+}
 
 export function MyReviewsScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [activeTab, setActiveTab] = useState<0 | 1>(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const [pastExperiences, setPastExperiences] = useState<PastExperienceItem[]>([]);
+  const [myReviews, setMyReviews] = useState<MyReviewItem[]>([]);
   const scrollRef = useRef<ScrollView>(null);
   const indicatorAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const loadReviewsAndPastExperiences = async () => {
+      try {
+        setIsLoading(true);
+        const profile = await getCurrentProfile();
+        if (!profile) return;
+
+        const [completedReservations, reviews] = await Promise.all([
+          getMyReservations("COMPLETED"),
+          getUserReviews(profile.id),
+        ]);
+
+        const reviewedReservationIds = new Set(reviews.map((r) => r.reservationId));
+
+        const pastWithoutReview = completedReservations.filter(
+          (r) => !reviewedReservationIds.has(r.id)
+        );
+
+        const [pastCards, reviewCards] = await Promise.all([
+          Promise.all(
+            pastWithoutReview.map(async (r): Promise<PastExperienceItem> => {
+              const exp = await getExperience(r.experienceId);
+              return {
+                id: String(r.id),
+                reservationId: r.id,
+                experienceId: r.experienceId,
+                date: formatDate(r.reservedDateTime),
+                title: exp.title,
+                artisan: exp.locationAddress || "위치 미정",
+                imageUri: exp.images?.[0]?.imageUrl || FALLBACK_IMAGE,
+              };
+            })
+          ),
+          Promise.all(
+            reviews.map(async (rv): Promise<MyReviewItem> => {
+              const exp = await getExperience(rv.experienceId);
+              return {
+                id: String(rv.id),
+                title: exp.title,
+                rating: rv.rating,
+                date: formatDate(rv.createdAt),
+                content: rv.content,
+                imageUri: exp.images?.[0]?.imageUrl || FALLBACK_IMAGE,
+                experienceId: rv.experienceId,
+                review: rv,
+              };
+            })
+          ),
+        ]);
+
+        setPastExperiences(pastCards);
+        setMyReviews(reviewCards);
+      } catch (e) {
+        console.error("리뷰/지난 체험 목록을 불러오는데 실패했습니다:", e);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadReviewsAndPastExperiences();
+  }, []);
+
+  const handleDeleteReview = (reviewItem: MyReviewItem) => {
+    Alert.alert("후기 삭제", "이 후기를 삭제하시겠습니까?", [
+      { text: "취소", style: "cancel" },
+      {
+        text: "삭제",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await deleteReview(reviewItem.review.id);
+            setMyReviews((prev) => prev.filter((r) => r.id !== reviewItem.id));
+          } catch (e) {
+            Alert.alert("오류", e instanceof Error ? e.message : "후기 삭제에 실패했습니다.");
+          }
+        },
+      },
+    ]);
+  };
 
   const switchTab = (idx: 0 | 1) => {
     setActiveTab(idx);
@@ -49,6 +161,14 @@ export function MyReviewsScreen() {
     inputRange: [0, 1],
     outputRange: [0, SCREEN_W / 2],
   });
+
+  if (isLoading) {
+    return (
+      <SafeAreaView style={[styles.safeArea, { justifyContent: "center", alignItems: "center" }]}>
+        <ActivityIndicator color={BRAND} />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -109,7 +229,7 @@ export function MyReviewsScreen() {
         {/* ── 페이지 1: 지난 체험 ── */}
         <View style={{ width: SCREEN_W }}>
           <FlatList
-            data={PAST_EXPERIENCES}
+            data={pastExperiences}
             keyExtractor={(item) => item.id}
             contentContainerStyle={styles.listContent}
             showsVerticalScrollIndicator={false}
@@ -163,7 +283,7 @@ export function MyReviewsScreen() {
         {/* ── 페이지 2: 작성한 후기 ── */}
         <View style={{ width: SCREEN_W }}>
           <FlatList
-            data={MY_REVIEWS}
+            data={myReviews}
             keyExtractor={(item) => item.id}
             contentContainerStyle={styles.listContent}
             showsVerticalScrollIndicator={false}
@@ -200,10 +320,35 @@ export function MyReviewsScreen() {
 
                 {/* 삭제 / 수정 버튼 */}
                 <View style={styles.reviewActions}>
-                  <TouchableOpacity style={styles.deleteBtn} activeOpacity={0.8}>
+                  <TouchableOpacity
+                    style={styles.deleteBtn}
+                    activeOpacity={0.8}
+                    onPress={() => handleDeleteReview(item)}
+                  >
                     <Text style={styles.deleteBtnText}>삭제하기</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={styles.editBtn} activeOpacity={0.8}>
+                  <TouchableOpacity
+                    style={styles.editBtn}
+                    activeOpacity={0.8}
+                    onPress={() =>
+                      navigation.navigate("Review", {
+                        booking: {
+                          id: item.id,
+                          reservationId: item.review.reservationId,
+                          experienceId: item.experienceId,
+                          status: "past",
+                          title: item.title,
+                          artisan: "",
+                          date: item.date,
+                          time: "",
+                          guests: 1,
+                          location: "",
+                          imageUri: item.imageUri,
+                        },
+                        existingReview: item.review,
+                      })
+                    }
+                  >
                     <Text style={styles.editBtnText}>수정하기</Text>
                   </TouchableOpacity>
                 </View>

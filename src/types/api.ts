@@ -194,9 +194,9 @@ export interface Artisan {
   userId: number
   name: string
   heritageCategory: string
-  certificationNumber: string
-  bio: string
-  profileImageUrl: string
+  certificationNumber: string | null
+  bio: string | null
+  profileImageUrl: string | null
   introVideoUrl: string | null
   certificationStatus: string
   verifiedAt: string | null
@@ -204,9 +204,11 @@ export interface Artisan {
   isActive: boolean
   createdAt: string
   updatedAt: string
-  address: string | null
-  latitude: number | null
-  longitude: number | null
+  // TODO: 백엔드 ArtisanResponse에 address/latitude/longitude 필드가 아직 없음.
+  // 추가되기 전까지는 항상 undefined이므로 옵셔널로 둔다 (ArtisanDetailScreen.hasLocation 참고).
+  address?: string | null
+  latitude?: number | null
+  longitude?: number | null
   // TODO: 백엔드에 /artisans/recommended, /artisans/nearby 엔드포인트 추가 시 정식 필드로 교체
   badge?: string
   quote?: string

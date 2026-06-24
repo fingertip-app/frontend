@@ -21,7 +21,7 @@ import { BookingsScreen } from "@/features/general/bookings/BookingsScreen";
 import { MyPageScreen } from "@/features/general/mypage/MyPageScreen";
 import { ProfileEditScreen } from "@/features/general/mypage/ProfileEditScreen";
 import { BookingCreateScreen } from "@/features/general/bookings/BookingCreateScreen";
-import type { Experience as BackendExperience } from "@/types/api";
+import type { Experience as BackendExperience, Review } from "@/types/api";
 import type { Experience as ExperienceViewModel } from "@/features/general/Search/SearchScreen";
 import { BookingDetailScreen } from "@/features/general/bookings/BookingDetailScreen";
 import { PaymentScreen } from "@/features/general/bookings/PaymentScreen";
@@ -94,7 +94,7 @@ export type RootStackParamList = {
   QRConfirmation: { booking: Booking };
   Wishlist: undefined;
   ProfileEdit: undefined;
-  Review: { booking: Booking };
+  Review: { booking: Booking; existingReview?: Review };
   MyReviews: undefined;
   Settings: undefined;
   Notifications: undefined;
