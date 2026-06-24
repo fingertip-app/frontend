@@ -4,13 +4,21 @@ import type { Experience } from '@/types/api'
 export interface CreateExperienceRequest {
   title: string
   description?: string
+  culturalStory?: string
   category?: string
   price: number
+  startDateTime?: string
+  endDateTime?: string
   maxParticipants: number
   difficulty: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED'
   durationMinutes?: number
+  supportedLanguages?: string[]
   imageUrl?: string
+  location?: string
   locationAddress?: string
+  locationLat?: number
+  locationLng?: number
+  tags?: string[]
   schedules?: { scheduledAt: string; availableSlots: number }[]
 }
 

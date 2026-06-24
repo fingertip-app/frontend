@@ -43,6 +43,10 @@ import { MasterExperienceCreateScreen } from "@/features/master/experienceManage
 import { Step1BasicInfo } from "@/features/master/experienceManagement/experienceRegistration/Step1BasicInfo";
 import { Step2Photos } from "@/features/master/experienceManagement/experienceRegistration/Step2Photos";
 import { Step3Schedule } from "@/features/master/experienceManagement/experienceRegistration/Step3Schedule";
+import type {
+  ExperiencePhoto,
+  ExperienceTimeSlot,
+} from "@/features/master/experienceManagement/types";
 import { Step4Pricing } from "@/features/master/experienceManagement/experienceRegistration/Step4Pricing";
 import { Step5Location } from "@/features/master/experienceManagement/experienceRegistration/Step5Location";
 import { CardNewsListScreen } from "@/features/general/cardnews/CardNewsListScreen";
@@ -68,7 +72,7 @@ export type CardNews = {
 
 export type MainTabParamList = {
   Home: undefined;
-  Explore: { filter?: string; exp?: ExperienceViewModel } | undefined;
+  Explore: { filter?: string; exp?: ExperienceViewModel; category?: string } | undefined;
   AIRecommend: undefined;
   Bookings: undefined;
   MyPage: undefined;
@@ -105,7 +109,7 @@ export type RootStackParamList = {
   MasterHome: undefined;
   MasterExperience: undefined;
   MasterBookings: undefined;
-  MasterBookingDetail: { booking: any };
+  MasterBookingDetail: { reservationId: number };
   MasterReviews: { repliedReviewId?: string; replyContent?: string } | undefined;
   MasterReviewReply: { review: any };
   MasterMyPage: undefined;
@@ -113,20 +117,30 @@ export type RootStackParamList = {
   MasterExperienceCreate: undefined;
   Step1BasicInfo: undefined;
   Step2Photos: { title: string; shortDesc: string; detail: string } | undefined;
-  Step3Schedule: { title: string; shortDesc: string; detail: string } | undefined;
+  Step3Schedule: {
+    title: string;
+    shortDesc: string;
+    detail: string;
+    mainPhoto: ExperiencePhoto;
+    detailPhotos: ExperiencePhoto[];
+  } | undefined;
   Step4Pricing: {
     title: string;
     shortDesc: string;
     detail: string;
+    mainPhoto: ExperiencePhoto;
+    detailPhotos: ExperiencePhoto[];
     selectedDays: string[];
-    timeSlots: { id: string; startTime: string; endTime: string }[];
+    timeSlots: ExperienceTimeSlot[];
   } | undefined;
   Step5Location: {
     title: string;
     shortDesc: string;
     detail: string;
+    mainPhoto: ExperiencePhoto;
+    detailPhotos: ExperiencePhoto[];
     selectedDays: string[];
-    timeSlots: { id: string; startTime: string; endTime: string }[];
+    timeSlots: ExperienceTimeSlot[];
     price: string;
     minGuests: number;
     maxGuests: number;

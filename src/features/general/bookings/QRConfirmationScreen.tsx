@@ -7,6 +7,7 @@ import { Ionicons } from "@expo/vector-icons";
 import QRCode from "react-native-qrcode-svg";
 import { getQrCodeByReservation } from "@/features/qr/api/qrApi";
 import { ApiError } from "@/services/api";
+import type { Booking } from "./BookingsScreen";
 
 const BRAND = "#3D1F0D";
 const GRAY = "#8C7B6E";
@@ -17,21 +18,11 @@ const ERROR = "#C62828";
 const WARNING = "#F57C00";
 
 type ErrorType = 'none' | 'network' | 'notPaid' | 'missing' | 'unknown';
-type ReservationStatus = 'PENDING' | 'APPROVED' | 'PAID' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED' | 'REJECTED';
-
-interface BookingData {
-  id: string;
-  reservationId: number;
-  status: ReservationStatus;
-  title: string;
-  date: string;
-  time: string;
-  guests: number;
-  location: string;
-}
-
-const isQrEligibleStatus = (status: ReservationStatus): boolean => {
-  return status === "PAID" || status === "CONFIRMED";
+const isQrEligibleStatus = (booking: Booking): boolean => {
+  if (booking.reservationStatus) {
+    return booking.reservationStatus === "PAID" || booking.reservationStatus === "CONFIRMED";
+  }
+  return booking.status === "upcoming" && !booking.paymentRequired;
 };
 
 const formatDateTime = (dateStr: string, timeStr: string): string => {
@@ -54,7 +45,7 @@ const formatDateTime = (dateStr: string, timeStr: string): string => {
 export function QRConfirmationScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const route = useRoute<RouteProp<RootStackParamList, "QRConfirmation">>();
-  const { booking } = route.params as { booking: BookingData };
+  const { booking } = route.params;
 
   const [qrToken, setQrToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -63,7 +54,7 @@ export function QRConfirmationScreen() {
   const [errorCode, setErrorCode] = useState<string>('');
   const [retryCount, setRetryCount] = useState(0);
 
-  const isQrEligible = isQrEligibleStatus(booking.status);
+  const isQrEligible = isQrEligibleStatus(booking);
   const isQrAvailable = errorType === 'none' && qrToken;
 
   const mapErrorCode = (code: string): ErrorType => {
@@ -150,9 +141,9 @@ export function QRConfirmationScreen() {
             <Ionicons name="alert-circle-outline" size={56} color={WARNING} />
             <Text style={styles.errorTitle}>아직 QR 확인서를 발급받을 수 없어요</Text>
             <Text style={styles.errorDesc}>
-              {booking.status === 'PENDING'
+              {booking.reservationStatus === 'PENDING' || booking.status === 'pending'
                 ? '장인의 승인을 기다리는 중입니다.'
-                : booking.status === 'APPROVED'
+                : booking.reservationStatus === 'APPROVED' || booking.paymentRequired
                 ? '결제 완료 후 QR 입장권이 발급됩니다.'
                 : '예약 상태를 다시 확인해주세요.'}
             </Text>

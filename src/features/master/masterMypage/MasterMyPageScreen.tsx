@@ -180,7 +180,7 @@ export function MasterMyPageScreen() {
 
         {/* ── 기타 설정 메뉴 ── */}
         <View style={ms.menuSection}>
-          {["프로필 수정", "공지사항 관리", "일반 유저 모드로 전환", "로그아웃"].map((item) => (
+          {["프로필 수정", "일반 유저 모드로 전환", "로그아웃"].map((item) => (
             <TouchableOpacity 
               key={item} 
               style={ms.menuItem} 

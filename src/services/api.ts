@@ -11,10 +11,15 @@ interface ApiResponse<T> {
   success: boolean
   message?: string
   data: T
+  errorCode?: string
 }
 
 export class ApiError extends Error {
-  constructor(public status: number, message: string) {
+  constructor(
+    public status: number,
+    message: string,
+    public code: string = 'UNKNOWN_ERROR',
+  ) {
     super(message);
     this.name = 'ApiError';
   }
@@ -37,13 +42,17 @@ export async function apiGet<T>(path: string): Promise<T> {
   if (!response.ok) {
     const payload = await response.json().catch(() => ({})) as ApiResponse<T>
     console.log('🔴 API Error payload:', payload)
-    throw new ApiError(response.status, payload.message ?? `API request failed: ${response.status}`)
+    throw new ApiError(
+      response.status,
+      payload.message ?? `API request failed: ${response.status}`,
+      payload.errorCode,
+    )
   }
 
   const payload = (await response.json()) as ApiResponse<T>
   console.log('🌐 API Response payload:', payload)
   if (!payload.success) {
-    throw new ApiError(response.status, payload.message ?? 'API request failed')
+    throw new ApiError(response.status, payload.message ?? 'API request failed', payload.errorCode)
   }
 
   console.log('✅ API Response data:', payload.data, typeof payload.data)
@@ -101,14 +110,18 @@ export async function apiPost<TRequest, TResponse>(
   if (!response.ok) {
     const payload = await response.json().catch(() => ({})) as ApiResponse<TResponse>
     console.log('🔴 API Error payload:', payload)
-    throw new ApiError(response.status, payload.message ?? `API request failed: ${response.status}`)
+    throw new ApiError(
+      response.status,
+      payload.message ?? `API request failed: ${response.status}`,
+      payload.errorCode,
+    )
   }
 
   const payload = (await response.json()) as ApiResponse<TResponse>
   console.log('🌐 API Response payload:', payload)
 
   if (!payload.success) {
-    throw new ApiError(response.status, payload.message ?? 'API request failed')
+    throw new ApiError(response.status, payload.message ?? 'API request failed', payload.errorCode)
   }
 
   console.log('✅ API Response data:', payload.data)
@@ -139,14 +152,18 @@ export async function apiPatch<TRequest, TResponse>(
   if (!response.ok) {
     const payload = await response.json().catch(() => ({})) as ApiResponse<TResponse>
     console.log('🔴 API Error payload:', payload)
-    throw new ApiError(response.status, payload.message ?? `API request failed: ${response.status}`)
+    throw new ApiError(
+      response.status,
+      payload.message ?? `API request failed: ${response.status}`,
+      payload.errorCode,
+    )
   }
 
   const payload = (await response.json()) as ApiResponse<TResponse>
   console.log('🌐 API Response payload:', payload)
 
   if (!payload.success) {
-    throw new ApiError(response.status, payload.message ?? 'API request failed')
+    throw new ApiError(response.status, payload.message ?? 'API request failed', payload.errorCode)
   }
 
   console.log('✅ API Response data:', payload.data)
@@ -169,12 +186,16 @@ export async function apiPut<TRequest, TResponse>(
 
   if (!response.ok) {
     const payload = await response.json().catch(() => ({})) as ApiResponse<TResponse>
-    throw new ApiError(response.status, payload.message ?? `API request failed: ${response.status}`)
+    throw new ApiError(
+      response.status,
+      payload.message ?? `API request failed: ${response.status}`,
+      payload.errorCode,
+    )
   }
 
   const payload = (await response.json()) as ApiResponse<TResponse>
   if (!payload.success) {
-    throw new ApiError(response.status, payload.message ?? 'API request failed')
+    throw new ApiError(response.status, payload.message ?? 'API request failed', payload.errorCode)
   }
 
   return payload.data

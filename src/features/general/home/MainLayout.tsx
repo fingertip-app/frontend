@@ -6,9 +6,10 @@ import { CustomDrawer } from "@/features/general/home/CustomDrawer";
 
 interface MainLayoutProps {
   children: React.ReactNode;
+  activeItem?: string;
 }
 
-export function MainLayout({ children }: MainLayoutProps) {
+export function MainLayout({ children, activeItem }: MainLayoutProps) {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   return (
@@ -28,7 +29,7 @@ export function MainLayout({ children }: MainLayoutProps) {
       </View>
 
       {/* 공통 드로어 메뉴 */}
-      <CustomDrawer isOpen={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} />
+      <CustomDrawer isOpen={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} activeItem={activeItem} />
     </SafeAreaView>
   );
 }

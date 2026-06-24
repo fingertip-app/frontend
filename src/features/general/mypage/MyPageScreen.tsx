@@ -200,7 +200,7 @@ export function MyPageScreen() {
 
   if (loading) {
     return (
-      <MainLayout>
+      <MainLayout activeItem="마이페이지">
         <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
           <ActivityIndicator color={BRAND} />
         </View>
@@ -209,7 +209,7 @@ export function MyPageScreen() {
   }
 
   return (
-    <MainLayout>
+    <MainLayout activeItem="마이페이지">
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={ms.scroll}
