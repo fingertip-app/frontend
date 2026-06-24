@@ -225,7 +225,7 @@ function NearbyArtisanCard({
 }) {
   return (
     <TouchableOpacity style={styles.nearbyCard} activeOpacity={0.9} onPress={onPress}>
-      <Image source={{ uri: item.profileImageUrl }} style={styles.nearbyImage} />
+      <Image source={{ uri: item.profileImageUrl || undefined }} style={styles.nearbyImage} />
       <View style={styles.nearbyInfo}>
         <Text style={styles.nearbyName} numberOfLines={1}>{item.name}</Text>
         <Text style={styles.nearbyMeta}>{item.heritageCategory} · {item.address || "위치 정보 없음"}</Text>
@@ -288,19 +288,24 @@ export function HomeScreen() {
   };
 
   useEffect(() => {
-    const fetchBannersAndArtisan = async () => {
+    const fetchBanners = async () => {
       try {
-        const [bannersData, artisanData] = await Promise.all([
-          getHeroBanners(),
-          getRecommendedArtisan(),
-        ]);
+        const bannersData = await getHeroBanners();
         setBanners(bannersData);
-        setRecommendedArtisan(artisanData);
       } catch (e) {
-        console.error("[Home] 배너/장인 로드 실패:", e);
+        console.error("[Home] 배너 로드 실패:", e);
       }
     };
-    fetchBannersAndArtisan();
+    const fetchRecommendedArtisan = async () => {
+      try {
+        const artisanData = await getRecommendedArtisan();
+        setRecommendedArtisan(artisanData);
+      } catch (e) {
+        console.error("[Home] 오늘의 장인 로드 실패:", e);
+      }
+    };
+    fetchBanners();
+    fetchRecommendedArtisan();
   }, []);
 
   useEffect(() => {
@@ -552,7 +557,7 @@ export function HomeScreen() {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>오늘의 장인</Text>
             <TouchableOpacity style={styles.artisanCard} activeOpacity={0.9}>
-              <Image source={{ uri: recommendedArtisan.profileImageUrl }} style={styles.artisanImage} />
+              <Image source={{ uri: recommendedArtisan.profileImageUrl || undefined }} style={styles.artisanImage} />
               <View style={styles.artisanInfo}>
                 {recommendedArtisan.heritageCategory && (
                   <View style={styles.artisanBadgeWrap}>

@@ -68,8 +68,8 @@ export function ArtisanDetailScreen() {
     );
   }
 
-  // 지도 표시 여부 확인
-  const hasLocation = artisan.latitude !== null && artisan.longitude !== null;
+  // 지도 표시 여부 확인 (백엔드가 아직 좌표를 내려주지 않으면 필드 자체가 없으므로 != null로 undefined까지 함께 체크)
+  const hasLocation = artisan.latitude != null && artisan.longitude != null;
 
   return (
     <SafeAreaView style={styles.safeArea}>
