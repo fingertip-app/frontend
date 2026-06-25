@@ -19,6 +19,7 @@ import {
   createExperience,
   CreateExperienceRequest,
   getExperience,
+  updateExperience,
 } from "@/features/experiences/api/experiencesApi";
 import {
   buildRecurringSchedules,
@@ -203,14 +204,6 @@ export function MasterExperienceCreateScreen() {
       return;
     }
 
-    // 백엔드 PUT /experiences/{id}가 아직 TODO 스텁이라(실제 수정 없이 항상 성공 응답을 줌),
-    // "수정 완료"라는 거짓 성공 알림을 띄우지 않도록 여기서 막아둔다.
-    // 백엔드 구현이 끝나면 이 분기를 지우고 updateExperience 호출을 복원하면 된다.
-    if (isEditing) {
-      Alert.alert("알림", "체험 수정 기능은 백엔드 API 구현이 필요합니다.");
-      return;
-    }
-
     setIsSubmitting(true);
     try {
       const request: CreateExperienceRequest = {
@@ -231,8 +224,12 @@ export function MasterExperienceCreateScreen() {
         schedules: hasReservedSchedules ? undefined : schedules,
       };
       const artisan = await getMyArtisan();
-      await createExperience(artisan.id, request);
-      Alert.alert("등록 완료", "체험이 성공적으로 등록되었습니다!", [
+      if (isEditing && experienceId) {
+        await updateExperience(artisan.id, experienceId, request);
+      } else {
+        await createExperience(artisan.id, request);
+      }
+      Alert.alert(isEditing ? "수정 완료" : "등록 완료", `체험이 성공적으로 ${isEditing ? "수정" : "등록"}되었습니다!`, [
         { text: "확인", onPress: () => navigation.goBack() },
       ]);
     } catch (e) {
