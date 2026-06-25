@@ -94,7 +94,12 @@ export async function apiPostWithToken<TRequest, TResponse>(
   })
 
   if (!response.ok) {
-    throw new Error(`API request failed: ${response.status}`)
+    const payload = await response.json().catch(() => ({})) as ApiResponse<TResponse>
+    throw new ApiError(
+      response.status,
+      payload.message ?? `API request failed: ${response.status}`,
+      payload.errorCode,
+    )
   }
 
   const payload = (await response.json()) as ApiResponse<TResponse>

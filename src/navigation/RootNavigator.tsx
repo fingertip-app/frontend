@@ -34,6 +34,7 @@ import { MyReviewsScreen } from "@/features/general/mypage/MyReviewsScreen";
 import { SettingScreen } from "@/features/general/setting/SettingScreen";
 import { MasterHomeScreen } from "@/features/master/masterHome/MasterHomeScreen";
 import { MasterExperienceScreen } from "@/features/master/experienceManagement/MasterExperienceScreen";
+import { MasterExperienceDetailScreen } from "@/features/master/experienceManagement/MasterExperienceDetailScreen";
 import { MasterBookingsScreen } from "@/features/master/masterBookings/MasterBookingsScreen";
 import { MasterBookingDetailScreen } from "@/features/master/masterBookings/MasterBookingDetailScreen";
 import { MasterReviewsScreen } from "@/features/master/masterReviews/MasterReviewsScreen";
@@ -62,6 +63,7 @@ import { MasterProfileScreen } from "@/features/master/masterProfile/MasterProfi
 import { NotificationsScreen } from "@/features/notifications/NotificationsScreen";
 import { QrScannerScreen } from "@/features/master/qrScanner/QrScannerScreen";
 import { useTheme } from "@/theme/ThemeContext";
+import { getLastMasterRoute } from "@/navigation/masterRoutePersistence";
 
 export type CardNews = {
   id: string;
@@ -69,11 +71,18 @@ export type CardNews = {
   desc: string;
   tag: string;
   imageUri: string;
+  relatedExperienceIds: number[];
 };
 
 export type MainTabParamList = {
   Home: undefined;
-  Explore: { filter?: string; exp?: ExperienceViewModel; category?: string } | undefined;
+  Explore: {
+    filter?: string;
+    exp?: ExperienceViewModel;
+    category?: string;
+    relatedExperienceIds?: number[];
+    relatedCategory?: string;
+  } | undefined;
   AIRecommend: undefined;
   Bookings: undefined;
   MyPage: undefined;
@@ -109,6 +118,7 @@ export type RootStackParamList = {
   Notifications: undefined;
   MasterHome: undefined;
   MasterExperience: undefined;
+  MasterExperienceDetail: { experienceId: number };
   MasterBookings: undefined;
   MasterBookingDetail: { reservationId: number };
   MasterReviews: undefined;
@@ -221,7 +231,11 @@ export function RootNavigator() {
   useEffect(() => {
     getCurrentProfile().then(async (profile) => {
       if (profile) {
-        setInitialRoute(profile.role === "ARTISAN" ? "MasterHome" : "MainTabs");
+        if (profile.role === "ARTISAN") {
+          setInitialRoute((await getLastMasterRoute()) ?? "MasterHome");
+        } else {
+          setInitialRoute("MainTabs");
+        }
       } else {
         const onboardingSeen = await AsyncStorage.getItem(ONBOARDING_SEEN_KEY);
         if (!onboardingSeen) {
@@ -262,6 +276,7 @@ export function RootNavigator() {
       <Stack.Screen name="Settings" component={SettingScreen} />
       <Stack.Screen name="MasterHome" component={MasterHomeScreen} options={{ animation: "none" }} />
       <Stack.Screen name="MasterExperience" component={MasterExperienceScreen} options={{ animation: "none" }} />
+      <Stack.Screen name="MasterExperienceDetail" component={MasterExperienceDetailScreen} />
       <Stack.Screen name="MasterBookings" component={MasterBookingsScreen} options={{ animation: "none" }} />
       <Stack.Screen name="MasterBookingDetail" component={MasterBookingDetailScreen} />
       <Stack.Screen name="MasterReviews" component={MasterReviewsScreen} options={{ animation: "none" }} />

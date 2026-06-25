@@ -71,7 +71,8 @@ export function CardNewsListScreen() {
                   title: item.title || '제목 없음',
                   desc: item.aiExplanation || '',
                   tag: item.categoryTags?.[0] || item.contentType || '기타',
-                  imageUri: item.imageUrl || ''
+                  imageUri: item.imageUrl || '',
+                  relatedExperienceIds: item.relatedExperienceIds ?? [],
                 }
               });
             }}

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -10,6 +10,8 @@ import {
   Platform,
   Alert,
   ActivityIndicator,
+  Modal,
+  Pressable,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
@@ -34,6 +36,11 @@ export function MasterExperienceScreen({
   const { colors } = useTheme();
   const { data, isLoading, error, reload } = useExperienceManagement();
   const experiences = data?.experiences ?? [];
+  const [menuExperienceId, setMenuExperienceId] = useState<number | null>(null);
+  const [deleteExperienceId, setDeleteExperienceId] = useState<number | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -45,48 +52,31 @@ export function MasterExperienceScreen({
     if (error) Alert.alert("오류", error.message);
   }, [error]);
 
-  const handleComingSoon = () => {
-    Alert.alert("알림", "준비 중인 기능입니다.");
-  };
-
   const handleMorePress = (id: number) => {
-    Alert.alert("체험 관리", undefined, [
-      {
-        text: "수정",
-        onPress: () => navigation.navigate("MasterExperienceCreate", { experienceId: id }),
-      },
-      {
-        text: "삭제",
-        style: "destructive",
-        onPress: () => confirmDelete(id),
-      },
-      { text: "비활성화", onPress: () => toggleActive(id) },
-      { text: "취소", style: "cancel" },
-    ]);
+    setMenuExperienceId(id);
   };
 
   const confirmDelete = (id: number) => {
-    Alert.alert("체험 삭제", "이 체험을 삭제하시겠습니까?", [
-      { text: "취소", style: "cancel" },
-      {
-        text: "삭제",
-        style: "destructive",
-        onPress: () => void handleDelete(id),
-      },
-    ]);
+    setDeleteError(null);
+    setDeleteExperienceId(id);
   };
 
   const handleDelete = async (id: number) => {
+    setIsDeleting(true);
+    setDeleteError(null);
     try {
       const artisan = await getMyArtisan();
       await deleteExperience(artisan.id, id);
       await reload();
-      Alert.alert("삭제 완료", "체험이 삭제되었습니다.");
+      setDeleteExperienceId(null);
+      setSuccessMessage("체험이 삭제되었습니다.");
+      setTimeout(() => setSuccessMessage(null), 2500);
     } catch (deleteError) {
-      Alert.alert(
-        "오류",
+      setDeleteError(
         deleteError instanceof Error ? deleteError.message : "체험 삭제에 실패했습니다.",
       );
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -181,7 +171,13 @@ export function MasterExperienceScreen({
                     <Ionicons name="pencil-outline" size={14} color={colors.textSecondary} />
                     <Text style={[styles.actionBtnText, { color: colors.textSecondary }]}>수정</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={styles.actionBtn} hitSlop={6} onPress={handleComingSoon}>
+                  <TouchableOpacity
+                    style={styles.actionBtn}
+                    hitSlop={6}
+                    onPress={() =>
+                      navigation.navigate("MasterExperienceDetail", { experienceId: item.id })
+                    }
+                  >
                     <Ionicons name="eye-outline" size={14} color={colors.textSecondary} />
                     <Text style={[styles.actionBtnText, { color: colors.textSecondary }]}>상세</Text>
                   </TouchableOpacity>
@@ -214,6 +210,99 @@ export function MasterExperienceScreen({
 
       {/* ── 하단 탭 바 ── */}
       <MasterBottomTabs activeTab="체험관리" />
+
+      <Modal
+        transparent
+        visible={menuExperienceId !== null}
+        animationType="fade"
+        onRequestClose={() => setMenuExperienceId(null)}
+      >
+        <Pressable style={styles.modalBackdrop} onPress={() => setMenuExperienceId(null)}>
+          <Pressable
+            style={[styles.actionMenu, { backgroundColor: colors.card, borderColor: colors.border }]}
+            onPress={(event) => event.stopPropagation()}
+          >
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => {
+                const id = menuExperienceId;
+                setMenuExperienceId(null);
+                if (id !== null) {
+                  navigation.navigate("MasterExperienceCreate", { experienceId: id });
+                }
+              }}
+            >
+              <Ionicons name="pencil-outline" size={19} color={colors.text} />
+              <Text style={[styles.menuText, { color: colors.text }]}>체험 수정</Text>
+            </TouchableOpacity>
+            <View style={[styles.menuDivider, { backgroundColor: colors.border }]} />
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => {
+                const id = menuExperienceId;
+                setMenuExperienceId(null);
+                if (id !== null) confirmDelete(id);
+              }}
+            >
+              <Ionicons name="trash-outline" size={19} color="#D64545" />
+              <Text style={[styles.menuText, { color: "#D64545" }]}>체험 삭제</Text>
+            </TouchableOpacity>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      <Modal
+        transparent
+        visible={deleteExperienceId !== null}
+        animationType="fade"
+        onRequestClose={() => {
+          if (!isDeleting) setDeleteExperienceId(null);
+        }}
+      >
+        <View style={styles.modalBackdrop}>
+          <View
+            style={[styles.confirmModal, { backgroundColor: colors.card, borderColor: colors.border }]}
+          >
+            <View style={styles.deleteIcon}>
+              <Ionicons name="trash-outline" size={24} color="#D64545" />
+            </View>
+            <Text style={[styles.confirmTitle, { color: colors.text }]}>체험을 삭제할까요?</Text>
+            <Text style={[styles.confirmDescription, { color: colors.textSecondary }]}>
+              삭제된 체험은 복구할 수 없습니다.
+            </Text>
+            {deleteError ? <Text style={styles.deleteErrorText}>{deleteError}</Text> : null}
+            <View style={styles.confirmActions}>
+              <TouchableOpacity
+                style={[styles.confirmButton, { borderColor: colors.border }]}
+                disabled={isDeleting}
+                onPress={() => setDeleteExperienceId(null)}
+              >
+                <Text style={[styles.cancelButtonText, { color: colors.text }]}>취소</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.confirmButton, styles.deleteButton]}
+                disabled={isDeleting}
+                onPress={() => {
+                  if (deleteExperienceId !== null) void handleDelete(deleteExperienceId);
+                }}
+              >
+                {isDeleting ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.deleteButtonText}>삭제</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {successMessage ? (
+        <View style={[styles.toast, { backgroundColor: colors.text }]}>
+          <Ionicons name="checkmark-circle" size={18} color={colors.bg} />
+          <Text style={[styles.toastText, { color: colors.bg }]}>{successMessage}</Text>
+        </View>
+      ) : null}
     </SafeAreaView>
   );
 }
@@ -310,5 +399,77 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   fabText: { fontSize: 14, fontWeight: "700" },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.35)",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 24,
+  },
+  actionMenu: {
+    width: "100%",
+    maxWidth: 340,
+    borderRadius: 16,
+    borderWidth: 1,
+    overflow: "hidden",
+  },
+  menuItem: {
+    minHeight: 56,
+    paddingHorizontal: 18,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  menuText: { fontSize: 15, fontWeight: "600" },
+  menuDivider: { height: 1 },
+  confirmModal: {
+    width: "100%",
+    maxWidth: 360,
+    borderRadius: 18,
+    borderWidth: 1,
+    padding: 22,
+    alignItems: "center",
+  },
+  deleteIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "#FDECEC",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 14,
+  },
+  confirmTitle: { fontSize: 19, fontWeight: "800", marginBottom: 8 },
+  confirmDescription: { fontSize: 14, textAlign: "center", marginBottom: 18 },
+  deleteErrorText: {
+    color: "#D64545",
+    fontSize: 13,
+    textAlign: "center",
+    marginBottom: 14,
+  },
+  confirmActions: { width: "100%", flexDirection: "row", gap: 10 },
+  confirmButton: {
+    flex: 1,
+    minHeight: 48,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  deleteButton: { backgroundColor: "#D64545", borderColor: "#D64545" },
+  cancelButtonText: { fontSize: 15, fontWeight: "700" },
+  deleteButtonText: { color: "#FFFFFF", fontSize: 15, fontWeight: "700" },
+  toast: {
+    position: "absolute",
+    bottom: 90,
+    alignSelf: "center",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
+    paddingHorizontal: 16,
+    paddingVertical: 11,
+    borderRadius: 24,
+  },
+  toastText: { fontSize: 14, fontWeight: "700" },
 
 });
