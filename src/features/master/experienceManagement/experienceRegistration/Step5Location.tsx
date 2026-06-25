@@ -122,6 +122,7 @@ export function Step5Location() {
         !params.detail ||
         !params.category ||
         !params.difficulty ||
+        !params.languages?.length ||
         !params.mainPhoto ||
         !params.selectedDays ||
         !params.timeSlots ||
