@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from "react-native";
 import Svg, { Path, Circle } from "react-native-svg";
+import { useTheme } from "@/theme/ThemeContext";
 
 interface Step1BasicInfoProps {
   masterName: string;
@@ -29,6 +30,7 @@ export function Step1BasicInfo({
 }: Step1BasicInfoProps) {
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [isPasswordConfirmVisible, setIsPasswordConfirmVisible] = useState(false);
+  const { colors } = useTheme();
 
   const handlePhoneChange = (text: string) => {
     const cleaned = text.replace(/[^0-9]/g, "");
@@ -87,67 +89,67 @@ export function Step1BasicInfo({
         </View>
       )}
 
-      <Text style={styles.inputLabel}>대표자(장인) 이름</Text>
-      <View style={styles.inputContainer}>
-        <TextInput style={styles.input} placeholder="실명을 입력해주세요" placeholderTextColor="#A39B92" value={masterName} onChangeText={setMasterName} />
+      <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>대표자(장인) 이름</Text>
+      <View style={[styles.inputContainer, { borderColor: colors.border, backgroundColor: colors.card }]}>
+        <TextInput style={[styles.input, { color: colors.text }]} placeholder="실명을 입력해주세요" placeholderTextColor={colors.textSecondary} value={masterName} onChangeText={setMasterName} />
       </View>
 
-      <Text style={styles.inputLabel}>닉네임 (또는 공방/상호명)</Text>
-      <View style={styles.inputContainer}>
-        <TextInput style={styles.input} placeholder="사용하실 닉네임을 입력해주세요" placeholderTextColor="#A39B92" value={nickname} onChangeText={setNickname} />
-        <TouchableOpacity style={styles.duplicateCheckBtn} onPress={handleCheckNicknameDuplicate} activeOpacity={0.7}>
-          <Text style={styles.duplicateCheckBtnText}>중복확인</Text>
+      <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>닉네임 (또는 공방/상호명)</Text>
+      <View style={[styles.inputContainer, { borderColor: colors.border, backgroundColor: colors.card }]}>
+        <TextInput style={[styles.input, { color: colors.text }]} placeholder="사용하실 닉네임을 입력해주세요" placeholderTextColor={colors.textSecondary} value={nickname} onChangeText={setNickname} />
+        <TouchableOpacity style={[styles.duplicateCheckBtn, { backgroundColor: colors.border }]} onPress={handleCheckNicknameDuplicate} activeOpacity={0.7}>
+          <Text style={[styles.duplicateCheckBtnText, { color: colors.text }]}>중복확인</Text>
         </TouchableOpacity>
       </View>
 
-      <Text style={styles.inputLabel}>연락처</Text>
-      <View style={styles.inputContainer}>
-        <TextInput style={styles.input} placeholder="010-0000-0000" placeholderTextColor="#A39B92" value={phoneNumber} onChangeText={handlePhoneChange} keyboardType="numeric" maxLength={13} />
+      <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>연락처</Text>
+      <View style={[styles.inputContainer, { borderColor: colors.border, backgroundColor: colors.card }]}>
+        <TextInput style={[styles.input, { color: colors.text }]} placeholder="010-0000-0000" placeholderTextColor={colors.textSecondary} value={phoneNumber} onChangeText={handlePhoneChange} keyboardType="numeric" maxLength={13} />
       </View>
 
-      <Text style={styles.inputLabel}>아이디 (이메일)</Text>
-      <View style={styles.inputContainer}>
-        <TextInput style={styles.input} placeholder="example@email.com" placeholderTextColor="#A39B92" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
-        <TouchableOpacity style={styles.duplicateCheckBtn} onPress={handleCheckEmailDuplicate} activeOpacity={0.7}>
-          <Text style={styles.duplicateCheckBtnText}>중복확인</Text>
+      <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>아이디 (이메일)</Text>
+      <View style={[styles.inputContainer, { borderColor: colors.border, backgroundColor: colors.card }]}>
+        <TextInput style={[styles.input, { color: colors.text }]} placeholder="example@email.com" placeholderTextColor={colors.textSecondary} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
+        <TouchableOpacity style={[styles.duplicateCheckBtn, { backgroundColor: colors.border }]} onPress={handleCheckEmailDuplicate} activeOpacity={0.7}>
+          <Text style={[styles.duplicateCheckBtnText, { color: colors.text }]}>중복확인</Text>
         </TouchableOpacity>
       </View>
       {email.length > 0 && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) && <Text style={styles.errorText}>올바른 이메일 형식이 아닙니다.</Text>}
 
-      <Text style={styles.inputLabel}>비밀번호</Text>
-      <View style={styles.inputContainer}>
-        <TextInput style={styles.input} placeholder="비밀번호 (8자 이상)" placeholderTextColor="#A39B92" value={password} onChangeText={setPassword} secureTextEntry={!isPasswordVisible} />
+      <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>비밀번호</Text>
+      <View style={[styles.inputContainer, { borderColor: colors.border, backgroundColor: colors.card }]}>
+        <TextInput style={[styles.input, { color: colors.text }]} placeholder="비밀번호 (8자 이상)" placeholderTextColor={colors.textSecondary} value={password} onChangeText={setPassword} secureTextEntry={!isPasswordVisible} />
         <TouchableOpacity onPress={() => setIsPasswordVisible(!isPasswordVisible)} style={styles.eyeIcon}>
           {isPasswordVisible ? (
             <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
-              <Path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="#8A8077" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"/>
-              <Circle cx={12} cy={12} r={3} stroke="#8A8077" strokeWidth={1.8}/>
+              <Path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke={colors.textSecondary} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"/>
+              <Circle cx={12} cy={12} r={3} stroke={colors.textSecondary} strokeWidth={1.8}/>
             </Svg>
           ) : (
             <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
-              <Path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94" stroke="#8A8077" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"/>
-              <Path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19" stroke="#8A8077" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"/>
-              <Path d="M1 1l22 22" stroke="#8A8077" strokeWidth={1.8} strokeLinecap="round"/>
+              <Path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94" stroke={colors.textSecondary} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"/>
+              <Path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19" stroke={colors.textSecondary} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"/>
+              <Path d="M1 1l22 22" stroke={colors.textSecondary} strokeWidth={1.8} strokeLinecap="round"/>
             </Svg>
           )}
         </TouchableOpacity>
       </View>
       {password.length > 0 && !/^(?=.*[a-zA-Z])(?=.*\d)(?=.*[\W_])[^\s]{8,}$/.test(password) && <Text style={styles.errorText}>영문, 숫자, 특수문자를 포함해 8자 이상 입력해주세요.</Text>}
 
-      <Text style={styles.inputLabel}>비밀번호 확인</Text>
-      <View style={styles.inputContainer}>
-        <TextInput style={styles.input} placeholder="비밀번호를 다시 입력해주세요" placeholderTextColor="#A39B92" value={passwordConfirm} onChangeText={setPasswordConfirm} secureTextEntry={!isPasswordConfirmVisible} />
+      <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>비밀번호 확인</Text>
+      <View style={[styles.inputContainer, { borderColor: colors.border, backgroundColor: colors.card }]}>
+        <TextInput style={[styles.input, { color: colors.text }]} placeholder="비밀번호를 다시 입력해주세요" placeholderTextColor={colors.textSecondary} value={passwordConfirm} onChangeText={setPasswordConfirm} secureTextEntry={!isPasswordConfirmVisible} />
         <TouchableOpacity onPress={() => setIsPasswordConfirmVisible(!isPasswordConfirmVisible)} style={styles.eyeIcon}>
           {isPasswordConfirmVisible ? (
             <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
-              <Path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="#8A8077" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"/>
-              <Circle cx={12} cy={12} r={3} stroke="#8A8077" strokeWidth={1.8}/>
+              <Path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke={colors.textSecondary} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"/>
+              <Circle cx={12} cy={12} r={3} stroke={colors.textSecondary} strokeWidth={1.8}/>
             </Svg>
           ) : (
             <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
-              <Path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94" stroke="#8A8077" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"/>
-              <Path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19" stroke="#8A8077" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"/>
-              <Path d="M1 1l22 22" stroke="#8A8077" strokeWidth={1.8} strokeLinecap="round"/>
+              <Path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94" stroke={colors.textSecondary} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"/>
+              <Path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19" stroke={colors.textSecondary} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"/>
+              <Path d="M1 1l22 22" stroke={colors.textSecondary} strokeWidth={1.8} strokeLinecap="round"/>
             </Svg>
           )}
         </TouchableOpacity>
@@ -159,12 +161,12 @@ export function Step1BasicInfo({
 
 const styles = StyleSheet.create({
   formSection: { marginBottom: 24 },
-  inputLabel: { fontSize: 13, fontWeight: '600', color: '#6E665F', marginBottom: 8, marginLeft: 4 },
-  inputContainer: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#D4CDC4', borderRadius: 12, marginBottom: 20, paddingHorizontal: 16, height: 52, backgroundColor: '#FAF9F6' },
-  input: { flex: 1, fontSize: 14, color: '#3B2B26' },
+  inputLabel: { fontSize: 13, fontWeight: '600', marginBottom: 8, marginLeft: 4 },
+  inputContainer: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: 12, marginBottom: 20, paddingHorizontal: 16, height: 52 },
+  input: { flex: 1, fontSize: 14 },
   eyeIcon: { padding: 4 },
-  duplicateCheckBtn: { backgroundColor: '#EAE6E1', paddingVertical: 8, paddingHorizontal: 12, borderRadius: 8 },
-  duplicateCheckBtnText: { fontSize: 12, color: '#3B2B26', fontWeight: '600' },
+  duplicateCheckBtn: { paddingVertical: 8, paddingHorizontal: 12, borderRadius: 8 },
+  duplicateCheckBtnText: { fontSize: 12, fontWeight: '600' },
   errorText: { color: '#D04040', fontSize: 12, marginLeft: 4, marginTop: -12, marginBottom: 16 },
   testBtnContainer: { flexDirection: 'row', justifyContent: 'flex-end', gap: 8, marginBottom: 16 },
   testBtn: { backgroundColor: '#EAE6E1', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6 },

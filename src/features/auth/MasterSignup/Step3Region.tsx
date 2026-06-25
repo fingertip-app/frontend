@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, TextInput } from "react-native";
 import Svg, { Path, Circle } from "react-native-svg";
+import { useTheme } from "@/theme/ThemeContext";
 
 const REGIONS: Record<string, string[]> = {
   "서울": ["강남구", "강동구", "강북구", "강서구", "관악구", "광진구", "구로구", "금천구", "노원구", "도봉구", "동대문구", "동작구", "마포구", "서대문구", "서초구", "성동구", "성북구", "송파구", "양천구", "영등포구", "용산구", "은평구", "종로구", "중구", "중랑구"],
@@ -35,6 +36,7 @@ interface Step3RegionProps {
 }
 
 export function Step3Region({ selectedRegions, setSelectedRegions }: Step3RegionProps) {
+  const { colors } = useTheme();
   const [searchText, setSearchText] = useState("");
   const [showDirectInput, setShowDirectInput] = useState(false);
   const [directInput, setDirectInput] = useState("");
@@ -64,77 +66,81 @@ export function Step3Region({ selectedRegions, setSelectedRegions }: Step3Region
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>활동 지역 선택</Text>
-        <Text style={styles.subtitle}>주로 활동하시는 지역을 지도에서 선택하거나 검색해주세요.</Text>
+        <Text style={[styles.title, { color: colors.text }]}>활동 지역 선택</Text>
+        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>주로 활동하시는 지역을 지도에서 선택하거나 검색해주세요.</Text>
       </View>
 
       {/* 검색창 */}
-      <View style={styles.searchBox}>
+      <View style={[styles.searchBox, { borderColor: colors.border, backgroundColor: colors.card }]}>
         <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" style={{ marginRight: 8 }}>
-          <Circle cx="11" cy="11" r="7" stroke="#A39B92" strokeWidth={1.8} />
-          <Path d="M16.5 16.5l4 4" stroke="#A39B92" strokeWidth={1.8} strokeLinecap="round" />
+          <Circle cx="11" cy="11" r="7" stroke={colors.textSecondary} strokeWidth={1.8} />
+          <Path d="M16.5 16.5l4 4" stroke={colors.textSecondary} strokeWidth={1.8} strokeLinecap="round" />
         </Svg>
         <TextInput
-          style={styles.searchInput}
+          style={[styles.searchInput, { color: colors.text }]}
           placeholder="시/군/구 검색 (예: 종로구, 이천시)"
-          placeholderTextColor="#A39B92"
+          placeholderTextColor={colors.textSecondary}
           value={searchText}
           onChangeText={setSearchText}
         />
         {searchText.length > 0 && (
           <TouchableOpacity onPress={() => setSearchText("")}>
-            <Text style={styles.clearBtn}>✕</Text>
+            <Text style={[styles.clearBtn, { color: colors.textSecondary }]}>✕</Text>
           </TouchableOpacity>
         )}
       </View>
 
       {/* 검색 결과 */}
       {searchText.length > 0 && (
-        <View style={styles.searchResults}>
+        <View style={[styles.searchResults, { borderColor: colors.border, backgroundColor: colors.card }]}>
           {searchResults.length > 0 ? (
             searchResults.slice(0, 6).map((r, i) => (
               <TouchableOpacity
                 key={i}
-                style={styles.searchResultItem}
+                style={[styles.searchResultItem, { borderBottomColor: colors.border }]}
                 onPress={() => {
                   addRegion(`${r.city} ${r.district}`);
                   setSearchText("");
                 }}
                 activeOpacity={0.7}
               >
-                <Text style={styles.searchResultText}>{r.city} {r.district}</Text>
+                <Text style={[styles.searchResultText, { color: colors.text }]}>{r.city} {r.district}</Text>
               </TouchableOpacity>
             ))
           ) : (
-            <Text style={styles.noResultText}>검색 결과가 없습니다.</Text>
+            <Text style={[styles.noResultText, { color: colors.textSecondary }]}>검색 결과가 없습니다.</Text>
           )}
         </View>
       )}
 
       {/* 인기 지역 */}
-      <Text style={styles.sectionLabel}>인기 지역</Text>
+      <Text style={[styles.sectionLabel, { color: colors.text }]}>인기 지역</Text>
       <View style={styles.popularList}>
         {POPULAR_REGIONS.map((region) => {
           const isSelected = selectedRegions.includes(region.label);
           return (
             <TouchableOpacity
               key={region.label}
-              style={[styles.popularItem, isSelected && styles.popularItemSelected]}
+              style={[
+                styles.popularItem,
+                { borderColor: colors.border, backgroundColor: colors.card },
+                isSelected && { borderColor: colors.text },
+              ]}
               onPress={() => isSelected ? removeRegion(region.label) : addRegion(region.label)}
               activeOpacity={0.8}
             >
               <View style={styles.popularItemInner}>
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.popularItemTitle, isSelected && styles.popularItemTitleSelected]}>
+                  <Text style={[styles.popularItemTitle, { color: colors.text }]}>
                     {region.label}
                   </Text>
-                  <Text style={[styles.popularItemDesc, isSelected && styles.popularItemDescSelected]}>
+                  <Text style={[styles.popularItemDesc, { color: isSelected ? colors.textSecondary : colors.textSecondary }]}>
                     {region.desc}
                   </Text>
                 </View>
                 {isSelected && (
-                  <View style={styles.checkBadge}>
-                    <Text style={styles.checkBadgeText}>✓</Text>
+                  <View style={[styles.checkBadge, { backgroundColor: colors.text }]}>
+                    <Text style={[styles.checkBadgeText, { color: colors.bg }]}>✓</Text>
                   </View>
                 )}
               </View>
@@ -149,20 +155,20 @@ export function Step3Region({ selectedRegions, setSelectedRegions }: Step3Region
         onPress={() => setShowDirectInput(!showDirectInput)}
         activeOpacity={0.7}
       >
-        <Text style={styles.directInputBtnText}>기타 지역 직접 입력하기</Text>
+        <Text style={[styles.directInputBtnText, { color: colors.textSecondary }]}>기타 지역 직접 입력하기</Text>
       </TouchableOpacity>
 
       {showDirectInput && (
-        <View style={styles.directInputBox}>
+        <View style={[styles.directInputBox, { borderColor: colors.border, backgroundColor: colors.card }]}>
           <TextInput
-            style={styles.directInputField}
+            style={[styles.directInputField, { color: colors.text }]}
             placeholder="지역명을 직접 입력해주세요"
-            placeholderTextColor="#A39B92"
+            placeholderTextColor={colors.textSecondary}
             value={directInput}
             onChangeText={setDirectInput}
           />
           <TouchableOpacity
-            style={styles.directInputConfirm}
+            style={[styles.directInputConfirm, { backgroundColor: colors.text }]}
             onPress={() => {
               if (directInput.trim()) {
                 addRegion(directInput.trim());
@@ -172,7 +178,7 @@ export function Step3Region({ selectedRegions, setSelectedRegions }: Step3Region
             }}
             activeOpacity={0.8}
           >
-            <Text style={styles.directInputConfirmText}>추가</Text>
+            <Text style={[styles.directInputConfirmText, { color: colors.bg }]}>추가</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -180,17 +186,17 @@ export function Step3Region({ selectedRegions, setSelectedRegions }: Step3Region
       {/* 선택된 활동 지역 태그 */}
       {selectedRegions.length > 0 && (
         <View style={styles.selectedSection}>
-          <Text style={styles.sectionLabel}>선택된 활동 지역</Text>
+          <Text style={[styles.sectionLabel, { color: colors.text }]}>선택된 활동 지역</Text>
           <View style={styles.selectedTags}>
             {selectedRegions.map((region) => (
               <TouchableOpacity
                 key={region}
-                style={styles.selectedTag}
+                style={[styles.selectedTag, { backgroundColor: colors.text }]}
                 onPress={() => removeRegion(region)}
                 activeOpacity={0.8}
               >
-                <Text style={styles.selectedTagText}>{region}</Text>
-                <Text style={styles.selectedTagRemove}> ✕</Text>
+                <Text style={[styles.selectedTagText, { color: colors.bg }]}>{region}</Text>
+                <Text style={[styles.selectedTagRemove, { color: colors.bg }]}> ✕</Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -203,30 +209,26 @@ export function Step3Region({ selectedRegions, setSelectedRegions }: Step3Region
 const styles = StyleSheet.create({
   container: { marginBottom: 24 },
   header: { marginBottom: 24 },
-  title: { fontSize: 22, fontWeight: "bold", color: "#3B2B26", marginBottom: 8 },
-  subtitle: { fontSize: 13, color: "#6E665F", lineHeight: 20 },
+  title: { fontSize: 22, fontWeight: "bold", marginBottom: 8 },
+  subtitle: { fontSize: 13, lineHeight: 20 },
 
   // 검색창
   searchBox: {
     flexDirection: "row",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#D4CDC4",
     borderRadius: 12,
     paddingHorizontal: 16,
     height: 52,
-    backgroundColor: "#FAF9F6",
     marginBottom: 8,
   },
-  searchInput: { flex: 1, fontSize: 14, color: "#3B2B26" },
-  clearBtn: { color: "#A39B92", fontSize: 14, paddingLeft: 8 },
+  searchInput: { flex: 1, fontSize: 14 },
+  clearBtn: { fontSize: 14, paddingLeft: 8 },
 
   // 검색 결과
   searchResults: {
     borderWidth: 1,
-    borderColor: "#D4CDC4",
     borderRadius: 12,
-    backgroundColor: "#FAF9F6",
     marginBottom: 16,
     overflow: "hidden",
   },
@@ -234,16 +236,14 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#EAE6E1",
   },
-  searchResultText: { fontSize: 14, color: "#3B2B26" },
-  noResultText: { padding: 16, color: "#A39B92", fontSize: 14 },
+  searchResultText: { fontSize: 14 },
+  noResultText: { padding: 16, fontSize: 14 },
 
   // 섹션 라벨
   sectionLabel: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#3B2B26",
     marginBottom: 12,
     marginTop: 8,
   },
@@ -252,30 +252,21 @@ const styles = StyleSheet.create({
   popularList: { marginBottom: 16 },
   popularItem: {
     borderWidth: 1,
-    borderColor: "#D4CDC4",
     borderRadius: 14,
     padding: 16,
     marginBottom: 10,
-    backgroundColor: "#FAF9F6",
-  },
-  popularItemSelected: {
-    borderColor: "#3B2B26",
-    backgroundColor: "#FAF9F6",
   },
   popularItemInner: { flexDirection: "row", alignItems: "center" },
-  popularItemTitle: { fontSize: 15, fontWeight: "700", color: "#3B2B26", marginBottom: 3 },
-  popularItemTitleSelected: { color: "#3B2B26" },
-  popularItemDesc: { fontSize: 12, color: "#A39B92" },
-  popularItemDescSelected: { color: "#6E665F" },
+  popularItemTitle: { fontSize: 15, fontWeight: "700", marginBottom: 3 },
+  popularItemDesc: { fontSize: 12 },
   checkBadge: {
     width: 26,
     height: 26,
     borderRadius: 13,
-    backgroundColor: "#3B2B26",
     justifyContent: "center",
     alignItems: "center",
   },
-  checkBadgeText: { color: "#FFF", fontSize: 13, fontWeight: "bold" },
+  checkBadgeText: { fontSize: 13, fontWeight: "bold" },
 
   // 직접 입력
   directInputBtn: {
@@ -283,27 +274,24 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 8,
   },
-  directInputBtnText: { fontSize: 14, color: "#6E665F", textDecorationLine: "underline" },
+  directInputBtnText: { fontSize: 14, textDecorationLine: "underline" },
   directInputBox: {
     flexDirection: "row",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#D4CDC4",
     borderRadius: 12,
     paddingHorizontal: 12,
     height: 52,
-    backgroundColor: "#FAF9F6",
     marginBottom: 16,
     gap: 8,
   },
-  directInputField: { flex: 1, fontSize: 14, color: "#3B2B26" },
+  directInputField: { flex: 1, fontSize: 14 },
   directInputConfirm: {
-    backgroundColor: "#3B2B26",
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
   },
-  directInputConfirmText: { color: "#FFF", fontSize: 13, fontWeight: "600" },
+  directInputConfirmText: { fontSize: 13, fontWeight: "600" },
 
   // 선택된 태그
   selectedSection: { marginTop: 8 },
@@ -311,11 +299,10 @@ const styles = StyleSheet.create({
   selectedTag: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#3B2B26",
     borderRadius: 20,
     paddingVertical: 8,
     paddingHorizontal: 14,
   },
-  selectedTagText: { color: "#FFF", fontSize: 13, fontWeight: "600" },
-  selectedTagRemove: { color: "rgba(255,255,255,0.7)", fontSize: 12 },
+  selectedTagText: { fontSize: 13, fontWeight: "600" },
+  selectedTagRemove: { fontSize: 12 },
 });

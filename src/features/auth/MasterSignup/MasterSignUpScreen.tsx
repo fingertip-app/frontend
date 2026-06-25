@@ -9,9 +9,11 @@ import { Step3Region } from "./Step3Region";
 import { Step4Portfolio } from "./Step4Portfolio";
 import { Step5Terms } from "./Step5Terms";
 import { applyArtisan, signUp } from "@/features/auth/api/authApi";
+import { useTheme } from "@/theme/ThemeContext";
 
 export function MasterSignUpScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { colors } = useTheme();
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [masterName, setMasterName] = useState("");
@@ -101,27 +103,27 @@ export function MasterSignUpScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.bg }]}>
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-        
+
         {/* 상단 5단계 스텝 인디케이터 */}
         <View style={styles.stepContainer}>
           {[1, 2, 3, 4, 5].map((step) => (
             <View key={step} style={styles.stepWrapper}>
-              <View style={[styles.stepCircle, currentStep >= step && styles.activeStepCircle]}>
-                <Text style={[styles.stepText, currentStep >= step && styles.activeStepText]}>{step}</Text>
+              <View style={[styles.stepCircle, { backgroundColor: colors.border }, currentStep >= step && { backgroundColor: colors.text }]}>
+                <Text style={[styles.stepText, { color: currentStep >= step ? colors.bg : colors.textSecondary }]}>{step}</Text>
               </View>
-              {step < 5 && <View style={[styles.stepLine, currentStep > step && styles.activeStepLine]} />}
+              {step < 5 && <View style={[styles.stepLine, { backgroundColor: colors.border }, currentStep > step && { backgroundColor: colors.text }]} />}
             </View>
           ))}
         </View>
 
         {/* 헤더 영역 */}
         <View style={styles.header}>
-          <Text style={styles.title}>
+          <Text style={[styles.title, { color: colors.text }]}>
             {currentStep === 1 ? "장인 파트너 가입" : `장인 파트너 가입 (${currentStep}/5)`}
           </Text>
-          <Text style={styles.subtitle}>
+          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
             {currentStep === 1 ? "한국의 전통문화를 널리 알리고 체험을 공유해보세요." : "파트너 신청을 위한 상세 정보를 입력해주세요."}
           </Text>
         </View>
@@ -181,8 +183,8 @@ export function MasterSignUpScreen() {
         )}
 
         {/* 회원가입 버튼 */}
-        <TouchableOpacity 
-          style={[styles.signupButton, isLoading && { opacity: 0.6 }]} 
+        <TouchableOpacity
+          style={[styles.signupButton, { backgroundColor: colors.text }, isLoading && { opacity: 0.6 }]}
           activeOpacity={0.8}
           disabled={isLoading}
           onPress={async () => {
@@ -218,9 +220,9 @@ export function MasterSignUpScreen() {
           }}
         >
           {isLoading
-            ? <ActivityIndicator color="#FFF" />
+            ? <ActivityIndicator color={colors.bg} />
             : (
-              <Text style={styles.signupButtonText}>
+              <Text style={[styles.signupButtonText, { color: colors.bg }]}>
                 {currentStep < 5 ? "다음 단계" : "가입완료 및 파트너 신청"}
               </Text>
             )
@@ -235,7 +237,6 @@ export function MasterSignUpScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#F5F4F0',
   },
   container: {
     paddingHorizontal: 24,
@@ -257,15 +258,11 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: '#EAE6E1',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  activeStepCircle: { backgroundColor: '#3B2B26' },
-  stepText: { fontSize: 13, color: '#8A8077', fontWeight: 'bold' },
-  activeStepText: { color: '#FFF' },
-  stepLine: { width: 14, height: 2, backgroundColor: '#EAE6E1', marginHorizontal: 4 },
-  activeStepLine: { backgroundColor: '#3B2B26' },
+  stepText: { fontSize: 13, fontWeight: 'bold' },
+  stepLine: { width: 14, height: 2, marginHorizontal: 4 },
   header: {
     marginBottom: 40,
     marginTop: 20,
@@ -273,19 +270,16 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 26,
     fontWeight: '700',
-    color: '#3B2B26',
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 14,
-    color: '#6E665F',
   },
   signupButton: {
-    backgroundColor: '#3B2B26',
     borderRadius: 26,
     height: 52,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  signupButtonText: { color: '#FFF', fontSize: 16, fontWeight: 'bold' },
+  signupButtonText: { fontSize: 16, fontWeight: 'bold' },
 });
