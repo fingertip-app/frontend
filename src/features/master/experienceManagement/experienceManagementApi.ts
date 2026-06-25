@@ -69,6 +69,7 @@ export async function getExperienceManagementData(): Promise<ExperienceManagemen
 export async function createRegisteredExperience(
   params: ExperienceRegistrationParams,
   locationAddress: string,
+  locationCoords?: { lat: number; lng: number },
 ): Promise<Experience> {
   const price = Number(params.price)
   if (!params.title.trim()) throw new Error('체험 제목을 입력해주세요.')
@@ -97,10 +98,12 @@ export async function createRegisteredExperience(
     category: params.category,
     price,
     maxParticipants: params.maxGuests,
-    difficulty: 'BEGINNER',
+    difficulty: params.difficulty,
     durationMinutes: computeDurationMinutes(params.timeSlots),
     imageUrl,
     locationAddress: locationAddress.trim(),
+    locationLat: locationCoords?.lat,
+    locationLng: locationCoords?.lng,
     tags: params.tags,
     schedules,
   })
