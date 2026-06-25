@@ -115,16 +115,6 @@ export function AIChatScreen() {
           renderItem={({ item }) => (
             <View style={[styles.messageBubble, item.sender === 'ai' ? styles.aiBubble : styles.userBubble]}>
               <Text style={item.sender === 'ai' ? styles.aiText : styles.userText}>{item.text}</Text>
-              {item.sender === 'ai' && item.sources && item.sources.length > 0 && (
-                <View style={styles.sourcesContainer}>
-                  <Text style={styles.sourcesLabel}>📚 출처</Text>
-                  {item.sources.map((source: { name: string; source: string }, idx: number) => (
-                    <Text key={idx} style={styles.sourceText}>
-                      • {source.name}
-                    </Text>
-                  ))}
-                </View>
-              )}
             </View>
           )}
         />
@@ -189,23 +179,6 @@ const styles = StyleSheet.create({
   },
   aiText: { fontSize: 15, color: '#3B2B26', lineHeight: 22 },
   userText: { fontSize: 15, color: '#FFFFFF', lineHeight: 22 },
-  sourcesContainer: {
-    marginTop: 12,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#EAE6E1',
-  },
-  sourcesLabel: {
-    fontSize: 12,
-    color: '#7A6F65',
-    fontWeight: '600',
-    marginBottom: 6,
-  },
-  sourceText: {
-    fontSize: 12,
-    color: '#7A6F65',
-    lineHeight: 18,
-  },
   loadingContainer: {
     flexDirection: 'row',
     alignItems: 'center',

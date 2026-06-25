@@ -22,6 +22,7 @@ import {
   extractInfoFromMessages,
   getNextStep,
   hasMinimumInfoForRecommendation,
+  getContextualPrompt,
 } from "./smart-flow-helper";
 
 // ─── 팔레트 (기존 유지) ────────────────────────────────────────────────────────
@@ -370,11 +371,23 @@ const toExperience = (item: RecommendationCard): Experience => ({
 // ─── 메인 스크린 ───────────────────────────────────────────────────────────────
 export function AIrecommendationScreen() {
   const navigation = useNavigation<BottomTabNavigationProp<MainTabParamList, "AIRecommend">>();
+
+  const initialPrompt = getContextualPrompt({
+    step: "companion",
+    userAnswers: [],
+    extractedInfo: {
+      hasCompanion: false,
+      hasInterest: false,
+      hasBudget: false,
+      hasDuration: false,
+    },
+  });
+
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "init",
       role: "ai",
-      text: FLOW.companion.aiText,
+      text: initialPrompt,
       chips: FLOW.companion.chips,
     },
   ]);
@@ -490,10 +503,18 @@ export function AIrecommendationScreen() {
       const nextStep = FLOW[currentStep]?.nextStep;
       if (nextStep && nextStep !== "done") {
         const node = FLOW[nextStep];
+
+        // 🆕 동적 프롬프트 생성
+        const dynamicPrompt = getContextualPrompt({
+          step: nextStep,
+          userAnswers,
+          extractedInfo,
+        });
+
         const aiMsg: Message = {
           id: (Date.now() + 1).toString(),
           role: "ai",
-          text: node.aiText,
+          text: dynamicPrompt || node.aiText, // fallback to static
           chips: node.chips,
         };
         setMessages((prev) => [...prev, aiMsg]);
@@ -514,11 +535,22 @@ export function AIrecommendationScreen() {
   };
 
   const handleReset = () => {
+    const resetPrompt = getContextualPrompt({
+      step: "companion",
+      userAnswers: [],
+      extractedInfo: {
+        hasCompanion: false,
+        hasInterest: false,
+        hasBudget: false,
+        hasDuration: false,
+      },
+    });
+
     setMessages([
       {
         id: "init",
         role: "ai",
-        text: FLOW.companion.aiText,
+        text: resetPrompt,
         chips: FLOW.companion.chips,
       },
     ]);
@@ -564,16 +596,6 @@ export function AIrecommendationScreen() {
                     onPress={() => navigation.navigate("Explore", { exp: toExperience(rec) })}
                   />
                 ))}
-                {!!item.sources?.length && (
-                  <View style={s.sourcesBox}>
-                    <Text style={s.sourcesTitle}>출처</Text>
-                    {item.sources.map((src) => (
-                      <Text key={src.id} style={s.sourceText}>
-                        · {src.name} ({src.category}) — {src.source}
-                      </Text>
-                    ))}
-                  </View>
-                )}
                 <TouchableOpacity style={s.resetButton} onPress={handleReset} activeOpacity={0.8}>
                   <Ionicons name="refresh" size={15} color={TEXT_MAIN} />
                   <Text style={s.resetButtonText}>다시 추천받기</Text>
@@ -899,25 +921,6 @@ const s = StyleSheet.create({
     color: BRAND_MID,
     marginTop: 8,
     textAlign: "right",
-  },
-
-  // 출처 목록
-  sourcesBox: {
-    backgroundColor: "#EFEAE2",
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 14,
-  },
-  sourcesTitle: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: TEXT_SUB,
-    marginBottom: 4,
-  },
-  sourceText: {
-    fontSize: 12,
-    color: TEXT_SUB,
-    lineHeight: 18,
   },
 
   // 다시 추천
