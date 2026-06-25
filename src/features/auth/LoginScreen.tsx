@@ -63,24 +63,6 @@ export function LoginScreen() {
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.bg }]}>
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
 
-        {/* DEV 전용: 테스트 완료 후 삭제 */}
-        {__DEV__ && (
-          <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 8, marginBottom: 10 }}>
-            <TouchableOpacity
-              style={{ padding: 8, backgroundColor: '#EAE6E1', borderRadius: 8 }}
-              onPress={() => navigation.reset({ index: 0, routes: [{ name: "MainTabs" }] })}
-            >
-              <Text style={{ fontSize: 12, color: '#3B2B26', fontWeight: 'bold' }}>🚀 일반 홈</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={{ padding: 8, backgroundColor: '#3B2B26', borderRadius: 8 }}
-              onPress={() => navigation.reset({ index: 0, routes: [{ name: "MasterHome" }] })}
-            >
-              <Text style={{ fontSize: 12, color: '#FFF', fontWeight: 'bold' }}>🛠️ 장인 홈</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-
         {/* 헤더 및 로고 영역 */}
         <View style={styles.header}>
           <View style={{ marginBottom: 16 }}>
