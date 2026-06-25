@@ -18,6 +18,7 @@ interface CardNewsUI {
   desc: string;
   tag: string;
   imageUri: string;
+  relatedExperienceIds: number[];
 }
 
 function mapCardNewsToUI(cardNews: CardNews): CardNewsUI {
@@ -31,7 +32,8 @@ function mapCardNewsToUI(cardNews: CardNews): CardNewsUI {
     title: cardNews.title,
     desc: cardNews.aiExplanation || "AI가 설명하는 전통문화 이야기",
     tag: tag,
-    imageUri: cardNews.imageUrl || "https://images.unsplash.com/photo-1605369680336-6468700a9437?w=400&q=80"
+    imageUri: cardNews.imageUrl || "https://images.unsplash.com/photo-1605369680336-6468700a9437?w=400&q=80",
+    relatedExperienceIds: cardNews.relatedExperienceIds ?? [],
   };
 }
 

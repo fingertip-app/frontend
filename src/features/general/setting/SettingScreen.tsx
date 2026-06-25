@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -7,11 +7,13 @@ import {
   TouchableOpacity,
   ScrollView,
   Alert,
+  ActivityIndicator,
+  Modal,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
-import { logout } from "@/features/auth/api/authApi";
+import { deleteAccount, logout } from "@/features/auth/api/authApi";
 import { RootStackParamList } from "@/navigation/RootNavigator";
 import { useTheme, ThemeMode } from "@/theme/ThemeContext";
 
@@ -62,6 +64,9 @@ const THEME_ORDER: ThemeMode[] = ["light", "dark", "auto"];
 export function SettingScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { mode, setMode, colors } = useTheme();
+  const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const handleCycleTheme = () => {
     const next = THEME_ORDER[(THEME_ORDER.indexOf(mode) + 1) % THEME_ORDER.length];
@@ -86,6 +91,20 @@ export function SettingScreen() {
     ]);
   };
 
+  const handleDeleteAccount = async () => {
+    setIsDeleting(true);
+    setDeleteError(null);
+    try {
+      await deleteAccount();
+      setIsDeleteModalVisible(false);
+      navigation.reset({ index: 0, routes: [{ name: "Login" }] });
+    } catch (error) {
+      setDeleteError(error instanceof Error ? error.message : "회원 탈퇴에 실패했습니다.");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.bg }]}>
       {/* 헤더 */}
@@ -107,6 +126,7 @@ export function SettingScreen() {
           <Row
             icon={<Ionicons name="person-outline" size={18} color={colors.textSecondary} />}
             label="프로필 수정"
+            onPress={() => navigation.navigate("ProfileEdit")}
           />
           <View style={[styles.separator, { backgroundColor: colors.border }]} />
           <Row
@@ -149,6 +169,10 @@ export function SettingScreen() {
             icon={<Ionicons name="person-remove-outline" size={18} color="#D04040" />}
             label="회원 탈퇴"
             danger
+            onPress={() => {
+              setDeleteError(null);
+              setIsDeleteModalVisible(true);
+            }}
           />
         </View>
 
@@ -160,6 +184,48 @@ export function SettingScreen() {
           </Text>
         </View>
       </ScrollView>
+
+      <Modal
+        transparent
+        visible={isDeleteModalVisible}
+        animationType="fade"
+        onRequestClose={() => {
+          if (!isDeleting) setIsDeleteModalVisible(false);
+        }}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={[styles.deleteModal, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <View style={styles.deleteIcon}>
+              <Ionicons name="person-remove-outline" size={24} color="#D04040" />
+            </View>
+            <Text style={[styles.deleteTitle, { color: colors.text }]}>회원 탈퇴</Text>
+            <Text style={[styles.deleteDescription, { color: colors.textSecondary }]}>
+              탈퇴 후에는 같은 계정으로 다시 로그인할 수 없습니다.
+            </Text>
+            {deleteError ? <Text style={styles.deleteError}>{deleteError}</Text> : null}
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={[styles.modalButton, { borderColor: colors.border }]}
+                disabled={isDeleting}
+                onPress={() => setIsDeleteModalVisible(false)}
+              >
+                <Text style={[styles.cancelText, { color: colors.text }]}>취소</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.deleteButton]}
+                disabled={isDeleting}
+                onPress={() => void handleDeleteAccount()}
+              >
+                {isDeleting ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.deleteButtonText}>탈퇴</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -221,4 +287,43 @@ const styles = StyleSheet.create({
   },
   versionText: { fontSize: 12 },
   copyrightText: { fontSize: 11, color: "#B0A89E" },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.35)",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 24,
+  },
+  deleteModal: {
+    width: "100%",
+    maxWidth: 360,
+    borderWidth: 1,
+    borderRadius: 18,
+    padding: 22,
+    alignItems: "center",
+  },
+  deleteIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "#FDECEC",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 14,
+  },
+  deleteTitle: { fontSize: 19, fontWeight: "800", marginBottom: 8 },
+  deleteDescription: { fontSize: 14, lineHeight: 21, textAlign: "center", marginBottom: 18 },
+  deleteError: { color: "#D04040", fontSize: 13, textAlign: "center", marginBottom: 14 },
+  modalActions: { width: "100%", flexDirection: "row", gap: 10 },
+  modalButton: {
+    flex: 1,
+    minHeight: 48,
+    borderWidth: 1,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  deleteButton: { backgroundColor: "#D04040", borderColor: "#D04040" },
+  cancelText: { fontSize: 15, fontWeight: "700" },
+  deleteButtonText: { color: "#FFFFFF", fontSize: 15, fontWeight: "700" },
 });

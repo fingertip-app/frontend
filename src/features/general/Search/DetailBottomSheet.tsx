@@ -645,8 +645,8 @@ export function DetailBottomSheet({ exp, onClose }: Props) {
             </Text>
             <View style={{ position: "relative" }}>
               <KakaoMapView
-                latitude={fullExperience?.locationLatitude || 37.5665}
-                longitude={fullExperience?.locationLongitude || 126.9780}
+                latitude={fullExperience?.locationLat || 37.5665}
+                longitude={fullExperience?.locationLng || 126.9780}
                 address={exp.location}
                 height={160}
                 markerTitle={fullExperience?.title || exp.title}

@@ -668,6 +668,12 @@ export function SearchScreen() {
   const [activeFilter, setFilter]       = useState(route.params?.filter ?? "popular");
   const [openDropdown, setDropdown]     = useState<DropdownKey>(null);
   const [selectedExp, setSelectedExp]   = useState<Experience | null>(route.params?.exp ?? null);
+  const [relatedExperienceIds, setRelatedExperienceIds] = useState<number[] | null>(
+    route.params?.relatedExperienceIds ?? null,
+  );
+  const [relatedCategory, setRelatedCategory] = useState<string | null>(
+    route.params?.relatedCategory ?? null,
+  );
 
   // 드롭다운 선택값
   const [region, setRegion] = useState("지역");
@@ -733,6 +739,36 @@ export function SearchScreen() {
     }
   }, [route.params?.category, navigation]);
 
+  useEffect(() => {
+    if (route.params?.relatedExperienceIds) {
+      setRelatedExperienceIds(route.params.relatedExperienceIds);
+      setRelatedCategory(null);
+      setQuery("");
+      setCategory("all");
+      setFilter("popular");
+      setRegion("지역");
+      setDate("날짜");
+      setTime("시간");
+      setLevel("난이도");
+      navigation.setParams({ relatedExperienceIds: undefined });
+    }
+  }, [route.params?.relatedExperienceIds, navigation]);
+
+  useEffect(() => {
+    if (route.params?.relatedCategory) {
+      setRelatedCategory(route.params.relatedCategory);
+      setRelatedExperienceIds(null);
+      setQuery("");
+      setCategory("all");
+      setFilter("popular");
+      setRegion("지역");
+      setDate("날짜");
+      setTime("시간");
+      setLevel("난이도");
+      navigation.setParams({ relatedCategory: undefined });
+    }
+  }, [route.params?.relatedCategory, navigation]);
+
   // 체험 목록에 실제로 존재하는 분야로 카테고리 칩을 구성 (백엔드 category는 자유 텍스트라 고정 목록과 어긋날 수 있음)
   const categories = useMemo<CategoryItem[]>(() => {
     const distinctCategories = Array.from(new Set(allExperiences.map((exp) => exp.category))).sort();
@@ -772,6 +808,15 @@ export function SearchScreen() {
   // 필터링 + 정렬
   const results = useMemo(() => {
     let list = allExperiences.filter((exp) => {
+      if (
+        relatedExperienceIds &&
+        !relatedExperienceIds.includes(Number(exp.id))
+      ) return false;
+      if (
+        relatedCategory &&
+        exp.category !== relatedCategory &&
+        !exp.tags.includes(relatedCategory)
+      ) return false;
       // 카테고리 (카테고리 id는 실제 category 값과 동일하다)
       if (activeCategory !== "all" && exp.category !== activeCategory) return false;
       // 지역
@@ -798,7 +843,17 @@ export function SearchScreen() {
     if (sort === "리뷰 많은순")   list = [...list].sort((a, b) => b.reviewCount - a.reviewCount);
 
     return list;
-  }, [allExperiences, query, activeCategory, region, level, activeFilter, sort]);
+  }, [
+    allExperiences,
+    query,
+    activeCategory,
+    region,
+    level,
+    activeFilter,
+    sort,
+    relatedExperienceIds,
+    relatedCategory,
+  ]);
 
   const currentDropdown = openDropdown ? dropdownConfig[openDropdown] : null;
 
@@ -874,10 +929,22 @@ export function SearchScreen() {
 
             {/* 결과 수 */}
             <View style={{ flexDirection: "row", alignItems: "baseline", paddingHorizontal: 16, paddingTop: 12, paddingBottom: 8 }}>
-              <Text style={{ fontSize: 15, fontWeight: "800", color: colors.text }}>전체 </Text>
+              <Text style={{ fontSize: 15, fontWeight: "800", color: colors.text }}>
+                {relatedExperienceIds || relatedCategory ? "관련 체험 " : "전체 "}
+              </Text>
               <Text style={{ fontSize: 15, fontWeight: "800", color: colors.accent }}>{results.length}</Text>
               <Text style={{ fontSize: 15, fontWeight: "800", color: colors.text }}>개의 체험</Text>
               <View style={{ flex: 1 }} />
+              {relatedExperienceIds || relatedCategory ? (
+                <TouchableOpacity
+                  onPress={() => {
+                    setRelatedExperienceIds(null);
+                    setRelatedCategory(null);
+                  }}
+                >
+                  <Text style={{ fontSize: 13, fontWeight: "700", color: colors.accent }}>전체 보기</Text>
+                </TouchableOpacity>
+              ) : null}
               <TouchableOpacity
                 onPress={() => setDropdown("sort")}
                 style={{ flexDirection: "row", alignItems: "center", gap: 3 }}
