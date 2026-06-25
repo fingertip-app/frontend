@@ -15,12 +15,7 @@ import { RootStackParamList } from "@/navigation/RootNavigator";
 import { Ionicons } from "@expo/vector-icons";
 import { payReservation } from "@/features/reservations/api/reservationsApi";
 import { ApiError } from "@/services/api";
-
-const BRAND = "#3D1F0D";
-const GRAY = "#8C7B6E";
-const BORDER = "#EDE8E2";
-const BG = "#FAFAF8";
-const CARD = "#FFFFFF";
+import { useTheme } from "@/theme/ThemeContext";
 
 type PayMethod = { id: string; label: string; icon: keyof typeof Ionicons.glyphMap };
 
@@ -34,6 +29,7 @@ const PAY_METHODS: PayMethod[] = [
 export function PaymentScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const route = useRoute<RouteProp<RootStackParamList, "Payment">>();
+  const { colors } = useTheme();
   const { exp, dateLabel, time, headcount, totalPrice, reservationId } = route.params;
 
   const [selectedMethod, setSelectedMethod] = useState("card");
@@ -83,12 +79,12 @@ export function PaymentScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.header}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.bg }]}>
+      <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={10}>
-          <Ionicons name="arrow-back" size={24} color="#1C1107" />
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>결제하기</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>결제하기</Text>
         <View style={{ width: 24 }} />
       </View>
 
@@ -98,34 +94,34 @@ export function PaymentScreen() {
       >
         {/* ── 예약 정보 ── */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>예약 정보</Text>
-          <View style={styles.card}>
-            <Text style={styles.expTitle} numberOfLines={1}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>예약 정보</Text>
+          <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={[styles.expTitle, { color: colors.text }]} numberOfLines={1}>
               {exp?.title ?? "이천 도자기 물레 체험"}
             </Text>
-            <Text style={styles.expSub} numberOfLines={1}>
+            <Text style={[styles.expSub, { color: colors.textSecondary }]} numberOfLines={1}>
               {exp?.location ?? "경기 이천시"} · {exp?.artisan ?? "김도예 장인"}
             </Text>
-            <View style={styles.divider} />
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>날짜</Text>
-              <Text style={styles.infoValue}>{dateLabel}</Text>
+              <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>날짜</Text>
+              <Text style={[styles.infoValue, { color: colors.text }]}>{dateLabel}</Text>
             </View>
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>시간</Text>
-              <Text style={styles.infoValue}>{time}</Text>
+              <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>시간</Text>
+              <Text style={[styles.infoValue, { color: colors.text }]}>{time}</Text>
             </View>
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>인원</Text>
-              <Text style={styles.infoValue}>{headcount}명</Text>
+              <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>인원</Text>
+              <Text style={[styles.infoValue, { color: colors.text }]}>{headcount}명</Text>
             </View>
           </View>
         </View>
 
         {/* ── 결제 수단 ── */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>결제 수단</Text>
-          <View style={styles.card}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>결제 수단</Text>
+          <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
             {PAY_METHODS.map((method, i) => {
               const active = selectedMethod === method.id;
               return (
@@ -133,19 +129,19 @@ export function PaymentScreen() {
                   key={method.id}
                   style={[
                     styles.methodRow,
-                    i !== PAY_METHODS.length - 1 && styles.methodRowBorder,
+                    i !== PAY_METHODS.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border },
                   ]}
                   activeOpacity={0.7}
                   onPress={() => setSelectedMethod(method.id)}
-                >
+                  >
                   <View style={styles.methodLeft}>
-                    <Ionicons name={method.icon} size={20} color={BRAND} />
-                    <Text style={styles.methodLabel}>{method.label}</Text>
+                    <Ionicons name={method.icon} size={20} color={colors.accent} />
+                    <Text style={[styles.methodLabel, { color: colors.text }]}>{method.label}</Text>
                   </View>
                   <Ionicons
                     name={active ? "radio-button-on" : "radio-button-off"}
                     size={20}
-                    color={active ? BRAND : "#D4CDC4"}
+                    color={active ? colors.accent : colors.border}
                   />
                 </TouchableOpacity>
               );
@@ -155,18 +151,18 @@ export function PaymentScreen() {
 
         {/* ── 결제 금액 ── */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>결제 금액</Text>
-          <View style={styles.card}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>결제 금액</Text>
+          <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>체험 금액</Text>
-              <Text style={styles.infoValue}>{totalPrice.toLocaleString()}원</Text>
+              <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>체험 금액</Text>
+              <Text style={[styles.infoValue, { color: colors.text }]}>{totalPrice.toLocaleString()}원</Text>
             </View>
-            <View style={styles.divider} />
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
             <View style={styles.infoRow}>
-              <Text style={[styles.infoLabel, { fontSize: 15, fontWeight: "600", color: "#1C1107" }]}>
+              <Text style={[styles.infoLabel, { fontSize: 15, fontWeight: "600", color: colors.text }]}>
                 총 결제 금액
               </Text>
-              <Text style={styles.totalText}>{totalPrice.toLocaleString()}원</Text>
+              <Text style={[styles.totalText, { color: colors.text }]}>{totalPrice.toLocaleString()}원</Text>
             </View>
           </View>
         </View>
@@ -180,21 +176,21 @@ export function PaymentScreen() {
           <Ionicons
             name={agreed ? "checkbox" : "square-outline"}
             size={20}
-            color={agreed ? BRAND : "#D4CDC4"}
+            color={agreed ? colors.accent : colors.border}
           />
-          <Text style={styles.agreeText}>결제 진행 및 취소・환불 규정에 동의합니다.</Text>
+          <Text style={[styles.agreeText, { color: colors.textSecondary }]}>결제 진행 및 취소・환불 규정에 동의합니다.</Text>
         </TouchableOpacity>
       </ScrollView>
 
       {/* 하단 고정 결제 버튼 */}
-      <View style={styles.footer}>
+      <View style={[styles.footer, { backgroundColor: colors.bg, borderTopColor: colors.border }]}>
         <TouchableOpacity
-          style={[styles.payBtn, processing && { opacity: 0.6 }]}
+          style={[styles.payBtn, { backgroundColor: colors.accent }, processing && { opacity: 0.6 }]}
           activeOpacity={0.85}
           onPress={handlePay}
           disabled={processing}
         >
-          <Text style={styles.payBtnText}>
+          <Text style={[styles.payBtnText, { color: colors.bg }]}>
             {processing ? "결제 처리 중..." : `${totalPrice.toLocaleString()}원 결제하기`}
           </Text>
         </TouchableOpacity>
@@ -204,7 +200,7 @@ export function PaymentScreen() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: BG },
+  safeArea: { flex: 1 },
 
   header: {
     flexDirection: "row",
@@ -213,25 +209,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: BORDER,
   },
-  headerTitle: { fontSize: 17, fontWeight: "700", color: "#1C1107" },
+  headerTitle: { fontSize: 17, fontWeight: "700" },
 
   section: { paddingHorizontal: 20, paddingTop: 20 },
-  sectionTitle: { fontSize: 15, fontWeight: "700", color: "#1C1107", marginBottom: 10 },
+  sectionTitle: { fontSize: 15, fontWeight: "700", marginBottom: 10 },
 
   card: {
-    backgroundColor: CARD,
     borderRadius: 14,
     padding: 16,
     borderWidth: 1,
-    borderColor: BORDER,
   },
 
-  expTitle: { fontSize: 15, fontWeight: "700", color: "#1C1107" },
-  expSub: { fontSize: 12, color: GRAY, marginTop: 3 },
+  expTitle: { fontSize: 15, fontWeight: "700" },
+  expSub: { fontSize: 12, marginTop: 3 },
 
-  divider: { height: 1, backgroundColor: BORDER, marginVertical: 12 },
+  divider: { height: 1, marginVertical: 12 },
 
   infoRow: {
     flexDirection: "row",
@@ -239,10 +232,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 8,
   },
-  infoLabel: { fontSize: 13, color: GRAY },
-  infoValue: { fontSize: 13, color: "#1C1107", fontWeight: "600" },
+  infoLabel: { fontSize: 13 },
+  infoValue: { fontSize: 13, fontWeight: "600" },
 
-  totalText: { fontSize: 18, fontWeight: "800", color: "#1C1107", letterSpacing: -0.3 },
+  totalText: { fontSize: 18, fontWeight: "800", letterSpacing: -0.3 },
 
   methodRow: {
     flexDirection: "row",
@@ -250,9 +243,8 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingVertical: 14,
   },
-  methodRowBorder: { borderBottomWidth: 1, borderBottomColor: BORDER },
   methodLeft: { flexDirection: "row", alignItems: "center", gap: 10 },
-  methodLabel: { fontSize: 14, fontWeight: "500", color: "#1C1107" },
+  methodLabel: { fontSize: 14, fontWeight: "500" },
 
   agreeRow: {
     flexDirection: "row",
@@ -261,7 +253,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
     marginTop: 20,
   },
-  agreeText: { fontSize: 13, color: GRAY, flex: 1 },
+  agreeText: { fontSize: 13, flex: 1 },
 
   footer: {
     position: "absolute",
@@ -271,15 +263,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 12,
     paddingBottom: Platform.OS === "ios" ? 34 : 20,
-    backgroundColor: BG,
     borderTopWidth: 1,
-    borderTopColor: BORDER,
   },
   payBtn: {
-    backgroundColor: BRAND,
     borderRadius: 50,
     paddingVertical: 17,
     alignItems: "center",
   },
-  payBtnText: { color: "#FFFFFF", fontSize: 16, fontWeight: "700" },
+  payBtnText: { fontSize: 16, fontWeight: "700" },
 });

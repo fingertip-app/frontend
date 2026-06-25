@@ -21,13 +21,7 @@ import { MasterHeader } from "../components/MasterHeader";
 import { useExperienceManagement } from "./useExperienceManagement";
 import { getMyArtisan } from "@/features/artisans/api/artisanApi";
 import { deleteExperience } from "@/features/experiences/api/experiencesApi";
-
-// ─── 팔레트 ────────────────────────────────────────────────────────────────────
-const BRAND = "#3B2B26";
-const BG = "#F5F4F0";
-const CARD = "#FFFFFF";
-const GRAY = "#8A8077";
-const BORDER = "#EAE6E1";
+import { useTheme } from "@/theme/ThemeContext";
 
 export function MasterExperienceScreen({
   onMenuPress,
@@ -37,6 +31,7 @@ export function MasterExperienceScreen({
   onNotificationPress?: () => void;
 }) {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { colors } = useTheme();
   const { data, isLoading, error, reload } = useExperienceManagement();
   const experiences = data?.experiences ?? [];
 
@@ -100,7 +95,7 @@ export function MasterExperienceScreen({
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.bg }]}>
       {/* ── 공통 상단바 및 서랍 ── */}
       <MasterHeader activeItem="체험관리" hasNotification={true} />
 
@@ -111,32 +106,32 @@ export function MasterExperienceScreen({
       >
         {/* ── 요약 통계 2칸 ── */}
         <View style={styles.statsRow}>
-          <View style={[styles.statCard, { marginRight: 8 }]}>
-            <Text style={styles.statLabel}>운영 승인 체험</Text>
-            <Text style={styles.statValue}>{data?.activeExperienceCount ?? 0}</Text>
+          <View style={[styles.statCard, { backgroundColor: colors.card, borderColor: colors.border, marginRight: 8 }]}>
+            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>운영 승인 체험</Text>
+            <Text style={[styles.statValue, { color: colors.text }]}>{data?.activeExperienceCount ?? 0}</Text>
           </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statLabel}>총 후기 수</Text>
-            <Text style={styles.statValue}>{data?.reviewCount ?? 0}</Text>
+          <View style={[styles.statCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>총 후기 수</Text>
+            <Text style={[styles.statValue, { color: colors.text }]}>{data?.reviewCount ?? 0}</Text>
           </View>
         </View>
 
         {/* ── 나의 체험 목록 헤더 ── */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>나의 체험 목록</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>나의 체험 목록</Text>
         </View>
 
-        {isLoading && <ActivityIndicator size="large" color={BRAND} style={{ marginTop: 20 }} />}
+        {isLoading && <ActivityIndicator size="large" color={colors.accent} style={{ marginTop: 20 }} />}
 
         {!isLoading && experiences.length === 0 && (
-          <Text style={{ color: GRAY, textAlign: "center", marginTop: 20 }}>
+          <Text style={{ color: colors.textSecondary, textAlign: "center", marginTop: 20 }}>
             등록된 체험이 없습니다. 새 체험을 등록해보세요.
           </Text>
         )}
 
         {/* ── 체험 카드 목록 ── */}
         {!isLoading && experiences.map((item) => (
-          <View key={item.id} style={styles.experienceCard}>
+          <View key={item.id} style={[styles.experienceCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
             {/* 이미지 + ACTIVE 뱃지 */}
             <View style={styles.imageWrapper}>
               <Image
@@ -147,10 +142,10 @@ export function MasterExperienceScreen({
               <View
                 style={[
                   styles.statusBadge,
-                  item.active ? styles.badgeActive : styles.badgeInactive,
+                  { backgroundColor: item.active ? colors.text : "rgba(90,75,68,0.75)" },
                 ]}
               >
-                <Text style={styles.badgeText}>{item.statusLabel}</Text>
+                <Text style={[styles.badgeText, { color: colors.bg }]}>{item.statusLabel}</Text>
               </View>
             </View>
 
@@ -158,16 +153,16 @@ export function MasterExperienceScreen({
             <View style={styles.cardBody}>
               {/* 제목 + 더보기 */}
               <View style={styles.cardTitleRow}>
-                <Text style={styles.cardTitle} numberOfLines={1}>
+                <Text style={[styles.cardTitle, { color: colors.text }]} numberOfLines={1}>
                   {item.title}
                 </Text>
                 <TouchableOpacity hitSlop={8} onPress={() => handleMorePress(item.id)}>
-                  <Ionicons name="ellipsis-vertical" size={18} color={GRAY} />
+                  <Ionicons name="ellipsis-vertical" size={18} color={colors.textSecondary} />
                 </TouchableOpacity>
               </View>
 
               {/* 예약 건수 · 평점 */}
-              <Text style={styles.cardMeta}>
+              <Text style={[styles.cardMeta, { color: colors.textSecondary }]}>
                 {item.bookings > 0
                   ? `예약 ${item.bookings}건 | 평점 ${item.rating}`
                   : `최근 진행 없음 | 평점 ${item.rating}`}
@@ -183,19 +178,19 @@ export function MasterExperienceScreen({
                       navigation.navigate("MasterExperienceCreate", { experienceId: item.id })
                     }
                   >
-                    <Ionicons name="pencil-outline" size={14} color={GRAY} />
-                    <Text style={styles.actionBtnText}>수정</Text>
+                    <Ionicons name="pencil-outline" size={14} color={colors.textSecondary} />
+                    <Text style={[styles.actionBtnText, { color: colors.textSecondary }]}>수정</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.actionBtn} hitSlop={6} onPress={handleComingSoon}>
-                    <Ionicons name="eye-outline" size={14} color={GRAY} />
-                    <Text style={styles.actionBtnText}>상세</Text>
+                    <Ionicons name="eye-outline" size={14} color={colors.textSecondary} />
+                    <Text style={[styles.actionBtnText, { color: colors.textSecondary }]}>상세</Text>
                   </TouchableOpacity>
                 </View>
                 <Switch
                   value={item.active}
                   onValueChange={() => toggleActive(item.id)}
-                  trackColor={{ false: "#D1CBC4", true: BRAND }}
-                  thumbColor={CARD}
+                  trackColor={{ false: "#D1CBC4", true: colors.text }}
+                  thumbColor={colors.card}
                   ios_backgroundColor="#D1CBC4"
                   style={Platform.OS === "android" ? { transform: [{ scaleX: 0.9 }, { scaleY: 0.9 }] } : undefined}
                 />
@@ -209,12 +204,12 @@ export function MasterExperienceScreen({
 
       {/* ── 새 체험 등록 FAB ── */}
       <TouchableOpacity
-        style={styles.fab}
+        style={[styles.fab, { backgroundColor: colors.text, shadowColor: colors.text }]}
         activeOpacity={0.85}
         onPress={() => navigation.navigate("Step1BasicInfo")}
       >
-        <Ionicons name="add" size={16} color="#FFF" />
-        <Text style={styles.fabText}>새체험 등록</Text>
+        <Ionicons name="add" size={16} color={colors.bg} />
+        <Text style={[styles.fabText, { color: colors.bg }]}>새체험 등록</Text>
       </TouchableOpacity>
 
       {/* ── 하단 탭 바 ── */}
@@ -225,7 +220,7 @@ export function MasterExperienceScreen({
 
 // ─── 스타일 ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: BG },
+  safeArea: { flex: 1 },
 
   scrollContent: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 40 },
 
@@ -233,15 +228,13 @@ const styles = StyleSheet.create({
   statsRow: { flexDirection: "row", marginBottom: 28 },
   statCard: {
     flex: 1,
-    backgroundColor: CARD,
     borderRadius: 14,
     paddingVertical: 16,
     paddingHorizontal: 18,
     borderWidth: 1,
-    borderColor: BORDER,
   },
-  statLabel: { fontSize: 13, color: GRAY, fontWeight: "500", marginBottom: 6 },
-  statValue: { fontSize: 28, fontWeight: "800", color: BRAND },
+  statLabel: { fontSize: 13, fontWeight: "500", marginBottom: 6 },
+  statValue: { fontSize: 28, fontWeight: "800" },
 
   // 섹션 헤더
   sectionHeader: {
@@ -250,17 +243,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 16,
   },
-  sectionTitle: { fontSize: 18, fontWeight: "700", color: BRAND },
-  moreLink: { fontSize: 13, color: GRAY },
+  sectionTitle: { fontSize: 18, fontWeight: "700" },
+  moreLink: { fontSize: 13 },
 
   // 체험 카드
   experienceCard: {
-    backgroundColor: CARD,
     borderRadius: 16,
     marginBottom: 20,
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: BORDER,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
@@ -279,9 +270,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 6,
   },
-  badgeActive: { backgroundColor: BRAND },
-  badgeInactive: { backgroundColor: "rgba(90,75,68,0.75)" },
-  badgeText: { fontSize: 10, fontWeight: "800", color: "#FFF", letterSpacing: 1 },
+  badgeText: { fontSize: 10, fontWeight: "800", letterSpacing: 1 },
 
   // 카드 하단
   cardBody: { padding: 14 },
@@ -291,8 +280,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 4,
   },
-  cardTitle: { fontSize: 16, fontWeight: "700", color: BRAND, flex: 1, marginRight: 8 },
-  cardMeta: { fontSize: 13, color: GRAY, marginBottom: 14 },
+  cardTitle: { fontSize: 16, fontWeight: "700", flex: 1, marginRight: 8 },
+  cardMeta: { fontSize: 13, marginBottom: 14 },
 
   // 하단 액션 행
   cardActions: {
@@ -302,7 +291,7 @@ const styles = StyleSheet.create({
   },
   cardActionsLeft: { flexDirection: "row", gap: 16 },
   actionBtn: { flexDirection: "row", alignItems: "center", gap: 4 },
-  actionBtnText: { fontSize: 13, color: GRAY, fontWeight: "500" },
+  actionBtnText: { fontSize: 13, fontWeight: "500" },
 
   // FAB
   fab: {
@@ -312,16 +301,14 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    backgroundColor: BRAND,
     paddingHorizontal: 18,
     paddingVertical: 13,
     borderRadius: 50,
-    shadowColor: BRAND,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.35,
     shadowRadius: 10,
     elevation: 6,
   },
-  fabText: { color: "#FFF", fontSize: 14, fontWeight: "700" },
+  fabText: { fontSize: 14, fontWeight: "700" },
 
 });

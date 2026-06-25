@@ -61,6 +61,7 @@ import { MasterTodayStatusScreen } from "@/features/master/todayStatus/MasterTod
 import { MasterProfileScreen } from "@/features/master/masterProfile/MasterProfileScreen";
 import { NotificationsScreen } from "@/features/notifications/NotificationsScreen";
 import { QrScannerScreen } from "@/features/master/qrScanner/QrScannerScreen";
+import { useTheme } from "@/theme/ThemeContext";
 
 export type CardNews = {
   id: string;
@@ -171,15 +172,17 @@ const Tab = createBottomTabNavigator<MainTabParamList>();
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 function MainTabs() {
+  const { colors } = useTheme();
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarActiveTintColor: "#3B2B26",
-        tabBarInactiveTintColor: "#A39B92",
+        tabBarActiveTintColor: colors.accent,
+        tabBarInactiveTintColor: colors.textSecondary,
         tabBarStyle: {
-          backgroundColor: "#FAF9F6",
-          borderTopColor: "#EAE6E1",
+          backgroundColor: colors.card,
+          borderTopColor: colors.border,
           height: 64,
           paddingBottom: 10,
           paddingTop: 8,
@@ -211,6 +214,7 @@ function MainTabs() {
 }
 
 export function RootNavigator() {
+  const { colors } = useTheme();
   const [initialRoute, setInitialRoute] = useState<keyof RootStackParamList>("Login");
   const [isReady, setIsReady] = useState(false);
 
@@ -230,8 +234,8 @@ export function RootNavigator() {
 
   if (!isReady) {
     return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#F5F4F0" }}>
-        <ActivityIndicator size="large" color="#3B2B26" />
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: colors.bg }}>
+        <ActivityIndicator size="large" color={colors.accent} />
       </View>
     );
   }

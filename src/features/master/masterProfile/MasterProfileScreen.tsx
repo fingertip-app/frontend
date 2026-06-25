@@ -17,14 +17,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { RootStackParamList } from "@/navigation/RootNavigator";
 import { logout } from "@/features/auth/api/authApi";
 import { useMasterAccount } from "@/features/master/hooks/useMasterAccount";
+import { useTheme } from "@/theme/ThemeContext";
 
-const BRAND = "#3B2B26";
-const BG = "#F5F4F0";
-const CARD = "#FFFFFF";
-const GRAY = "#8A8077";
-const BORDER = "#EAE6E1";
-const ACCENT = "#7C5C52";
-const ACCENT_LIGHT = "#F2EBE8";
 const GREEN = "#2D7D5A";
 const GREEN_BG = "#E8F5EF";
 
@@ -40,16 +34,17 @@ interface SectionHeaderProps {
   title: string;
 }
 function SectionHeader({ icon, title }: SectionHeaderProps) {
+  const { colors } = useTheme();
   return (
     <View style={sh.row}>
-      <Ionicons name={icon as any} size={15} color={GRAY} style={{ marginRight: 6 }} />
-      <Text style={sh.title}>{title}</Text>
+      <Ionicons name={icon as any} size={15} color={colors.textSecondary} style={{ marginRight: 6 }} />
+      <Text style={[sh.title, { color: colors.textSecondary }]}>{title}</Text>
     </View>
   );
 }
 const sh = StyleSheet.create({
   row: { flexDirection: "row", alignItems: "center", marginBottom: 14, marginTop: 4 },
-  title: { fontSize: 12, fontWeight: "700", color: GRAY, letterSpacing: 0.8, textTransform: "uppercase" },
+  title: { fontSize: 12, fontWeight: "700", letterSpacing: 0.8, textTransform: "uppercase" },
 });
 
 // ── 인풋 필드 ───────────────────────────────────────────
@@ -64,41 +59,42 @@ interface FieldProps {
   note?: string;
 }
 function Field({ label, value, onChange, editing, multiline, placeholder, maxLength, note }: FieldProps) {
+  const { colors } = useTheme();
   return (
     <View style={f.wrap}>
       <View style={f.labelRow}>
-        <Text style={f.label}>{label}</Text>
+        <Text style={[f.label, { color: colors.textSecondary }]}>{label}</Text>
         {maxLength && editing && (
-          <Text style={f.counter}>{value.length}/{maxLength}</Text>
+          <Text style={[f.counter, { color: colors.textSecondary }]}>{value.length}/{maxLength}</Text>
         )}
       </View>
       {editing ? (
         <TextInput
-          style={[f.input, multiline && f.textarea]}
+          style={[f.input, multiline && f.textarea, { borderColor: colors.border, color: colors.text, backgroundColor: colors.bg }]}
           value={value}
           onChangeText={onChange}
           multiline={multiline}
           textAlignVertical={multiline ? "top" : "center"}
           placeholder={placeholder}
-          placeholderTextColor="#C2BAB3"
+          placeholderTextColor={colors.textSecondary}
           maxLength={maxLength}
         />
       ) : (
-        <Text style={[f.value, multiline && { lineHeight: 22 }]}>{value || <Text style={{ color: "#C2BAB3" }}>{placeholder}</Text>}</Text>
+        <Text style={[f.value, { color: colors.text }, multiline && { lineHeight: 22 }]}>{value || <Text style={{ color: colors.textSecondary }}>{placeholder}</Text>}</Text>
       )}
-      {note && <Text style={f.note}>{note}</Text>}
+      {note && <Text style={[f.note, { color: colors.textSecondary }]}>{note}</Text>}
     </View>
   );
 }
 const f = StyleSheet.create({
   wrap: { marginBottom: 20 },
   labelRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 7 },
-  label: { fontSize: 12, fontWeight: "600", color: GRAY, letterSpacing: 0.3 },
-  counter: { fontSize: 11, color: "#C2BAB3" },
-  input: { borderWidth: 1, borderColor: BORDER, borderRadius: 10, paddingHorizontal: 13, paddingVertical: 11, fontSize: 15, color: BRAND, backgroundColor: "#FAF9F6" },
+  label: { fontSize: 12, fontWeight: "600", letterSpacing: 0.3 },
+  counter: { fontSize: 11 },
+  input: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 13, paddingVertical: 11, fontSize: 15 },
   textarea: { minHeight: 90, paddingTop: 12 },
-  value: { fontSize: 15, color: BRAND, fontWeight: "400", paddingVertical: 2 },
-  note: { fontSize: 11, color: "#C2BAB3", marginTop: 5 },
+  value: { fontSize: 15, fontWeight: "400", paddingVertical: 2 },
+  note: { fontSize: 11, marginTop: 5 },
 });
 
 // ── 태그 입력 ────────────────────────────────────────────
@@ -109,28 +105,29 @@ interface TagFieldProps {
   onRemove: (tag: string) => void;
 }
 function TagField({ tags, editing, onAdd, onRemove }: TagFieldProps) {
+  const { colors } = useTheme();
   const [draft, setDraft] = useState("");
   return (
     <View style={t.wrap}>
       <View style={t.tags}>
         {tags.map((tag) => (
-          <View key={tag} style={t.tag}>
-            <Text style={t.tagText}>{tag}</Text>
+          <View key={tag} style={[t.tag, { backgroundColor: colors.border }]}>
+            <Text style={[t.tagText, { color: colors.accent }]}>{tag}</Text>
             {editing && (
               <TouchableOpacity onPress={() => onRemove(tag)} hitSlop={8}>
-                <Ionicons name="close" size={12} color={ACCENT} />
+                <Ionicons name="close" size={12} color={colors.accent} />
               </TouchableOpacity>
             )}
           </View>
         ))}
         {editing && (
-          <View style={t.inputWrap}>
+          <View style={[t.inputWrap, { borderColor: colors.border }]}>
             <TextInput
-              style={t.input}
+              style={[t.input, { color: colors.text }]}
               value={draft}
               onChangeText={setDraft}
               placeholder="+ 태그 추가"
-              placeholderTextColor="#C2BAB3"
+              placeholderTextColor={colors.textSecondary}
               onSubmitEditing={() => {
                 if (draft.trim()) { onAdd(draft.trim()); setDraft(""); }
               }}
@@ -145,10 +142,10 @@ function TagField({ tags, editing, onAdd, onRemove }: TagFieldProps) {
 const t = StyleSheet.create({
   wrap: { marginBottom: 20 },
   tags: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  tag: { flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: ACCENT_LIGHT, paddingHorizontal: 11, paddingVertical: 6, borderRadius: 20 },
-  tagText: { fontSize: 13, color: ACCENT, fontWeight: "500" },
-  inputWrap: { borderWidth: 1, borderColor: BORDER, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 5 },
-  input: { fontSize: 13, color: BRAND, minWidth: 80 },
+  tag: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 11, paddingVertical: 6, borderRadius: 20 },
+  tagText: { fontSize: 13, fontWeight: "500" },
+  inputWrap: { borderWidth: 1, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 5 },
+  input: { fontSize: 13, minWidth: 80 },
 });
 
 // ── SNS 링크 행 ──────────────────────────────────────────
@@ -160,28 +157,29 @@ interface SnsRowProps {
   editing: boolean;
 }
 function SnsRow({ icon, placeholder, value, onChange, editing }: SnsRowProps) {
+  const { colors } = useTheme();
   return (
-    <View style={sn.row}>
-      <Ionicons name={icon as any} size={18} color={GRAY} style={{ marginRight: 10 }} />
+    <View style={[sn.row, { borderBottomColor: colors.border }]}>
+      <Ionicons name={icon as any} size={18} color={colors.textSecondary} style={{ marginRight: 10 }} />
       {editing ? (
         <TextInput
-          style={sn.input}
+          style={[sn.input, { color: colors.text }]}
           value={value}
           onChangeText={onChange}
           placeholder={placeholder}
-          placeholderTextColor="#C2BAB3"
+          placeholderTextColor={colors.textSecondary}
           autoCapitalize="none"
         />
       ) : (
-        <Text style={[sn.value, !value && { color: "#C2BAB3" }]}>{value || placeholder}</Text>
+        <Text style={[sn.value, { color: value ? colors.text : colors.textSecondary }]}>{value || placeholder}</Text>
       )}
     </View>
   );
 }
 const sn = StyleSheet.create({
-  row: { flexDirection: "row", alignItems: "center", paddingVertical: 11, borderBottomWidth: 1, borderBottomColor: BORDER },
-  input: { flex: 1, fontSize: 14, color: BRAND },
-  value: { flex: 1, fontSize: 14, color: BRAND },
+  row: { flexDirection: "row", alignItems: "center", paddingVertical: 11, borderBottomWidth: 1 },
+  input: { flex: 1, fontSize: 14 },
+  value: { flex: 1, fontSize: 14 },
 });
 
 // ── 설정 토글 행 ─────────────────────────────────────────
@@ -194,36 +192,38 @@ interface ToggleRowProps {
   disabled?: boolean;
 }
 function ToggleRow({ icon, label, sub, value, onChange, disabled }: ToggleRowProps) {
+  const { colors } = useTheme();
   return (
     <View style={tr.row}>
-      <View style={tr.icon}>
-        <Ionicons name={icon as any} size={17} color={ACCENT} />
+      <View style={[tr.icon, { backgroundColor: colors.border }]}>
+        <Ionicons name={icon as any} size={17} color={colors.accent} />
       </View>
       <View style={{ flex: 1 }}>
-        <Text style={tr.label}>{label}</Text>
-        {sub && <Text style={tr.sub}>{sub}</Text>}
+        <Text style={[tr.label, { color: colors.text }]}>{label}</Text>
+        {sub && <Text style={[tr.sub, { color: colors.textSecondary }]}>{sub}</Text>}
       </View>
       <Switch
         value={value}
         onValueChange={onChange}
         disabled={disabled}
-        trackColor={{ false: BORDER, true: ACCENT }}
-        thumbColor={CARD}
-        ios_backgroundColor={BORDER}
+        trackColor={{ false: colors.border, true: colors.accent }}
+        thumbColor={colors.card}
+        ios_backgroundColor={colors.border}
       />
     </View>
   );
 }
 const tr = StyleSheet.create({
   row: { flexDirection: "row", alignItems: "center", paddingVertical: 12, gap: 12 },
-  icon: { width: 34, height: 34, borderRadius: 10, backgroundColor: ACCENT_LIGHT, justifyContent: "center", alignItems: "center" },
-  label: { fontSize: 14, fontWeight: "500", color: BRAND },
-  sub: { fontSize: 12, color: GRAY, marginTop: 2 },
+  icon: { width: 34, height: 34, borderRadius: 10, justifyContent: "center", alignItems: "center" },
+  label: { fontSize: 14, fontWeight: "500" },
+  sub: { fontSize: 12, marginTop: 2 },
 });
 
 // ── 메인 화면 ────────────────────────────────────────────
 export function MasterProfileScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { colors } = useTheme();
   const [isEditing, setIsEditing] = useState(false);
   const { data, error, reload } = useMasterAccount();
 
@@ -287,18 +287,18 @@ export function MasterProfileScreen() {
   };
 
   return (
-    <SafeAreaView style={s.safeArea}>
+    <SafeAreaView style={[s.safeArea, { backgroundColor: colors.bg }]}>
       {/* ── 헤더 ── */}
-      <View style={s.header}>
+      <View style={[s.header, { backgroundColor: colors.bg, borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={10} style={s.headerSide}>
-          <Ionicons name="arrow-back" size={22} color={BRAND} />
+          <Ionicons name="arrow-back" size={22} color={colors.text} />
         </TouchableOpacity>
-        <Text style={s.headerTitle}>장인 프로필</Text>
+        <Text style={[s.headerTitle, { color: colors.text }]}>장인 프로필</Text>
         <View style={s.headerSide}>
           {isEditing ? (
             <View style={{ flexDirection: "row", gap: 12 }}>
               <TouchableOpacity onPress={handleCancel} hitSlop={8}>
-                <Text style={s.cancelBtn}>취소</Text>
+                <Text style={[s.cancelBtn, { color: colors.textSecondary }]}>취소</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={handleSave} hitSlop={8}>
                 <Text style={s.saveBtn}>저장</Text>
@@ -308,10 +308,10 @@ export function MasterProfileScreen() {
             <TouchableOpacity
               onPress={handleUnsupportedEdit}
               hitSlop={10}
-              style={s.editBtnWrap}
+              style={[s.editBtnWrap, { backgroundColor: colors.border }]}
             >
-              <Ionicons name="pencil" size={14} color={ACCENT} />
-              <Text style={s.editBtn}>수정</Text>
+              <Ionicons name="pencil" size={14} color={colors.accent} />
+              <Text style={[s.editBtn, { color: colors.accent }]}>수정</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -324,17 +324,17 @@ export function MasterProfileScreen() {
           <View style={s.imageWrap}>
             <Image
               source={{ uri: data?.profile.imageUrl }}
-              style={s.profileImage}
+              style={[s.profileImage, { backgroundColor: colors.border, borderColor: colors.card }]}
             />
             {isEditing && (
-              <TouchableOpacity style={s.cameraBtn} activeOpacity={0.8} onPress={handleComingSoon}>
-                <Ionicons name="camera" size={16} color={CARD} />
+              <TouchableOpacity style={[s.cameraBtn, { backgroundColor: colors.text, borderColor: colors.bg }]} activeOpacity={0.8} onPress={handleComingSoon}>
+                <Ionicons name="camera" size={16} color={colors.bg} />
               </TouchableOpacity>
             )}
           </View>
           <View style={{ alignItems: "center", marginTop: 14 }}>
-            <Text style={s.heroName}>{name}</Text>
-            <Text style={s.heroDesc}>{desc}</Text>
+            <Text style={[s.heroName, { color: colors.text }]}>{name}</Text>
+            <Text style={[s.heroDesc, { color: colors.textSecondary }]}>{desc}</Text>
             <View style={s.heroBadgeRow}>
               <View style={s.badge}>
                 <Ionicons name="shield-checkmark" size={12} color={GREEN} />
@@ -343,15 +343,15 @@ export function MasterProfileScreen() {
                 </Text>
               </View>
               {location ? (
-                <View style={[s.badge, { backgroundColor: ACCENT_LIGHT }]}>
-                  <Ionicons name="location" size={12} color={ACCENT} />
-                  <Text style={[s.badgeText, { color: ACCENT }]}>{location}</Text>
+                <View style={[s.badge, { backgroundColor: colors.border }]}>
+                  <Ionicons name="location" size={12} color={colors.accent} />
+                  <Text style={[s.badgeText, { color: colors.accent }]}>{location}</Text>
                 </View>
               ) : null}
               {career ? (
-                <View style={[s.badge, { backgroundColor: "#F0EBE8" }]}>
-                  <Ionicons name="time" size={12} color={GRAY} />
-                  <Text style={[s.badgeText, { color: GRAY }]}>{career}</Text>
+                <View style={[s.badge, { backgroundColor: colors.border }]}>
+                  <Ionicons name="time" size={12} color={colors.textSecondary} />
+                  <Text style={[s.badgeText, { color: colors.textSecondary }]}>{career}</Text>
                 </View>
               ) : null}
             </View>
@@ -359,7 +359,7 @@ export function MasterProfileScreen() {
         </View>
 
         {/* ── 기본 정보 ── */}
-        <View style={s.card}>
+        <View style={[s.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <SectionHeader icon="person-outline" title="기본 정보" />
           <Field label="이름 (또는 공방명)" value={name} onChange={setName} editing={isEditing} placeholder="이름을 입력하세요" maxLength={20} />
           <Field label="타이틀 (분야 및 자격)" value={desc} onChange={setDesc} editing={isEditing} placeholder="예: 국가무형문화재 제105호 도예" maxLength={40} />
@@ -367,7 +367,7 @@ export function MasterProfileScreen() {
           <Field label="경력" value={career} onChange={setCareer} editing={isEditing} placeholder="예: 25년 경력" />
           <View style={{ marginBottom: 4 }}>
             <View style={f.labelRow}>
-              <Text style={f.label}>전문 분야 태그</Text>
+              <Text style={[f.label, { color: colors.textSecondary }]}>전문 분야 태그</Text>
             </View>
             <TagField
               tags={tags}
@@ -379,7 +379,7 @@ export function MasterProfileScreen() {
         </View>
 
         {/* ── 소개글 ── */}
-        <View style={s.card}>
+        <View style={[s.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <SectionHeader icon="document-text-outline" title="소개글" />
           <Field
             label="나의 공방 소개"
@@ -394,7 +394,7 @@ export function MasterProfileScreen() {
         </View>
 
         {/* ── SNS / 링크 ── */}
-        <View style={s.card}>
+        <View style={[s.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <SectionHeader icon="link-outline" title="SNS / 링크" />
           <SnsRow icon="logo-instagram" placeholder="인스타그램 계정" value={instagram} onChange={setInstagram} editing={isEditing} />
           <SnsRow icon="logo-youtube" placeholder="유튜브 채널 링크" value={youtube} onChange={setYoutube} editing={isEditing} />
@@ -402,7 +402,7 @@ export function MasterProfileScreen() {
         </View>
 
         {/* ── 예약 설정 ── */}
-        <View style={s.card}>
+        <View style={[s.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <SectionHeader icon="settings-outline" title="예약 설정" />
           <ToggleRow
             icon="calendar-outline"
@@ -412,7 +412,7 @@ export function MasterProfileScreen() {
             onChange={setOpenToBooking}
             disabled
           />
-          <View style={s.divider} />
+          <View style={[s.divider, { backgroundColor: colors.border }]} />
           <ToggleRow
             icon="star-outline"
             label="후기 공개"
@@ -421,7 +421,7 @@ export function MasterProfileScreen() {
             onChange={setShowReviews}
             disabled
           />
-          <View style={s.divider} />
+          <View style={[s.divider, { backgroundColor: colors.border }]} />
           <ToggleRow
             icon="people-outline"
             label="초보자 환영"
@@ -433,7 +433,7 @@ export function MasterProfileScreen() {
         </View>
 
         {/* ── 통계 (읽기 전용) ── */}
-        <View style={s.card}>
+        <View style={[s.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <SectionHeader icon="bar-chart-outline" title="내 활동 통계" />
           <View style={s.statGrid}>
             {[
@@ -442,27 +442,27 @@ export function MasterProfileScreen() {
               { label: "평균 평점", value: `★ ${(data?.stats.averageRating ?? 0).toFixed(1)}` },
               { label: "응답률", value: "-" },
             ].map((item) => (
-              <View key={item.label} style={s.statItem}>
-                <Text style={s.statValue}>{item.value}</Text>
-                <Text style={s.statLabel}>{item.label}</Text>
+              <View key={item.label} style={[s.statItem, { backgroundColor: colors.bg }]}>
+                <Text style={[s.statValue, { color: colors.text }]}>{item.value}</Text>
+                <Text style={[s.statLabel, { color: colors.textSecondary }]}>{item.label}</Text>
               </View>
             ))}
           </View>
         </View>
 
         {/* ── 계정 관리 ── */}
-        <View style={s.card}>
+        <View style={[s.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <SectionHeader icon="shield-outline" title="계정" />
           {ACCOUNT_MENU_ITEMS.map((item, i, arr) => (
             <View key={item.label}>
               <TouchableOpacity style={s.menuRow} activeOpacity={0.6} onPress={handleComingSoon}>
-                <View style={s.menuIcon}>
-                  <Ionicons name={item.icon} size={17} color={ACCENT} />
+                <View style={[s.menuIcon, { backgroundColor: colors.border }]}>
+                  <Ionicons name={item.icon} size={17} color={colors.accent} />
                 </View>
-                <Text style={s.menuLabel}>{item.label}</Text>
-                <Ionicons name="chevron-forward" size={16} color={BORDER} />
+                <Text style={[s.menuLabel, { color: colors.text }]}>{item.label}</Text>
+                <Ionicons name="chevron-forward" size={16} color={colors.border} />
               </TouchableOpacity>
-              {i < arr.length - 1 && <View style={s.divider} />}
+              {i < arr.length - 1 && <View style={[s.divider, { backgroundColor: colors.border }]} />}
             </View>
           ))}
         </View>
@@ -478,55 +478,55 @@ export function MasterProfileScreen() {
 }
 
 const s = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: BG },
+  safeArea: { flex: 1 },
 
   header: {
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
     paddingHorizontal: 20, paddingVertical: 13,
-    backgroundColor: BG, borderBottomWidth: 1, borderBottomColor: BORDER,
+    borderBottomWidth: 1,
   },
-  headerTitle: { fontSize: 16, fontWeight: "700", color: BRAND },
+  headerTitle: { fontSize: 16, fontWeight: "700" },
   headerSide: { minWidth: 60, alignItems: "flex-end" },
-  editBtnWrap: { flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: ACCENT_LIGHT, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
-  editBtn: { fontSize: 13, fontWeight: "600", color: ACCENT },
+  editBtnWrap: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
+  editBtn: { fontSize: 13, fontWeight: "600" },
   saveBtn: { fontSize: 14, fontWeight: "700", color: GREEN },
-  cancelBtn: { fontSize: 14, fontWeight: "500", color: GRAY },
+  cancelBtn: { fontSize: 14, fontWeight: "500" },
 
   scroll: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 20 },
 
   heroSection: { alignItems: "center", paddingVertical: 28 },
   imageWrap: { position: "relative" },
-  profileImage: { width: 96, height: 96, borderRadius: 48, backgroundColor: BORDER, borderWidth: 3, borderColor: CARD },
+  profileImage: { width: 96, height: 96, borderRadius: 48, borderWidth: 3 },
   cameraBtn: {
     position: "absolute", bottom: 0, right: 0,
     width: 30, height: 30, borderRadius: 15,
-    backgroundColor: BRAND, justifyContent: "center", alignItems: "center",
-    borderWidth: 2, borderColor: BG,
+    justifyContent: "center", alignItems: "center",
+    borderWidth: 2,
   },
-  heroName: { fontSize: 20, fontWeight: "700", color: BRAND, marginBottom: 4 },
-  heroDesc: { fontSize: 13, color: GRAY, marginBottom: 10 },
+  heroName: { fontSize: 20, fontWeight: "700", marginBottom: 4 },
+  heroDesc: { fontSize: 13, marginBottom: 10 },
   heroBadgeRow: { flexDirection: "row", gap: 8, flexWrap: "wrap", justifyContent: "center" },
   badge: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: GREEN_BG, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20 },
   badgeText: { fontSize: 12, fontWeight: "600", color: GREEN },
 
   card: {
-    backgroundColor: CARD, borderRadius: 16, padding: 20,
-    marginBottom: 12, borderWidth: 1, borderColor: BORDER,
+    borderRadius: 16, padding: 20,
+    marginBottom: 12, borderWidth: 1,
   },
 
-  divider: { height: 1, backgroundColor: BORDER, marginVertical: 2 },
+  divider: { height: 1, marginVertical: 2 },
 
   statGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
   statItem: {
-    flex: 1, minWidth: "44%", backgroundColor: BG,
+    flex: 1, minWidth: "44%",
     borderRadius: 12, paddingVertical: 14, paddingHorizontal: 12, alignItems: "center",
   },
-  statValue: { fontSize: 18, fontWeight: "700", color: BRAND, marginBottom: 4 },
-  statLabel: { fontSize: 12, color: GRAY },
+  statValue: { fontSize: 18, fontWeight: "700", marginBottom: 4 },
+  statLabel: { fontSize: 12 },
 
   menuRow: { flexDirection: "row", alignItems: "center", paddingVertical: 13, gap: 12 },
-  menuIcon: { width: 34, height: 34, borderRadius: 10, backgroundColor: ACCENT_LIGHT, justifyContent: "center", alignItems: "center" },
-  menuLabel: { flex: 1, fontSize: 14, fontWeight: "500", color: BRAND },
+  menuIcon: { width: 34, height: 34, borderRadius: 10, justifyContent: "center", alignItems: "center" },
+  menuLabel: { flex: 1, fontSize: 14, fontWeight: "500" },
 
   logoutBtn: { alignSelf: "center", marginTop: 8, paddingVertical: 10, paddingHorizontal: 32 },
   logoutText: { fontSize: 14, color: "#D97706", fontWeight: "500" },

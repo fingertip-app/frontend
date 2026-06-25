@@ -18,6 +18,7 @@ import { MainLayout } from "@/features/general/home/MainLayout";
 import { apiPost } from "@/services/api";
 import { MainTabParamList } from "@/navigation/RootNavigator";
 import { Experience } from "@/features/general/Search/SearchScreen";
+import { useTheme } from "@/theme/ThemeContext";
 import {
   extractInfoFromMessages,
   getNextStep,
@@ -270,36 +271,37 @@ const mapRecommendationResponse = (response: AiRecommendationResponse): Recommen
 // ─── 결과 카드 ─────────────────────────────────────────────────────────────────
 function ResultCard({ item, onPress }: { item: RecommendationCard; onPress: () => void }) {
   const [liked, setLiked] = useState(false);
+  const { colors } = useTheme();
   return (
-    <TouchableOpacity style={s.resultCard} activeOpacity={0.9} onPress={onPress}>
+    <TouchableOpacity style={[s.resultCard, { backgroundColor: colors.card }]} activeOpacity={0.9} onPress={onPress}>
       <Image source={{ uri: item.imageUri }} style={s.resultImage} resizeMode="cover" />
-      <View style={[s.reasonBadge, { flexDirection: "row", alignItems: "center", gap: 4 }]}>
-        <Ionicons name="sparkles-outline" size={12} color={s.reasonText.color as string} />
-        <Text style={s.reasonText}>{item.reason}</Text>
+      <View style={[s.reasonBadge, { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: colors.text }]}>
+        <Ionicons name="sparkles-outline" size={12} color={colors.bg} />
+        <Text style={[s.reasonText, { color: colors.bg }]}>{item.reason}</Text>
       </View>
       <View style={s.resultInfo}>
         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
           <View style={{ flex: 1 }}>
-            <Text style={s.resultCategory}>{item.category}</Text>
-            <Text style={s.resultTitle} numberOfLines={2}>{item.title}</Text>
+            <Text style={[s.resultCategory, { color: colors.accent }]}>{item.category}</Text>
+            <Text style={[s.resultTitle, { color: colors.text }]} numberOfLines={2}>{item.title}</Text>
           </View>
           <TouchableOpacity onPress={() => setLiked((p) => !p)} hitSlop={8} style={{ marginLeft: 8 }}>
             <Ionicons
               name={liked ? "heart" : "heart-outline"}
               size={22}
-              color={liked ? "#EF4444" : "#D1D5DB"}
+              color={liked ? colors.accent : colors.border}
             />
           </TouchableOpacity>
         </View>
         <View style={{ flexDirection: "row", alignItems: "center", marginTop: 6, gap: 4 }}>
-          <Ionicons name="star" size={13} color="#F59E0B" />
-          <Text style={{ fontSize: 13, fontWeight: "700", color: TEXT_MAIN }}>{item.rating}</Text>
-          <Text style={{ fontSize: 12, color: TEXT_SUB }}>({item.reviewCount})</Text>
-          <Text style={{ color: "#DDD8D0", marginHorizontal: 4 }}>·</Text>
-          <Ionicons name="location-outline" size={12} color={TEXT_SUB} />
-          <Text style={{ fontSize: 12, color: TEXT_SUB }}>{item.location}</Text>
+          <Ionicons name="star" size={13} color={colors.gold} />
+          <Text style={{ fontSize: 13, fontWeight: "700", color: colors.text }}>{item.rating}</Text>
+          <Text style={{ fontSize: 12, color: colors.textSecondary }}>({item.reviewCount})</Text>
+          <Text style={{ color: colors.border, marginHorizontal: 4 }}>·</Text>
+          <Ionicons name="location-outline" size={12} color={colors.textSecondary} />
+          <Text style={{ fontSize: 12, color: colors.textSecondary }}>{item.location}</Text>
         </View>
-        <Text style={s.resultPrice}>{item.price.toLocaleString()}원~</Text>
+        <Text style={[s.resultPrice, { color: colors.accent }]}>{item.price.toLocaleString()}원~</Text>
       </View>
     </TouchableOpacity>
   );
@@ -307,15 +309,17 @@ function ResultCard({ item, onPress }: { item: RecommendationCard; onPress: () =
 
 // ─── AI 아바타 ─────────────────────────────────────────────────────────────────
 function AIAvatar() {
+  const { colors } = useTheme();
   return (
-    <View style={s.avatar}>
-      <Text style={s.avatarText}>AI</Text>
+    <View style={[s.avatar, { backgroundColor: colors.accent }]}>
+      <Text style={[s.avatarText, { color: colors.bg }]}>AI</Text>
     </View>
   );
 }
 
 // ─── 타이핑 인디케이터 ─────────────────────────────────────────────────────────
 function TypingIndicator() {
+  const { colors } = useTheme();
   const dot1 = useRef(new Animated.Value(0)).current;
   const dot2 = useRef(new Animated.Value(0)).current;
   const dot3 = useRef(new Animated.Value(0)).current;
@@ -340,12 +344,12 @@ function TypingIndicator() {
   return (
     <View style={s.messageRow}>
       <AIAvatar />
-      <View style={[s.aiBubble, { paddingHorizontal: 16, paddingVertical: 14 }]}>
+      <View style={[s.aiBubble, { paddingHorizontal: 16, paddingVertical: 14, backgroundColor: colors.card }]}>
         <View style={{ flexDirection: "row", gap: 5, alignItems: "center" }}>
           {[dot1, dot2, dot3].map((dot, i) => (
             <Animated.View
               key={i}
-              style={[s.typingDot, { opacity: dot, transform: [{ translateY: dot.interpolate({ inputRange: [0, 1], outputRange: [0, -4] }) }] }]}
+              style={[s.typingDot, { backgroundColor: colors.border, opacity: dot, transform: [{ translateY: dot.interpolate({ inputRange: [0, 1], outputRange: [0, -4] }) }] }]}
             />
           ))}
         </View>
@@ -372,6 +376,7 @@ const toExperience = (item: RecommendationCard): Experience => ({
 // ─── 메인 스크린 ───────────────────────────────────────────────────────────────
 export function AIrecommendationScreen() {
   const navigation = useNavigation<BottomTabNavigationProp<MainTabParamList, "AIRecommend">>();
+  const { colors } = useTheme();
 
   const initialPrompt = getContextualPrompt({
     step: "companion",
@@ -565,8 +570,8 @@ export function AIrecommendationScreen() {
     if (item.role === "user") {
       return (
         <View style={[s.messageRow, s.userRow]}>
-          <View style={s.userBubble}>
-            <Text style={s.userBubbleText}>{item.text}</Text>
+          <View style={[s.userBubble, { backgroundColor: colors.accent }]}>
+            <Text style={[s.userBubbleText, { color: colors.bg }]}>{item.text}</Text>
           </View>
         </View>
       );
@@ -577,13 +582,13 @@ export function AIrecommendationScreen() {
         <View style={s.messageRow}>
           <AIAvatar />
           <View style={{ flex: 1 }}>
-            <View style={s.aiBubble}>
-              <Text style={s.aiBubbleText}>{item.text}</Text>
+            <View style={[s.aiBubble, { backgroundColor: colors.card }]}>
+              <Text style={[s.aiBubbleText, { color: colors.text }]}>{item.text}</Text>
             </View>
             {/* 추천 결과 카드 */}
             {item.showResults && (
               <View style={{ marginTop: 14 }}>
-                <Text style={[s.resultGuideText, item.isFallback && s.fallbackGuideText]}>
+                <Text style={[s.resultGuideText, { color: colors.textSecondary }, item.isFallback && { color: colors.accent, fontWeight: "600" }]}>
                   {item.resultGuide ?? (
                     item.isFallback
                       ? FALLBACK_RESULT_GUIDE
@@ -597,9 +602,19 @@ export function AIrecommendationScreen() {
                     onPress={() => navigation.navigate("Explore", { exp: toExperience(rec) })}
                   />
                 ))}
-                <TouchableOpacity style={s.resetButton} onPress={handleReset} activeOpacity={0.8}>
-                  <Ionicons name="refresh" size={15} color={TEXT_MAIN} />
-                  <Text style={s.resetButtonText}>다시 추천받기</Text>
+                {!!item.sources?.length && (
+                  <View style={[s.sourcesBox, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                    <Text style={[s.sourcesTitle, { color: colors.textSecondary }]}>출처</Text>
+                    {item.sources.map((src) => (
+                      <Text key={src.id} style={[s.sourceText, { color: colors.textSecondary }]}>
+                        · {src.name} ({src.category}) — {src.source}
+                      </Text>
+                    ))}
+                  </View>
+                )}
+                <TouchableOpacity style={[s.resetButton, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={handleReset} activeOpacity={0.8}>
+                  <Ionicons name="refresh" size={15} color={colors.text} />
+                  <Text style={[s.resetButtonText, { color: colors.text }]}>다시 추천받기</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -611,11 +626,11 @@ export function AIrecommendationScreen() {
             {item.chips.map((chip) => (
               <TouchableOpacity
                 key={chip}
-                style={s.chipOption}
+                style={[s.chipOption, { backgroundColor: colors.card, borderColor: colors.border }]}
                 onPress={() => sendMessage(chip)}
                 activeOpacity={0.75}
               >
-                <Text style={s.chipOptionText}>{chip}</Text>
+                <Text style={[s.chipOptionText, { color: colors.text }]}>{chip}</Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -627,18 +642,18 @@ export function AIrecommendationScreen() {
   return (
     <MainLayout activeItem="AI추천">
       <KeyboardAvoidingView
-        style={{ flex: 1, backgroundColor: BG }}
+        style={{ flex: 1, backgroundColor: colors.bg }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
       >
         {/* 헤더 */}
-        <View style={s.header}>
+        <View style={[s.header, { backgroundColor: colors.bg, borderBottomColor: colors.border }]}>
           <TouchableOpacity hitSlop={10}>
-            <Ionicons name="arrow-back" size={22} color={TEXT_MAIN} />
+            <Ionicons name="arrow-back" size={22} color={colors.text} />
           </TouchableOpacity>
           <View style={s.headerCenter}>
-            <View style={s.headerDot} />
-            <Text style={s.headerTitle}>AI 추천</Text>
+            <View style={[s.headerDot, { backgroundColor: colors.accentGreen }]} />
+            <Text style={[s.headerTitle, { color: colors.text }]}>AI 추천</Text>
           </View>
           <View style={{ width: 22 }} />
         </View>
@@ -656,11 +671,11 @@ export function AIrecommendationScreen() {
         />
 
         {/* 입력창 */}
-        <View style={s.inputContainer}>
+        <View style={[s.inputContainer, { backgroundColor: colors.bg, borderTopColor: colors.border }]}>
           <TextInput
-            style={s.textInput}
+            style={[s.textInput, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
             placeholder="답변하거나 자유롭게 입력..."
-            placeholderTextColor={TEXT_SUB}
+            placeholderTextColor={colors.textSecondary}
             value={inputText}
             onChangeText={setInputText}
             multiline
@@ -670,12 +685,16 @@ export function AIrecommendationScreen() {
             editable={!isTyping}
           />
           <TouchableOpacity
-            style={[s.sendBtn, (!inputText.trim() || isTyping) && s.sendBtnDisabled]}
+            style={[
+              s.sendBtn,
+              { backgroundColor: colors.accent },
+              (!inputText.trim() || isTyping) && { backgroundColor: colors.border },
+            ]}
             onPress={() => sendMessage(inputText)}
             disabled={!inputText.trim() || isTyping}
             activeOpacity={0.8}
           >
-            <Ionicons name="arrow-up" size={18} color="#FFFFFF" />
+            <Ionicons name="arrow-up" size={18} color={colors.bg} />
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -924,12 +943,31 @@ const s = StyleSheet.create({
     textAlign: "right",
   },
 
+  // 출처 목록
+  sourcesBox: {
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 12,
+    marginBottom: 14,
+  },
+  sourcesTitle: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: TEXT_SUB,
+    marginBottom: 4,
+  },
+  sourceText: {
+    fontSize: 12,
+    color: TEXT_SUB,
+    lineHeight: 18,
+  },
+
   // 다시 추천
   resetButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#EAE4DC",
+    borderWidth: 1,
     paddingVertical: 14,
     borderRadius: 14,
     marginTop: 4,

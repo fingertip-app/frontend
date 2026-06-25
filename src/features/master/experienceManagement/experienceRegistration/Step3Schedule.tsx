@@ -18,14 +18,7 @@ import {
   parseLocalDate,
   parseTimeLabel,
 } from "@/features/experiences/utils/scheduleBuilder";
-
-// ─── 팔레트 (Step1/2와 동일) ──────────────────────────────────────────────────
-const BRAND = "#3B2B26";
-const BG = "#F5F4F0";
-const CARD = "#FFFFFF";
-const GRAY = "#A89F96";
-const BORDER = "#E8E3DC";
-const PLACEHOLDER = "#C4BCB4";
+import { useTheme } from "@/theme/ThemeContext";
 
 const STEP_LABELS = ["기본 정보", "사진", "일정 등록", "가격/인원", "장소"];
 const DAYS = ["월", "화", "수", "목", "금", "토", "일"];
@@ -39,6 +32,7 @@ interface TimeSlot {
 export function Step3Schedule() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
+  const { colors } = useTheme();
   const currentStep = 3;
   const initialStartDate = useMemo(() => {
     const date = new Date();
@@ -139,15 +133,15 @@ export function Step3Schedule() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.bg }]}>
       {/* ── 헤더 바 ── */}
-      <View style={styles.headerBar}>
+      <View style={[styles.headerBar, { backgroundColor: colors.bg, borderBottomColor: colors.border }]}>
         <TouchableOpacity style={styles.closeBtn} onPress={() => navigation.goBack()}>
-          <Text style={styles.closeBtnText}>✕</Text>
+          <Text style={[styles.closeBtnText, { color: colors.text }]}>✕</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>체험 등록</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>체험 등록</Text>
         <TouchableOpacity>
-          <Text style={styles.tempSaveText}>임시 저장</Text>
+          <Text style={[styles.tempSaveText, { color: colors.textSecondary }]}>임시 저장</Text>
         </TouchableOpacity>
       </View>
 
@@ -165,17 +159,17 @@ export function Step3Schedule() {
             return (
               <View key={step} style={styles.stepWrapper}>
                 <View style={styles.stepItem}>
-                  <View style={[styles.stepCircle, isActive && styles.activeStepCircle]}>
-                    <Text style={[styles.stepNum, isActive && styles.activeStepNum]}>
+                  <View style={[styles.stepCircle, { backgroundColor: colors.border }, isActive && { backgroundColor: colors.text }]}>
+                    <Text style={[styles.stepNum, { color: isActive ? colors.bg : colors.textSecondary }]}>
                       {step}
                     </Text>
                   </View>
-                  <Text style={[styles.stepLabel, isCurrent && styles.activeStepLabel]}>
+                  <Text style={[styles.stepLabel, { color: colors.textSecondary }, isCurrent && { color: colors.text, fontWeight: "600" }]}>
                     {label}
                   </Text>
                 </View>
                 {step < 5 && (
-                  <View style={[styles.stepLine, currentStep > step && styles.activeStepLine]} />
+                  <View style={[styles.stepLine, { backgroundColor: colors.border }, currentStep > step && { backgroundColor: colors.text }]} />
                 )}
               </View>
             );
@@ -184,8 +178,8 @@ export function Step3Schedule() {
 
         {/* ── 섹션 헤더 ── */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>체험 일정을 설정해주세요</Text>
-          <Text style={styles.sectionSubtitle}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>체험 일정을 설정해주세요</Text>
+          <Text style={[styles.sectionSubtitle, { color: colors.textSecondary }]}>
             장인님의 소중한 시간이 헛되지 않도록,{"\n"}
             가능한 요일과 시간대를 명확히 설정해주세요.
           </Text>
@@ -194,29 +188,29 @@ export function Step3Schedule() {
         {/* ── 운영 기간 ── */}
         <View style={styles.block}>
           <View style={styles.blockTitleRow}>
-            <Ionicons name="calendar-number-outline" size={15} color={BRAND} />
-            <Text style={styles.blockTitle}>운영 기간</Text>
+            <Ionicons name="calendar-number-outline" size={15} color={colors.text} />
+            <Text style={[styles.blockTitle, { color: colors.text }]}>운영 기간</Text>
           </View>
           <View style={styles.dateRangeRow}>
             <View style={styles.dateInputCol}>
-              <Text style={styles.dateLabel}>시작일</Text>
+              <Text style={[styles.dateLabel, { color: colors.textSecondary }]}>시작일</Text>
               <TextInput
-                style={styles.dateInput}
+                style={[styles.dateInput, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
                 value={operationStartDate}
                 onChangeText={setOperationStartDate}
                 placeholder="YYYY-MM-DD"
-                placeholderTextColor={PLACEHOLDER}
+                placeholderTextColor={colors.textSecondary}
               />
             </View>
-            <Text style={styles.dateSeparator}>~</Text>
+            <Text style={[styles.dateSeparator, { color: colors.textSecondary }]}>~</Text>
             <View style={styles.dateInputCol}>
-              <Text style={styles.dateLabel}>종료일</Text>
+              <Text style={[styles.dateLabel, { color: colors.textSecondary }]}>종료일</Text>
               <TextInput
-                style={styles.dateInput}
+                style={[styles.dateInput, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
                 value={operationEndDate}
                 onChangeText={setOperationEndDate}
                 placeholder="YYYY-MM-DD"
-                placeholderTextColor={PLACEHOLDER}
+                placeholderTextColor={colors.textSecondary}
               />
             </View>
           </View>
@@ -225,8 +219,8 @@ export function Step3Schedule() {
         {/* ── 운영 요일 선택 ── */}
         <View style={styles.block}>
           <View style={styles.blockTitleRow}>
-            <Ionicons name="calendar-outline" size={15} color={BRAND} />
-            <Text style={styles.blockTitle}>운영 요일 선택 (중복 선택 가능)</Text>
+            <Ionicons name="calendar-outline" size={15} color={colors.text} />
+            <Text style={[styles.blockTitle, { color: colors.text }]}>운영 요일 선택 (중복 선택 가능)</Text>
           </View>
 
           <View style={styles.dayGrid}>
@@ -235,11 +229,15 @@ export function Step3Schedule() {
               return (
                 <TouchableOpacity
                   key={day}
-                  style={[styles.dayBtn, active && styles.dayBtnActive]}
+                  style={[
+                    styles.dayBtn,
+                    { backgroundColor: colors.card, borderColor: colors.border },
+                    active && { backgroundColor: colors.text, borderColor: colors.text },
+                  ]}
                   activeOpacity={0.75}
                   onPress={() => toggleDay(day)}
                 >
-                  <Text style={[styles.dayBtnText, active && styles.dayBtnTextActive]}>
+                  <Text style={[styles.dayBtnText, { color: active ? colors.bg : colors.textSecondary }]}>
                     {day}
                   </Text>
                 </TouchableOpacity>
@@ -251,49 +249,49 @@ export function Step3Schedule() {
         {/* ── 운영 시간대 ── */}
         <View style={styles.block}>
           <View style={styles.blockTitleRow}>
-            <Ionicons name="time-outline" size={15} color={BRAND} />
-            <Text style={styles.blockTitle}>운영 시간대 (타임)</Text>
-            <TouchableOpacity style={styles.addSlotBtn} onPress={handleAddSlot}>
-              <Ionicons name="add" size={14} color={BRAND} />
-              <Text style={styles.addSlotBtnText}>타임 추가</Text>
+            <Ionicons name="time-outline" size={15} color={colors.text} />
+            <Text style={[styles.blockTitle, { color: colors.text }]}>운영 시간대 (타임)</Text>
+            <TouchableOpacity style={[styles.addSlotBtn, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={handleAddSlot}>
+              <Ionicons name="add" size={14} color={colors.text} />
+              <Text style={[styles.addSlotBtnText, { color: colors.text }]}>타임 추가</Text>
             </TouchableOpacity>
           </View>
 
           <View style={styles.slotList}>
             {timeSlots.map((slot, idx) => (
-              <View key={slot.id} style={styles.slotCard}>
+              <View key={slot.id} style={[styles.slotCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 {/* 카드 헤더 */}
                 <View style={styles.slotCardHeader}>
-                  <Text style={styles.slotCardTitle}>{idx + 1}타임</Text>
+                  <Text style={[styles.slotCardTitle, { color: colors.text }]}>{idx + 1}타임</Text>
                   <TouchableOpacity
                     onPress={() => handleRemoveSlot(slot.id)}
                     hitSlop={8}
                   >
-                    <Ionicons name="trash-outline" size={17} color={GRAY} />
+                    <Ionicons name="trash-outline" size={17} color={colors.textSecondary} />
                   </TouchableOpacity>
                 </View>
 
                 {/* 시간 입력 */}
                 <View style={styles.slotTimeRow}>
                   <View style={styles.slotTimeCol}>
-                    <Text style={styles.slotTimeLabel}>시작 시간</Text>
+                    <Text style={[styles.slotTimeLabel, { color: colors.textSecondary }]}>시작 시간</Text>
                     <TextInput
-                      style={styles.slotTimeInput}
+                      style={[styles.slotTimeInput, { backgroundColor: colors.bg, color: colors.text }]}
                       value={slot.startTime}
                       onChangeText={(v) => handleUpdateSlot(slot.id, "startTime", v)}
                       placeholder="00:00 AM"
-                      placeholderTextColor={PLACEHOLDER}
+                      placeholderTextColor={colors.textSecondary}
                     />
                   </View>
-                  <View style={styles.slotTimeDivider} />
+                  <View style={[styles.slotTimeDivider, { backgroundColor: colors.border }]} />
                   <View style={styles.slotTimeCol}>
-                    <Text style={styles.slotTimeLabel}>종료 시간</Text>
+                    <Text style={[styles.slotTimeLabel, { color: colors.textSecondary }]}>종료 시간</Text>
                     <TextInput
-                      style={styles.slotTimeInput}
+                      style={[styles.slotTimeInput, { backgroundColor: colors.bg, color: colors.text }]}
                       value={slot.endTime}
                       onChangeText={(v) => handleUpdateSlot(slot.id, "endTime", v)}
                       placeholder="00:00 PM"
-                      placeholderTextColor={PLACEHOLDER}
+                      placeholderTextColor={colors.textSecondary}
                     />
                   </View>
                 </View>
@@ -303,33 +301,33 @@ export function Step3Schedule() {
         </View>
 
         {/* ── 일정 설정 팁 ── */}
-        <View style={styles.tipBox}>
+        <View style={[styles.tipBox, { backgroundColor: colors.border }]}>
           <View style={styles.tipTitleRow}>
-            <Ionicons name="location-outline" size={14} color={BRAND} />
-            <Text style={styles.tipTitle}>일정 설정 팁</Text>
+            <Ionicons name="location-outline" size={14} color={colors.text} />
+            <Text style={[styles.tipTitle, { color: colors.text }]}>일정 설정 팁</Text>
           </View>
-          <Text style={styles.tipText}>
+          <Text style={[styles.tipText, { color: colors.textSecondary }]}>
             선택한 운영 기간 동안 요일과 시간대가 조합되어 총 {scheduleCount}개의 예약 회차가 생성됩니다.
           </Text>
         </View>
       </ScrollView>
 
       {/* ── 하단 버튼 ── */}
-      <View style={styles.footer}>
+      <View style={[styles.footer, { backgroundColor: colors.bg, borderTopColor: colors.border }]}>
         <TouchableOpacity
-          style={styles.prevBtn}
+          style={[styles.prevBtn, { borderColor: colors.text }]}
           activeOpacity={0.8}
           onPress={() => navigation.goBack()}
         >
-          <Text style={styles.prevBtnText}>이전</Text>
+          <Text style={[styles.prevBtnText, { color: colors.text }]}>이전</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.nextBtn, timeSlots.length === 0 && styles.nextBtnDisabled]}
+          style={[styles.nextBtn, { backgroundColor: colors.text }, timeSlots.length === 0 && styles.nextBtnDisabled]}
           activeOpacity={0.8}
           disabled={timeSlots.length === 0}
           onPress={handleNext}
         >
-          <Text style={styles.nextBtnText}>다음 단계</Text>
+          <Text style={[styles.nextBtnText, { color: colors.bg }]}>다음 단계</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -338,18 +336,18 @@ export function Step3Schedule() {
 
 // ─── 스타일 ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: BG },
+  safeArea: { flex: 1 },
 
   // 헤더 바
   headerBar: {
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
     paddingHorizontal: 16, paddingVertical: 12,
-    backgroundColor: BG, borderBottomWidth: 1, borderBottomColor: BORDER,
+    borderBottomWidth: 1,
   },
   closeBtn: { width: 32, height: 32, justifyContent: "center", alignItems: "center" },
-  closeBtnText: { fontSize: 16, color: BRAND },
-  headerTitle: { fontSize: 16, fontWeight: "600", color: BRAND },
-  tempSaveText: { fontSize: 13, color: GRAY },
+  closeBtnText: { fontSize: 16 },
+  headerTitle: { fontSize: 16, fontWeight: "600" },
+  tempSaveText: { fontSize: 13 },
 
   // 스크롤
   content: { padding: 20, paddingBottom: 40 },
@@ -363,108 +361,101 @@ const styles = StyleSheet.create({
   stepItem: { alignItems: "center", gap: 4 },
   stepCircle: {
     width: 26, height: 26, borderRadius: 13,
-    backgroundColor: BORDER, justifyContent: "center", alignItems: "center",
+    justifyContent: "center", alignItems: "center",
   },
-  activeStepCircle: { backgroundColor: BRAND },
-  stepNum: { fontSize: 12, color: GRAY, fontWeight: "700" },
-  activeStepNum: { color: "#FFF" },
-  stepLabel: { fontSize: 10, color: GRAY, marginTop: 2, textAlign: "center" },
-  activeStepLabel: { color: BRAND, fontWeight: "600" },
+  stepNum: { fontSize: 12, fontWeight: "700" },
+  stepLabel: { fontSize: 10, marginTop: 2, textAlign: "center" },
   stepLine: {
     width: 20, height: 1.5,
-    backgroundColor: BORDER, marginHorizontal: 4, marginBottom: 14,
+    marginHorizontal: 4, marginBottom: 14,
   },
-  activeStepLine: { backgroundColor: BRAND },
 
   // 섹션 헤더
   sectionHeader: { marginBottom: 28 },
-  sectionTitle: { fontSize: 22, fontWeight: "700", color: BRAND, marginBottom: 8 },
-  sectionSubtitle: { fontSize: 13, color: GRAY, lineHeight: 20 },
+  sectionTitle: { fontSize: 22, fontWeight: "700", marginBottom: 8 },
+  sectionSubtitle: { fontSize: 13, lineHeight: 20 },
 
   // 공통 블록
   block: { marginBottom: 28 },
   blockTitleRow: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 14 },
-  blockTitle: { fontSize: 14, fontWeight: "600", color: BRAND, flex: 1 },
+  blockTitle: { fontSize: 14, fontWeight: "600", flex: 1 },
 
   // 운영 기간
   dateRangeRow: { flexDirection: "row", alignItems: "flex-end", gap: 10 },
   dateInputCol: { flex: 1 },
-  dateLabel: { fontSize: 11, color: GRAY, marginBottom: 6 },
+  dateLabel: { fontSize: 11, marginBottom: 6 },
   dateInput: {
-    backgroundColor: CARD, borderRadius: 10,
-    borderWidth: 1, borderColor: BORDER,
+    borderRadius: 10,
+    borderWidth: 1,
     paddingHorizontal: 12, paddingVertical: 11,
-    fontSize: 14, color: BRAND,
+    fontSize: 14,
   },
-  dateSeparator: { color: GRAY, paddingBottom: 12 },
+  dateSeparator: { paddingBottom: 12 },
 
   // 요일 버튼
   dayGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
   dayBtn: {
     width: 44, height: 44, borderRadius: 22,
-    backgroundColor: CARD, borderWidth: 1, borderColor: BORDER,
+    borderWidth: 1,
     justifyContent: "center", alignItems: "center",
   },
-  dayBtnActive: { backgroundColor: BRAND, borderColor: BRAND },
-  dayBtnText: { fontSize: 14, fontWeight: "600", color: GRAY },
-  dayBtnTextActive: { color: "#FFF" },
+  dayBtnText: { fontSize: 14, fontWeight: "600" },
 
   // 타임 추가 버튼
   addSlotBtn: {
     flexDirection: "row", alignItems: "center", gap: 3,
     paddingHorizontal: 10, paddingVertical: 5,
-    borderRadius: 20, borderWidth: 1, borderColor: BORDER,
-    backgroundColor: CARD,
+    borderRadius: 20, borderWidth: 1,
   },
-  addSlotBtnText: { fontSize: 12, fontWeight: "600", color: BRAND },
+  addSlotBtnText: { fontSize: 12, fontWeight: "600" },
 
   // 타임 슬롯 카드
   slotList: { gap: 12 },
   slotCard: {
-    backgroundColor: CARD, borderRadius: 12,
-    borderWidth: 1, borderColor: BORDER,
+    borderRadius: 12,
+    borderWidth: 1,
     paddingHorizontal: 16, paddingVertical: 14,
   },
   slotCardHeader: {
     flexDirection: "row", justifyContent: "space-between", alignItems: "center",
     marginBottom: 14,
   },
-  slotCardTitle: { fontSize: 14, fontWeight: "700", color: BRAND },
+  slotCardTitle: { fontSize: 14, fontWeight: "700" },
   slotTimeRow: { flexDirection: "row", alignItems: "center", gap: 12 },
   slotTimeCol: { flex: 1 },
-  slotTimeDivider: { width: 1, height: 36, backgroundColor: BORDER },
-  slotTimeLabel: { fontSize: 11, color: GRAY, marginBottom: 6 },
+  slotTimeDivider: { width: 1, height: 36 },
+  slotTimeLabel: { fontSize: 11, marginBottom: 6 },
   slotTimeInput: {
-    backgroundColor: BG, borderRadius: 8,
+    borderRadius: 8,
     paddingHorizontal: 12, paddingVertical: 10,
-    fontSize: 15, fontWeight: "600", color: BRAND,
+    fontSize: 15, fontWeight: "600",
   },
 
   // 팁 박스
   tipBox: {
-    backgroundColor: "#EDE8E3", borderRadius: 12,
+    borderRadius: 12,
     padding: 16, marginBottom: 8,
   },
   tipTitleRow: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 8 },
-  tipTitle: { fontSize: 13, fontWeight: "700", color: BRAND },
-  tipText: { fontSize: 12, color: GRAY, lineHeight: 20 },
+  tipTitle: { fontSize: 13, fontWeight: "700" },
+  tipText: { fontSize: 12, lineHeight: 20 },
 
   // 하단 푸터
   footer: {
     flexDirection: "row", gap: 10,
     paddingHorizontal: 20, paddingTop: 12,
     paddingBottom: Platform.OS === "ios" ? 34 : 20,
-    backgroundColor: BG, borderTopWidth: 1, borderTopColor: BORDER,
+    borderTopWidth: 1,
   },
   prevBtn: {
-    flex: 1, borderWidth: 1.5, borderColor: BRAND,
+    flex: 1, borderWidth: 1.5,
     borderRadius: 50, paddingVertical: 17, alignItems: "center",
   },
-  prevBtnText: { color: BRAND, fontSize: 16, fontWeight: "700" },
+  prevBtnText: { fontSize: 16, fontWeight: "700" },
   nextBtn: {
-    flex: 2, backgroundColor: BRAND,
+    flex: 2,
     borderRadius: 50, paddingVertical: 17, alignItems: "center",
   },
   nextBtnDisabled: { opacity: 0.45 },
-  nextBtnText: { color: "#FFFFFF", fontSize: 16, fontWeight: "700" },
+  nextBtnText: { fontSize: 16, fontWeight: "700" },
 });

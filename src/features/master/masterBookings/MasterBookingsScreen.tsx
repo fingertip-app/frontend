@@ -19,13 +19,7 @@ import { MasterHeader } from "../components/MasterHeader";
 import { useMasterBookings } from "./useMasterBookings";
 import { matchesMasterBookingFilter } from "./masterBookingsApi";
 import type { MasterBookingFilter, MasterBookingStatus } from "./types";
-
-// ─── 팔레트 ────────────────────────────────────────────────────────────────────
-const BRAND = "#3B2B26";
-const BG = "#F5F4F0";
-const CARD = "#FFFFFF";
-const GRAY = "#8A8077";
-const BORDER = "#EAE6E1";
+import { useTheme } from "@/theme/ThemeContext";
 
 // ─── 화면 표시용 예약 타입 ───────────────────────────────────────────────────────
 const STATUS_TABS: { id: MasterBookingFilter; label: string }[] = [
@@ -52,6 +46,7 @@ function confirmAction(title: string, message: string, confirmText: string): Pro
 export function MasterBookingsScreen() {
   const [activeTab, setActiveTab] = useState<MasterBookingFilter>("all");
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { colors } = useTheme();
   const { data, isLoading, error, reload, approve, reject } = useMasterBookings();
   const bookings = data?.bookings ?? [];
 
@@ -147,26 +142,26 @@ export function MasterBookingsScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.bg }]}>
       {/* ── 공통 상단바 및 서랍 ── */}
       <MasterHeader
         activeItem="예약관리"
         rightComponent={
           <TouchableOpacity hitSlop={8}>
-            <Ionicons name="search" size={24} color={BRAND} />
+            <Ionicons name="search" size={24} color={colors.text} />
           </TouchableOpacity>
         }
       />
 
       {/* ── 필터 탭 ── */}
-      <View style={styles.tabContainer}>
+      <View style={[styles.tabContainer, { backgroundColor: colors.bg, borderBottomColor: colors.border }]}>
         {STATUS_TABS.map((tab) => (
           <TouchableOpacity
             key={tab.id}
-            style={[styles.tabButton, activeTab === tab.id && styles.tabButtonActive]}
+            style={[styles.tabButton, { backgroundColor: colors.border }, activeTab === tab.id && { backgroundColor: colors.text }]}
             onPress={() => setActiveTab(tab.id)}
           >
-            <Text style={[styles.tabText, activeTab === tab.id && styles.tabTextActive]}>
+            <Text style={[styles.tabText, { color: activeTab === tab.id ? colors.bg : colors.textSecondary }]}>
               {tab.label}
             </Text>
           </TouchableOpacity>
@@ -176,7 +171,7 @@ export function MasterBookingsScreen() {
       {/* ── 예약 리스트 ── */}
       {isLoading ? (
         <View style={styles.emptyContainer}>
-          <ActivityIndicator color={BRAND} />
+          <ActivityIndicator color={colors.accent} />
         </View>
       ) : (
         <FlatList
@@ -189,13 +184,13 @@ export function MasterBookingsScreen() {
           refreshing={isLoading}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
-              <Ionicons name="calendar-clear-outline" size={48} color="#D4CDC4" />
-              <Text style={styles.emptyText}>해당하는 예약 내역이 없습니다.</Text>
+              <Ionicons name="calendar-clear-outline" size={48} color={colors.border} />
+              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>해당하는 예약 내역이 없습니다.</Text>
             </View>
           }
           renderItem={({ item }) => (
             <TouchableOpacity
-              style={styles.card}
+              style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
               activeOpacity={0.8}
               onPress={() =>
                 navigation.navigate("MasterBookingDetail", {
@@ -205,18 +200,18 @@ export function MasterBookingsScreen() {
             >
               <View style={styles.cardHeader}>
                 {renderStatusBadge(item.status)}
-                <Text style={styles.cardDate}>{item.date} {item.time}</Text>
+                <Text style={[styles.cardDate, { color: colors.textSecondary }]}>{item.date} {item.time}</Text>
               </View>
 
-              <Text style={styles.cardTitle}>{item.title}</Text>
+              <Text style={[styles.cardTitle, { color: colors.text }]}>{item.title}</Text>
 
               <View style={styles.cardInfoRow}>
-                <Text style={styles.cardInfoLabel}>예약자</Text>
-                <Text style={styles.cardInfoValue}>{item.bookerName} (총 {item.guests}명)</Text>
+                <Text style={[styles.cardInfoLabel, { color: colors.textSecondary }]}>예약자</Text>
+                <Text style={[styles.cardInfoValue, { color: colors.text }]}>{item.bookerName} (총 {item.guests}명)</Text>
               </View>
               <View style={styles.cardInfoRow}>
-                <Text style={styles.cardInfoLabel}>결제금액</Text>
-                <Text style={styles.cardInfoValue}>{item.price.toLocaleString()}원</Text>
+                <Text style={[styles.cardInfoLabel, { color: colors.textSecondary }]}>결제금액</Text>
+                <Text style={[styles.cardInfoValue, { color: colors.text }]}>{item.price.toLocaleString()}원</Text>
               </View>
 
               {/* 액션 버튼 (상태에 따라 다르게 노출) */}
@@ -229,15 +224,15 @@ export function MasterBookingsScreen() {
                     <Text style={styles.rejectBtnText}>거절</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    style={[styles.actionBtn, styles.approveBtn]}
+                    style={[styles.actionBtn, { backgroundColor: colors.text }]}
                     onPress={() => handleApprove(item.id)}
                   >
-                    <Text style={styles.approveBtnText}>승인하기</Text>
+                    <Text style={[styles.approveBtnText, { color: colors.bg }]}>승인하기</Text>
                   </TouchableOpacity>
                 </View>
               ) : (
-                <View style={styles.detailBtn}>
-                  <Text style={styles.detailBtnText}>상세 보기</Text>
+                <View style={[styles.detailBtn, { backgroundColor: colors.bg, borderColor: colors.border }]}>
+                  <Text style={[styles.detailBtnText, { color: colors.text }]}>상세 보기</Text>
                 </View>
               )}
             </TouchableOpacity>
@@ -253,34 +248,31 @@ export function MasterBookingsScreen() {
 
 // ─── 스타일 ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: BG },
+  safeArea: { flex: 1 },
 
-  tabContainer: { flexDirection: "row", paddingHorizontal: 20, paddingVertical: 12, backgroundColor: BG, borderBottomWidth: 1, borderBottomColor: BORDER, gap: 8 },
-  tabButton: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, backgroundColor: "#EAE6E1" },
-  tabButtonActive: { backgroundColor: BRAND },
-  tabText: { fontSize: 14, fontWeight: "600", color: GRAY },
-  tabTextActive: { color: "#FFF" },
+  tabContainer: { flexDirection: "row", paddingHorizontal: 20, paddingVertical: 12, borderBottomWidth: 1, gap: 8 },
+  tabButton: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },
+  tabText: { fontSize: 14, fontWeight: "600" },
 
   listContent: { padding: 20, paddingBottom: 40 },
   emptyContainer: { alignItems: "center", justifyContent: "center", paddingTop: 80 },
-  emptyText: { marginTop: 16, fontSize: 15, color: GRAY },
+  emptyText: { marginTop: 16, fontSize: 15 },
 
-  card: { backgroundColor: CARD, borderRadius: 16, padding: 18, marginBottom: 16, borderWidth: 1, borderColor: BORDER, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 6, elevation: 2 },
+  card: { borderRadius: 16, padding: 18, marginBottom: 16, borderWidth: 1, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 6, elevation: 2 },
   cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
   badge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
   badgeText: { fontSize: 11, fontWeight: "700" },
-  cardDate: { fontSize: 13, color: GRAY, fontWeight: "500" },
-  cardTitle: { fontSize: 17, fontWeight: "700", color: BRAND, marginBottom: 14 },
+  cardDate: { fontSize: 13, fontWeight: "500" },
+  cardTitle: { fontSize: 17, fontWeight: "700", marginBottom: 14 },
   cardInfoRow: { flexDirection: "row", justifyContent: "space-between", marginBottom: 6 },
-  cardInfoLabel: { fontSize: 13, color: GRAY },
-  cardInfoValue: { fontSize: 13, fontWeight: "600", color: BRAND },
+  cardInfoLabel: { fontSize: 13 },
+  cardInfoValue: { fontSize: 13, fontWeight: "600" },
 
   actionRow: { flexDirection: "row", gap: 10, marginTop: 16 },
   actionBtn: { flex: 1, paddingVertical: 12, borderRadius: 8, alignItems: "center", justifyContent: "center" },
   rejectBtn: { backgroundColor: "#F3F4F6", borderWidth: 1, borderColor: "#E5E7EB" },
   rejectBtnText: { fontSize: 14, fontWeight: "600", color: "#4B5563" },
-  approveBtn: { backgroundColor: BRAND },
-  approveBtnText: { fontSize: 14, fontWeight: "600", color: "#FFF" },
-  detailBtn: { marginTop: 16, paddingVertical: 12, borderRadius: 8, backgroundColor: "#FAF9F6", alignItems: "center", borderWidth: 1, borderColor: BORDER },
-  detailBtnText: { fontSize: 14, fontWeight: "600", color: BRAND },
+  approveBtnText: { fontSize: 14, fontWeight: "600" },
+  detailBtn: { marginTop: 16, paddingVertical: 12, borderRadius: 8, alignItems: "center", borderWidth: 1 },
+  detailBtnText: { fontSize: 14, fontWeight: "600" },
 });

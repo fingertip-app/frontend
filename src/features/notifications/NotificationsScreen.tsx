@@ -1,36 +1,35 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  TouchableOpacity,
-  RefreshControl,
   ActivityIndicator,
   Alert,
+  FlatList,
+  RefreshControl,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
-import { getUserNotifications, markNotificationAsRead, markAllNotificationsAsRead } from "./api/notificationsApi";
 import { getCurrentProfile } from "@/features/auth/api/authApi";
+import { useTheme } from "@/theme/ThemeContext";
 import type { Notification } from "@/types/api";
-
-const BRAND = "#3D1F0D";
-const GRAY = "#8C7B6E";
-const BORDER = "#EDE8E2";
-const BG = "#FAFAF8";
-const CARD = "#FFFFFF";
-const UNREAD_BG = "#FFF9F0";
+import {
+  getUserNotifications,
+  markAllNotificationsAsRead,
+  markNotificationAsRead,
+} from "./api/notificationsApi";
 
 export function NotificationsScreen() {
   const navigation = useNavigation();
+  const { colors } = useTheme();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [userId, setUserId] = useState<number | null>(null);
 
-  const loadNotifications = async (isRefresh: boolean = false) => {
+  const loadNotifications = async (isRefresh = false) => {
     if (isRefresh) setIsRefreshing(true);
     else setIsLoading(true);
 
@@ -57,24 +56,23 @@ export function NotificationsScreen() {
   }, []);
 
   const handleNotificationPress = async (notification: Notification) => {
-    if (!notification.isRead) {
-      try {
-        await markNotificationAsRead(notification.id);
-        // API 성공 후 UI 업데이트
-        setNotifications(prev =>
-          prev.map(n => (n.id === notification.id ? { ...n, isRead: true } : n))
-        );
-      } catch (error) {
-        console.error("Failed to mark as read:", error);
-        Alert.alert("오류", "알림 읽음 처리에 실패했습니다.");
-      }
+    if (notification.isRead) return;
+
+    try {
+      await markNotificationAsRead(notification.id);
+      setNotifications((prev) =>
+        prev.map((item) => (item.id === notification.id ? { ...item, isRead: true } : item)),
+      );
+    } catch (error) {
+      console.error("Failed to mark as read:", error);
+      Alert.alert("오류", "알림 읽음 처리에 실패했습니다.");
     }
   };
 
   const handleMarkAllAsRead = async () => {
     if (!userId) return;
 
-    const unreadCount = notifications.filter(n => !n.isRead).length;
+    const unreadCount = notifications.filter((item) => !item.isRead).length;
     if (unreadCount === 0) {
       Alert.alert("안내", "읽지 않은 알림이 없습니다.");
       return;
@@ -82,8 +80,7 @@ export function NotificationsScreen() {
 
     try {
       await markAllNotificationsAsRead(userId);
-      // API 성공 후 UI 업데이트
-      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+      setNotifications((prev) => prev.map((item) => ({ ...item, isRead: true })));
     } catch (error) {
       console.error("Failed to mark all as read:", error);
       Alert.alert("오류", "알림 읽음 처리에 실패했습니다.");
@@ -105,58 +102,88 @@ export function NotificationsScreen() {
     return created.toLocaleDateString("ko-KR", { month: "short", day: "numeric" });
   };
 
-  const renderNotification = ({ item }: { item: Notification }) => (
-    <TouchableOpacity
-      style={[styles.notificationCard, !item.isRead && styles.notificationCardUnread]}
-      onPress={() => handleNotificationPress(item)}
-      activeOpacity={0.7}
-    >
-      <View style={styles.notificationHeader}>
-        <Text style={styles.notificationTitle}>{item.title}</Text>
-        {!item.isRead && <View style={styles.unreadBadge} />}
-      </View>
-      <Text style={styles.notificationBody}>{item.body}</Text>
-      <Text style={styles.notificationTime}>{formatRelativeTime(item.createdAt)}</Text>
-    </TouchableOpacity>
-  );
+  const renderNotification = ({ item }: { item: Notification }) => {
+    const isUnread = !item.isRead;
+
+    return (
+      <TouchableOpacity
+        style={[
+          styles.notificationCard,
+          { backgroundColor: colors.card, borderColor: colors.border },
+          isUnread && { borderColor: colors.accent },
+        ]}
+        onPress={() => handleNotificationPress(item)}
+        activeOpacity={0.75}
+      >
+        <View style={styles.notificationHeader}>
+          <View style={[styles.iconBox, { backgroundColor: colors.bg, borderColor: colors.border }]}>
+            <Ionicons
+              name={isUnread ? "notifications" : "notifications-outline"}
+              size={18}
+              color={isUnread ? colors.accent : colors.textSecondary}
+            />
+          </View>
+          <View style={styles.notificationTextBlock}>
+            <View style={styles.titleRow}>
+              <Text style={[styles.notificationTitle, { color: colors.text }]} numberOfLines={1}>
+                {item.title}
+              </Text>
+              {isUnread && <View style={[styles.unreadDot, { backgroundColor: colors.accent }]} />}
+            </View>
+            <Text style={[styles.notificationBody, { color: colors.textSecondary }]} numberOfLines={2}>
+              {item.body}
+            </Text>
+            <Text style={[styles.notificationTime, { color: colors.textSecondary }]}>
+              {formatRelativeTime(item.createdAt)}
+            </Text>
+          </View>
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
   const renderEmpty = () => (
     <View style={styles.emptyContainer}>
-      <Ionicons name="notifications-off-outline" size={64} color={GRAY} />
-      <Text style={styles.emptyTitle}>알림이 없습니다</Text>
-      <Text style={styles.emptyDesc}>예약 상태 변경 등의 알림을 여기서 확인할 수 있어요.</Text>
+      <View style={[styles.emptyIcon, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <Ionicons name="notifications-off-outline" size={34} color={colors.textSecondary} />
+      </View>
+      <Text style={[styles.emptyTitle, { color: colors.text }]}>알림이 없습니다</Text>
+      <Text style={[styles.emptyDesc, { color: colors.textSecondary }]}>
+        예약 상태 변경 등의 알림을 여기서 확인할 수 있어요.
+      </Text>
+    </View>
+  );
+
+  const renderHeader = (showAction: boolean) => (
+    <View style={[styles.header, { backgroundColor: colors.bg, borderBottomColor: colors.border }]}>
+      <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={10}>
+        <Ionicons name="arrow-back" size={24} color={colors.text} />
+      </TouchableOpacity>
+      <Text style={[styles.headerTitle, { color: colors.text }]}>알림</Text>
+      {showAction ? (
+        <TouchableOpacity onPress={handleMarkAllAsRead} hitSlop={10}>
+          <Text style={[styles.markAllText, { color: colors.accent }]}>전체 읽음</Text>
+        </TouchableOpacity>
+      ) : (
+        <View style={{ width: 52 }} />
+      )}
     </View>
   );
 
   if (isLoading) {
     return (
-      <SafeAreaView style={styles.safeArea}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={10}>
-            <Ionicons name="arrow-back" size={24} color="#1C1107" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>알림</Text>
-          <View style={{ width: 24 }} />
-        </View>
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.bg }]}>
+        {renderHeader(false)}
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={BRAND} />
+          <ActivityIndicator size="large" color={colors.accent} />
         </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={10}>
-          <Ionicons name="arrow-back" size={24} color="#1C1107" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>알림</Text>
-        <TouchableOpacity onPress={handleMarkAllAsRead} hitSlop={10}>
-          <Text style={styles.markAllText}>전체 읽음</Text>
-        </TouchableOpacity>
-      </View>
-
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.bg }]}>
+      {renderHeader(true)}
       <FlatList
         data={notifications}
         keyExtractor={(item) => item.id.toString()}
@@ -167,7 +194,7 @@ export function NotificationsScreen() {
           <RefreshControl
             refreshing={isRefreshing}
             onRefresh={() => loadNotifications(true)}
-            tintColor={BRAND}
+            tintColor={colors.accent}
           />
         }
       />
@@ -176,7 +203,7 @@ export function NotificationsScreen() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: BG },
+  safeArea: { flex: 1 },
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -184,70 +211,77 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: BORDER,
-    backgroundColor: BG,
   },
-  headerTitle: { fontSize: 17, fontWeight: "700", color: "#1C1107" },
-  markAllText: { fontSize: 14, color: BRAND, fontWeight: "600" },
-  listContent: { padding: 16 },
+  headerTitle: { fontSize: 18, fontWeight: "800" },
+  markAllText: { fontSize: 13, fontWeight: "700" },
+  listContent: { padding: 20, paddingBottom: 40 },
   notificationCard: {
-    backgroundColor: CARD,
-    borderRadius: 12,
+    borderRadius: 16,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: BORDER,
-  },
-  notificationCardUnread: {
-    backgroundColor: UNREAD_BG,
-    borderColor: "#FFE4B5",
   },
   notificationHeader: {
     flexDirection: "row",
+    gap: 12,
+  },
+  iconBox: {
+    width: 38,
+    height: 38,
+    borderRadius: 13,
+    borderWidth: 1,
     alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 8,
+    justifyContent: "center",
+  },
+  notificationTextBlock: { flex: 1 },
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
   },
   notificationTitle: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: BRAND,
     flex: 1,
+    fontSize: 15,
+    fontWeight: "800",
   },
-  unreadBadge: {
-    width: 8,
-    height: 8,
+  unreadDot: {
+    width: 7,
+    height: 7,
     borderRadius: 4,
-    backgroundColor: "#FF6B35",
-    marginLeft: 8,
   },
   notificationBody: {
-    fontSize: 14,
-    color: "#3B2B26",
-    lineHeight: 20,
-    marginBottom: 8,
+    fontSize: 13,
+    lineHeight: 19,
+    marginTop: 5,
   },
   notificationTime: {
     fontSize: 12,
-    color: GRAY,
+    marginTop: 9,
   },
   emptyContainer: {
     alignItems: "center",
     justifyContent: "center",
     paddingTop: 80,
   },
+  emptyIcon: {
+    width: 72,
+    height: 72,
+    borderRadius: 20,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   emptyTitle: {
     fontSize: 18,
-    fontWeight: "700",
-    color: BRAND,
+    fontWeight: "800",
     marginTop: 16,
   },
   emptyDesc: {
     fontSize: 14,
-    color: GRAY,
     marginTop: 8,
     textAlign: "center",
     paddingHorizontal: 40,
+    lineHeight: 20,
   },
   loadingContainer: {
     flex: 1,

@@ -152,3 +152,36 @@ export function getNextStep(info: ExtractedInfo): "companion" | "vibe" | "budget
 
   return "recommend";
 }
+
+export function getContextualPrompt({
+  step,
+  userAnswers,
+  extractedInfo,
+}: {
+  step: "companion" | "vibe" | "budget" | "duration" | "done";
+  userAnswers: string[];
+  extractedInfo: ExtractedInfo;
+}): string {
+  const latestAnswer = userAnswers[userAnswers.length - 1];
+
+  switch (step) {
+    case "companion":
+      return "안녕하세요! 어떤 분과 함께 체험을 찾고 계신가요?";
+    case "vibe":
+      return latestAnswer
+        ? `${latestAnswer} 좋네요. 어떤 분위기의 체험을 원하세요?`
+        : "어떤 분위기의 체험을 원하세요?";
+    case "budget":
+      return extractedInfo.hasInterest
+        ? "취향에 맞는 체험을 찾고 있어요. 예산은 어느 정도 생각하세요?"
+        : "좋아요. 예산은 어느 정도 생각하세요?";
+    case "duration":
+      return extractedInfo.hasBudget
+        ? "예산까지 확인했어요. 마지막으로 체험 시간은 어느 정도가 좋으세요?"
+        : "마지막으로 체험 시간은 어느 정도가 좋으세요?";
+    case "done":
+      return "완벽해요! 딱 맞는 체험을 찾았어요.";
+    default:
+      return "조금 더 알려주시면 잘 맞는 체험을 추천해드릴게요.";
+  }
+}

@@ -14,7 +14,7 @@ export function LogoMark({ size = 36, radius }: LogoMarkProps) {
       style={{
         width: size,
         height: size,
-        borderRadius: radius ?? size * 0.28,
+        borderRadius: radius ?? size / 2,
         overflow: "hidden",
       }}
     >
