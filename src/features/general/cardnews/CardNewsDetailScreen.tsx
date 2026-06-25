@@ -92,9 +92,19 @@ export function CardNewsDetailScreen() {
           <TouchableOpacity 
             style={styles.recommendBtn} 
             activeOpacity={0.8}
-            onPress={() => navigation.navigate("MainTabs", { screen: "Explore" })}
+            onPress={() => {
+              navigation.navigate("MainTabs", {
+                screen: "Explore",
+                params: news.relatedExperienceIds.length > 0
+                  ? { relatedExperienceIds: news.relatedExperienceIds }
+                  : { relatedCategory: news.tag },
+              });
+            }}
           >
-            <Text style={styles.recommendBtnText}>관련 체험 둘러보기</Text>
+            <Text style={styles.recommendBtnText}>
+              관련 체험 둘러보기
+              {news.relatedExperienceIds.length > 0 ? ` (${news.relatedExperienceIds.length})` : ""}
+            </Text>
             <Ionicons name="chevron-forward" size={16} color="#FFF" />
           </TouchableOpacity>
         </View>

@@ -37,7 +37,13 @@ export async function login(email: string, password: string): Promise<LoginResul
   }
 
   // 백엔드에서 user 프로필 + role 조회 — 세션 저장 타이밍 이슈 방지용으로 토큰 직접 전달
-  const profile = await apiPostWithToken<undefined, UserProfile>('/auth/login', data.session.access_token)
+  let profile: UserProfile
+  try {
+    profile = await apiPostWithToken<undefined, UserProfile>('/auth/login', data.session.access_token)
+  } catch (backendError) {
+    await supabase.auth.signOut({ scope: 'local' })
+    throw backendError
+  }
 
   return { profile }
 }
