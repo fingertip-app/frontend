@@ -112,6 +112,16 @@ export function MasterHomeScreen({
           </View>
         </View>
 
+        {/* ── QR 스캔 버튼 ── */}
+        <TouchableOpacity
+          style={[styles.qrScanButton, { backgroundColor: colors.accent }]}
+          onPress={() => navigation.navigate("QrScanner")}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="qr-code-outline" size={24} color="#fff" />
+          <Text style={styles.qrScanButtonText}>QR 코드 스캔</Text>
+        </TouchableOpacity>
+
         {/* ── 오늘의 현황 ── */}
         <View style={styles.sectionHeader}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>오늘의 현황</Text>
@@ -261,6 +271,22 @@ const styles = StyleSheet.create({
   profileDesc: { fontSize: 13, lineHeight: 20 },
   profileLinkRow: { flexDirection: "row", alignItems: "center", marginTop: 4 },
   profileLink: { fontSize: 13, fontWeight: "500" },
+
+  // QR 스캔 버튼
+  qrScanButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    borderRadius: 12,
+    paddingVertical: 16,
+    marginBottom: 24,
+  },
+  qrScanButtonText: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#fff",
+  },
 
   // 섹션 헤더
   sectionHeader: {
