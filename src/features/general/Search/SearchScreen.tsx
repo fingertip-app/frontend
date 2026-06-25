@@ -19,9 +19,11 @@ import { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
 import { DetailBottomSheet } from "./DetailBottomSheet";
 import { MainLayout } from "@/features/general/home/MainLayout";
 import { MainTabParamList } from "@/navigation/RootNavigator";
-import { getActiveExperiences } from "@/features/experiences/api/experiencesApi";
+import { getActiveExperiencesWithReviewStats } from "@/features/experiences/api/experiencesApi";
 import { addToWishlist, removeFromWishlist, checkWishlist } from "@/features/wishlists/api/wishlistsApi";
 import type { Experience as ApiExperience } from "@/types/api";
+import { useTheme } from "@/theme/ThemeContext";
+import type { ThemeColors } from "@/theme/colors";
 
 // ─── 타입 ────────────────────────────────────────────────────────────────────
 
@@ -61,10 +63,6 @@ export type Experience = {
 };
 
 // ─── 상수 / 데이터 ────────────────────────────────────────────────────────────
-
-const BRAND = "#92400E";
-const BRAND_BG = "#FEF3E2";
-const BRAND_LIGHT = "#B45309";
 
 // 체험의 category는 자유 텍스트(백엔드 Experience.category)라 고정된 값 목록이 없다.
 // 알려진 분야는 보기 좋은 아이콘을 붙이고, 모르는 분야는 기본 아이콘으로 표시한다.
@@ -153,8 +151,8 @@ function mapApiExperienceToUI(exp: ApiExperience): Experience {
     category: exp.category || "기타",
     location: exp.locationAddress || "위치 미정",
     artisan: "장인", // TODO: artisan 정보 추가 필요
-    rating: 0, // TODO: 리뷰 평점 연동 필요
-    reviewCount: 0, // TODO: 리뷰 개수 연동 필요
+    rating: Number((exp.averageRating ?? 0).toFixed(1)),
+    reviewCount: exp.reviewCount ?? 0,
     duration: exp.durationMinutes ? `${exp.durationMinutes}분` : "시간 미정",
     price: exp.price || 0,
     tags: exp.tags ?? [],
@@ -183,12 +181,13 @@ function SearchBar({
   onChange: (v: string) => void;
   onClear: () => void;
 }) {
+  const { colors } = useTheme();
   return (
     <View
       style={{
         flexDirection: "row",
         alignItems: "center",
-        backgroundColor: "#F3F4F6",
+        backgroundColor: colors.card,
         borderRadius: 14,
         paddingHorizontal: 14,
         paddingVertical: 12,
@@ -197,27 +196,27 @@ function SearchBar({
         marginBottom: 4,
       }}
     >
-      <Ionicons name="search-outline" size={18} color="#9CA3AF" />
+      <Ionicons name="search-outline" size={18} color={colors.textSecondary} />
       <TextInput
         style={{
           flex: 1,
           marginLeft: 8,
           fontSize: 14,
-          color: "#111827",
+          color: colors.text,
           padding: 0,
         }}
         placeholder="어떤 전통 체험을 찾고 있나요?"
-        placeholderTextColor="#9CA3AF"
+        placeholderTextColor={colors.textSecondary}
         value={value}
         onChangeText={onChange}
         returnKeyType="search"
       />
       {value.length > 0 ? (
         <TouchableOpacity onPress={onClear} hitSlop={8}>
-          <Ionicons name="close-circle" size={18} color="#D1D5DB" />
+          <Ionicons name="close-circle" size={18} color={colors.border} />
         </TouchableOpacity>
       ) : (
-        <Feather name="sliders" size={17} color="#6B7280" />
+        <Feather name="sliders" size={17} color={colors.textSecondary} />
       )}
     </View>
   );
@@ -233,6 +232,7 @@ function CategoryRow({
   selected: string;
   onSelect: (id: string) => void;
 }) {
+  const { colors } = useTheme();
   return (
     <ScrollView
       horizontal
@@ -254,9 +254,9 @@ function CategoryRow({
                 width: 52,
                 height: 52,
                 borderRadius: 16,
-                backgroundColor: active ? BRAND_BG : "#F9FAFB",
+                backgroundColor: colors.card,
                 borderWidth: 1.5,
-                borderColor: active ? BRAND : "#F0EDE8",
+                borderColor: active ? colors.accent : colors.border,
                 alignItems: "center",
                 justifyContent: "center",
               }}
@@ -268,7 +268,7 @@ function CategoryRow({
                 marginTop: 5,
                 fontSize: 11,
                 fontWeight: active ? "700" : "500",
-                color: active ? BRAND : "#6B7280",
+                color: active ? colors.accent : colors.textSecondary,
               }}
             >
               {cat.label}
@@ -288,6 +288,7 @@ function FilterChips({
   selected: string;
   onSelect: (id: string) => void;
 }) {
+  const { colors } = useTheme();
   return (
     <ScrollView
       horizontal
@@ -308,8 +309,8 @@ function FilterChips({
               paddingVertical: 8,
               borderRadius: 999,
               borderWidth: 1,
-              borderColor: active ? BRAND : "#E5E7EB",
-              backgroundColor: active ? BRAND : "#FFFFFF",
+              borderColor: active ? colors.accent : colors.border,
+              backgroundColor: active ? colors.accent : colors.card,
             }}
           >
             <Text style={{ fontSize: 12, marginRight: 4 }}>{chip.icon}</Text>
@@ -317,7 +318,7 @@ function FilterChips({
               style={{
                 fontSize: 13,
                 fontWeight: "600",
-                color: active ? "#FFFFFF" : "#374151",
+                color: active ? colors.bg : colors.text,
               }}
             >
               {chip.label}
@@ -338,6 +339,7 @@ function DropdownRow({
   onRegion: () => void; onDate: () => void; onTime: () => void;
   onLevel: () => void; onSort: () => void;
 }) {
+  const { colors } = useTheme();
   const chips = [
     { label: region, onPress: onRegion },
     { label: date,   onPress: onDate   },
@@ -363,14 +365,14 @@ function DropdownRow({
             paddingVertical: 6,
             borderRadius: 999,
             borderWidth: 1,
-            borderColor: "#E5E7EB",
-            backgroundColor: "#FFFFFF",
+            borderColor: colors.border,
+            backgroundColor: colors.card,
           }}
         >
-          <Text style={{ fontSize: 12, color: "#374151", fontWeight: "500" }}>
+          <Text style={{ fontSize: 12, color: colors.text, fontWeight: "500" }}>
             {label}
           </Text>
-          <Ionicons name="chevron-down" size={12} color="#9CA3AF" style={{ marginLeft: 3 }} />
+          <Ionicons name="chevron-down" size={12} color={colors.textSecondary} style={{ marginLeft: 3 }} />
         </TouchableOpacity>
       ))}
     </ScrollView>
@@ -391,6 +393,7 @@ function DropdownSheet({
   onSelect: (v: string) => void;
   onClose: () => void;
 }) {
+  const { colors } = useTheme();
   return (
     <View
       style={{
@@ -408,7 +411,7 @@ function DropdownSheet({
       {/* 시트 */}
       <View
         style={{
-          backgroundColor: "#FFFFFF",
+          backgroundColor: colors.card,
           borderTopLeftRadius: 20,
           borderTopRightRadius: 20,
           paddingBottom: 32,
@@ -421,7 +424,7 @@ function DropdownSheet({
             width: 36,
             height: 4,
             borderRadius: 2,
-            backgroundColor: "#E5E7EB",
+            backgroundColor: colors.border,
             alignSelf: "center",
             marginBottom: 16,
           }}
@@ -430,7 +433,7 @@ function DropdownSheet({
           style={{
             fontSize: 16,
             fontWeight: "700",
-            color: "#111827",
+            color: colors.text,
             paddingHorizontal: 20,
             marginBottom: 12,
           }}
@@ -450,19 +453,19 @@ function DropdownSheet({
                 justifyContent: "space-between",
                 paddingHorizontal: 20,
                 paddingVertical: 14,
-                backgroundColor: active ? BRAND_BG : "#FFFFFF",
+                backgroundColor: active ? colors.bg : colors.card,
               }}
             >
               <Text
                 style={{
                   fontSize: 15,
                   fontWeight: active ? "700" : "400",
-                  color: active ? BRAND : "#374151",
+                  color: active ? colors.accent : colors.text,
                 }}
               >
                 {opt}
               </Text>
-              {active && <Ionicons name="checkmark" size={18} color={BRAND} />}
+              {active && <Ionicons name="checkmark" size={18} color={colors.accent} />}
             </TouchableOpacity>
           );
         })}
@@ -492,6 +495,7 @@ function TagBadge({ label }: { label: string }) {
 function ExperienceCard({ item, onPress, refreshTrigger }: { item: Experience; onPress: () => void; refreshTrigger?: number }) {
   const [liked, setLiked] = useState(false);
   const [loading, setLoading] = useState(false);
+  const { colors } = useTheme();
 
   // 마운트 시 + refreshTrigger 변경 시 찜 상태 확인
   useEffect(() => {
@@ -544,7 +548,7 @@ function ExperienceCard({ item, onPress, refreshTrigger }: { item: Experience; o
       onPress={onPress}
       style={{
         flexDirection: "row",
-        backgroundColor: "#FFFFFF",
+        backgroundColor: colors.card,
         borderRadius: 18,
         marginHorizontal: 16,
         marginBottom: 14,
@@ -569,13 +573,13 @@ function ExperienceCard({ item, onPress, refreshTrigger }: { item: Experience; o
               position: "absolute",
               top: 8,
               left: 8,
-              backgroundColor: BRAND,
+              backgroundColor: colors.accent,
               borderRadius: 5,
               paddingHorizontal: 7,
               paddingVertical: 2,
             }}
           >
-            <Text style={{ color: "#FFF", fontSize: 10, fontWeight: "800" }}>
+            <Text style={{ color: colors.bg, fontSize: 10, fontWeight: "800" }}>
               {item.badge}
             </Text>
           </View>
@@ -586,27 +590,27 @@ function ExperienceCard({ item, onPress, refreshTrigger }: { item: Experience; o
       <View style={{ flex: 1, paddingHorizontal: 12, paddingVertical: 11, justifyContent: "space-between" }}>
         {/* 제목 + 찜 */}
         <View style={{ flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between" }}>
-          <Text style={{ flex: 1, fontSize: 14, fontWeight: "700", color: "#111827", paddingRight: 6, lineHeight: 20 }} numberOfLines={2}>
+          <Text style={{ flex: 1, fontSize: 14, fontWeight: "700", color: colors.text, paddingRight: 6, lineHeight: 20 }} numberOfLines={2}>
             {item.title}
           </Text>
           <TouchableOpacity onPress={handleToggleWishlist} hitSlop={8} disabled={loading}>
-            <Ionicons name={liked ? "heart" : "heart-outline"} size={20} color={liked ? "#EF4444" : "#D1D5DB"} />
+            <Ionicons name={liked ? "heart" : "heart-outline"} size={20} color={liked ? colors.accent : colors.border} />
           </TouchableOpacity>
         </View>
 
         {/* 위치 · 장인 */}
-        <Text style={{ fontSize: 11, color: "#9CA3AF", marginTop: 2 }}>
+        <Text style={{ fontSize: 11, color: colors.textSecondary, marginTop: 2 }}>
           {item.location} · {item.artisan}
         </Text>
 
         {/* 별점 · 리뷰 · 시간 */}
         <View style={{ flexDirection: "row", alignItems: "center", marginTop: 4, gap: 4 }}>
-          <Ionicons name="star" size={12} color="#F59E0B" />
-          <Text style={{ fontSize: 12, fontWeight: "700", color: "#111827" }}>{item.rating}</Text>
-          <Text style={{ fontSize: 12, color: "#9CA3AF" }}>({item.reviewCount})</Text>
-          <Text style={{ color: "#E5E7EB", marginHorizontal: 2 }}>·</Text>
-          <Feather name="clock" size={11} color="#9CA3AF" />
-          <Text style={{ fontSize: 11, color: "#9CA3AF", marginLeft: 2 }}>{item.duration}</Text>
+          <Ionicons name="star" size={12} color={colors.gold} />
+          <Text style={{ fontSize: 12, fontWeight: "700", color: colors.text }}>{item.rating}</Text>
+          <Text style={{ fontSize: 12, color: colors.textSecondary }}>({item.reviewCount})</Text>
+          <Text style={{ color: colors.border, marginHorizontal: 2 }}>·</Text>
+          <Feather name="clock" size={11} color={colors.textSecondary} />
+          <Text style={{ fontSize: 11, color: colors.textSecondary, marginLeft: 2 }}>{item.duration}</Text>
         </View>
 
         {/* 태그 행 */}
@@ -617,15 +621,15 @@ function ExperienceCard({ item, onPress, refreshTrigger }: { item: Experience; o
             </View>
           )}
           {item.highlight && (
-            <View style={{ backgroundColor: BRAND_BG, borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3 }}>
-              <Text style={{ fontSize: 11, fontWeight: "600", color: item.highlightColor }}>{item.highlight}</Text>
+            <View style={{ backgroundColor: colors.card, borderWidth: 1, borderColor: colors.accent, borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3 }}>
+              <Text style={{ fontSize: 11, fontWeight: "600", color: colors.accent }}>{item.highlight}</Text>
             </View>
           )}
           {item.tags.map((t) => <TagBadge key={t} label={t} />)}
         </View>
 
         {/* 가격 */}
-        <Text style={{ textAlign: "right", fontSize: 15, fontWeight: "800", color: BRAND, marginTop: 4 }}>
+        <Text style={{ textAlign: "right", fontSize: 15, fontWeight: "800", color: colors.accent, marginTop: 4 }}>
           {item.price.toLocaleString()}원~
         </Text>
       </View>
@@ -635,13 +639,14 @@ function ExperienceCard({ item, onPress, refreshTrigger }: { item: Experience; o
 
 /** 결과 없음 */
 function EmptyState({ query }: { query: string }) {
+  const { colors } = useTheme();
   return (
     <View style={{ alignItems: "center", paddingTop: 80 }}>
-      <Text style={{ fontSize: 40 }}>🔍</Text>
-      <Text style={{ marginTop: 12, fontSize: 16, fontWeight: "700", color: "#374151" }}>
+      <Ionicons name="search-outline" size={40} color={colors.border} />
+      <Text style={{ marginTop: 12, fontSize: 16, fontWeight: "700", color: colors.text }}>
         검색 결과가 없어요
       </Text>
-      <Text style={{ marginTop: 6, fontSize: 13, color: "#9CA3AF", textAlign: "center" }}>
+      <Text style={{ marginTop: 6, fontSize: 13, color: colors.textSecondary, textAlign: "center" }}>
         {query ? `"${query}"에 해당하는 체험이 없습니다.\n다른 키워드로 검색해 보세요.` : "조건에 맞는 체험이 없습니다."}
       </Text>
     </View>
@@ -656,6 +661,7 @@ type DropdownKey = "region" | "date" | "time" | "level" | "sort" | null;
 export function SearchScreen() {
   const route = useRoute<RouteProp<MainTabParamList, "Explore">>();
   const navigation = useNavigation<BottomTabNavigationProp<MainTabParamList, "Explore">>();
+  const { colors } = useTheme();
 
   const [query, setQuery]               = useState("");
   const [activeCategory, setCategory]   = useState("all");
@@ -688,7 +694,7 @@ export function SearchScreen() {
     try {
       setIsLoading(true);
       setError(null);
-      const apiExperiences = await getActiveExperiences();
+      const apiExperiences = await getActiveExperiencesWithReviewStats();
       const uiExperiences = apiExperiences.map(mapApiExperienceToUI);
       setAllExperiences(uiExperiences);
     } catch (e) {
@@ -800,9 +806,9 @@ export function SearchScreen() {
   if (isLoading) {
     return (
       <MainLayout activeItem="탐색">
-        <View style={{ flex: 1, backgroundColor: "#F9FAFB", justifyContent: "center", alignItems: "center" }}>
-          <ActivityIndicator size="large" color={BRAND} />
-          <Text style={{ marginTop: 12, fontSize: 14, color: "#6B7280" }}>체험 목록을 불러오는 중...</Text>
+        <View style={{ flex: 1, backgroundColor: colors.bg, justifyContent: "center", alignItems: "center" }}>
+          <ActivityIndicator size="large" color={colors.accent} />
+          <Text style={{ marginTop: 12, fontSize: 14, color: colors.textSecondary }}>체험 목록을 불러오는 중...</Text>
         </View>
       </MainLayout>
     );
@@ -812,20 +818,20 @@ export function SearchScreen() {
   if (error) {
     return (
       <MainLayout activeItem="탐색">
-        <View style={{ flex: 1, backgroundColor: "#F9FAFB", justifyContent: "center", alignItems: "center", paddingHorizontal: 24 }}>
-          <Text style={{ fontSize: 40 }}>⚠️</Text>
-          <Text style={{ marginTop: 12, fontSize: 16, fontWeight: "700", color: "#374151" }}>{error}</Text>
+        <View style={{ flex: 1, backgroundColor: colors.bg, justifyContent: "center", alignItems: "center", paddingHorizontal: 24 }}>
+          <Ionicons name="alert-circle-outline" size={40} color={colors.border} />
+          <Text style={{ marginTop: 12, fontSize: 16, fontWeight: "700", color: colors.text }}>{error}</Text>
           <TouchableOpacity
             onPress={fetchExperiences}
             style={{
               marginTop: 20,
               paddingHorizontal: 20,
               paddingVertical: 12,
-              backgroundColor: BRAND,
+              backgroundColor: colors.accent,
               borderRadius: 12,
             }}
           >
-            <Text style={{ color: "#FFF", fontWeight: "600" }}>다시 시도</Text>
+            <Text style={{ color: colors.bg, fontWeight: "600" }}>다시 시도</Text>
           </TouchableOpacity>
         </View>
       </MainLayout>
@@ -834,8 +840,8 @@ export function SearchScreen() {
 
   return (
     <MainLayout activeItem="탐색">
-      <View style={{ flex: 1, backgroundColor: "#F9FAFB" }}>
-        <StatusBar barStyle="dark-content" backgroundColor="#F9FAFB" />
+      <View style={{ flex: 1, backgroundColor: colors.bg }}>
+        <StatusBar barStyle={colors.bg === "#0A0A0E" ? "light-content" : "dark-content"} backgroundColor={colors.bg} />
 
         {/* ── 검색창 ── */}
         <SearchBar value={query} onChange={setQuery} onClear={() => setQuery("")} />
@@ -868,16 +874,16 @@ export function SearchScreen() {
 
             {/* 결과 수 */}
             <View style={{ flexDirection: "row", alignItems: "baseline", paddingHorizontal: 16, paddingTop: 12, paddingBottom: 8 }}>
-              <Text style={{ fontSize: 15, fontWeight: "800", color: "#111827" }}>전체 </Text>
-              <Text style={{ fontSize: 15, fontWeight: "800", color: BRAND }}>{results.length}</Text>
-              <Text style={{ fontSize: 15, fontWeight: "800", color: "#111827" }}>개의 체험</Text>
+              <Text style={{ fontSize: 15, fontWeight: "800", color: colors.text }}>전체 </Text>
+              <Text style={{ fontSize: 15, fontWeight: "800", color: colors.accent }}>{results.length}</Text>
+              <Text style={{ fontSize: 15, fontWeight: "800", color: colors.text }}>개의 체험</Text>
               <View style={{ flex: 1 }} />
               <TouchableOpacity
                 onPress={() => setDropdown("sort")}
                 style={{ flexDirection: "row", alignItems: "center", gap: 3 }}
               >
-                <Feather name="bar-chart-2" size={13} color="#6B7280" />
-                <Text style={{ fontSize: 12, color: "#6B7280", fontWeight: "500" }}>{sort}</Text>
+                <Feather name="bar-chart-2" size={13} color={colors.textSecondary} />
+                <Text style={{ fontSize: 12, color: colors.textSecondary, fontWeight: "500" }}>{sort}</Text>
               </TouchableOpacity>
             </View>
           </>
