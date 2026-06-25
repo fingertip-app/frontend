@@ -35,6 +35,8 @@ export interface Booking {
   time: string;
   guests: number;
   location: string;
+  locationLat?: number;
+  locationLng?: number;
   imageUri?: string;
   orderNo?: string;
   paidAt?: string;
@@ -112,6 +114,8 @@ async function toBooking(reservation: Reservation): Promise<Booking> {
     time: formatTime(reservation.reservedDateTime),
     guests: reservation.numberOfParticipants,
     location: experience?.locationAddress ?? "-",
+    locationLat: experience?.locationLat,
+    locationLng: experience?.locationLng,
     imageUri: getMainImageUri(experience),
     totalPrice: reservation.totalPrice,
     paymentRequired: reservation.status === "APPROVED",
