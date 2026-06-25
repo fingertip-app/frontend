@@ -16,6 +16,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { MasterBottomTabs } from "../components/MasterBottomTabs";
 import { MasterHeader } from "../components/MasterHeader";
 import { useMasterReviews } from "./useMasterReviews";
+import { summarizeReview } from "@/features/reviews/api/reviewsApi";
 
 // ─── 팔레트 ────────────────────────────────────────────────────────────────────
 const BRAND = "#3B2B26";
@@ -44,6 +45,7 @@ export function MasterReviewsScreen() {
   const [sortOption, setSortOption] = useState<"latest" | "rating">("latest");
   const { data, isLoading, error, reload } = useMasterReviews();
   const reviews = data?.reviews ?? [];
+  const [summarizingReviewId, setSummarizingReviewId] = useState<number | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -68,6 +70,34 @@ export function MasterReviewsScreen() {
 
   const handleUnsupportedReply = () => {
     Alert.alert("알림", "후기 답글 기능은 백엔드 API 구현이 필요합니다.");
+  };
+
+  // AI 요약 버튼 핸들러
+  const handleSummarizeReview = async (reviewId: number, content: string) => {
+    if (!content || content.trim().length === 0) {
+      Alert.alert("알림", "요약할 내용이 없습니다.");
+      return;
+    }
+
+    setSummarizingReviewId(reviewId);
+    try {
+      const result = await summarizeReview({ content, locale: "ko" });
+
+      const keywords = result.keywords.join(", ");
+      const sentiment = result.sentimentScore >= 0.7 ? "😊 긍정적" :
+                       result.sentimentScore >= 0.4 ? "😐 중립적" : "😟 부정적";
+
+      Alert.alert(
+        "AI 리뷰 요약",
+        `📝 요약: ${result.summary}\n\n` +
+        `💭 감정: ${sentiment} (${(result.sentimentScore * 100).toFixed(0)}%)\n\n` +
+        `🏷️ 키워드: ${keywords}`
+      );
+    } catch (err) {
+      Alert.alert("오류", err instanceof Error ? err.message : "AI 요약에 실패했습니다.");
+    } finally {
+      setSummarizingReviewId(null);
+    }
   };
 
   // 필터(정렬) 버튼 핸들러
@@ -174,15 +204,30 @@ export function MasterReviewsScreen() {
             {/* 후기 내용 */}
             <Text style={styles.reviewContent}>{item.content}</Text>
 
-            {/* 하단 액션 (답글 달기) */}
+            {/* 하단 액션 (AI 요약, 답글 달기) */}
             <View style={styles.cardFooter}>
-              <TouchableOpacity 
-                style={styles.replyBtn} 
+              <TouchableOpacity
+                style={styles.summaryBtn}
+                activeOpacity={0.7}
+                onPress={() => handleSummarizeReview(item.id, item.content)}
+                disabled={summarizingReviewId === item.id}
+              >
+                {summarizingReviewId === item.id ? (
+                  <ActivityIndicator size="small" color={BRAND} />
+                ) : (
+                  <>
+                    <Ionicons name="sparkles-outline" size={16} color="#F59E0B" />
+                    <Text style={styles.summaryBtnText}>AI 요약</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.replyBtn}
                 activeOpacity={0.7}
                 onPress={handleUnsupportedReply}
               >
                 <Ionicons name="chatbubble-ellipses-outline" size={16} color={BRAND} />
-                <Text style={styles.replyBtnText}>답글 기능 준비 중</Text>
+                <Text style={styles.replyBtnText}>답글 (준비 중)</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -228,7 +273,9 @@ const styles = StyleSheet.create({
   replyTitle: { fontSize: 13, fontWeight: "700", color: BRAND },
   replyText: { fontSize: 14, color: "#5C5651", lineHeight: 20 },
   
-  cardFooter: { flexDirection: "row", justifyContent: "flex-end", borderTopWidth: 1, borderTopColor: "#F5F4F0", paddingTop: 12 },
+  cardFooter: { flexDirection: "row", justifyContent: "flex-end", borderTopWidth: 1, borderTopColor: "#F5F4F0", paddingTop: 12, gap: 8 },
+  summaryBtn: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#FEF3C7", paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8, minWidth: 90, justifyContent: "center" },
+  summaryBtnText: { fontSize: 13, fontWeight: "600", color: "#F59E0B" },
   replyBtn: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#FAF9F6", paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8, borderWidth: 1, borderColor: BORDER },
   replyBtnText: { fontSize: 13, fontWeight: "600", color: BRAND },
   repliedBadge: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 10, paddingVertical: 6 },
