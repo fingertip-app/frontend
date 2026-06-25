@@ -20,6 +20,7 @@ import { addToWishlist, checkWishlist, removeFromWishlist } from "@/features/wis
 import { formatScheduleDate } from "@/lib/scheduling";
 import type { Experience as BackendExperience, Review } from "@/types/api";
 import { useTheme } from "@/theme/ThemeContext";
+import { KakaoMapView } from "@/components/KakaoMapView";
 
 type Props = {
   exp: Experience;
@@ -642,19 +643,14 @@ export function DetailBottomSheet({ exp, onClose }: Props) {
             >
               위치 안내
             </Text>
-            <View
-              style={{
-                height: 160,
-                backgroundColor: colors.bg,
-                borderRadius: 16,
-                justifyContent: "center",
-                alignItems: "center",
-                overflow: "hidden",
-                position: "relative",
-              }}
-            >
-              {/* 지도 플레이스홀더 — 실제 MapView로 교체 가능 */}
-              <Ionicons name="map-outline" size={40} color={colors.textSecondary} />
+            <View style={{ position: "relative" }}>
+              <KakaoMapView
+                latitude={fullExperience?.locationLatitude || 37.5665}
+                longitude={fullExperience?.locationLongitude || 126.9780}
+                address={exp.location}
+                height={160}
+                markerTitle={fullExperience?.title || exp.title}
+              />
               <View
                 style={{
                   position: "absolute",
