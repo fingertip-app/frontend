@@ -6,7 +6,6 @@ import {
   SafeAreaView,
   TouchableOpacity,
   ScrollView,
-  Alert,
   ActivityIndicator,
   Modal,
   Switch,
@@ -85,6 +84,9 @@ export function SettingScreen() {
   const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [logoutError, setLogoutError] = useState<string | null>(null);
   const [activeModal, setActiveModal] = useState<"password" | "notifications" | "language" | null>(null);
   const [newPassword, setNewPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
@@ -125,22 +127,18 @@ export function SettingScreen() {
     setMode(next);
   };
 
-  const handleLogout = () => {
-    Alert.alert("로그아웃", "정말 로그아웃 하시겠어요?", [
-      { text: "취소", style: "cancel" },
-      {
-        text: "로그아웃",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            await logout();
-            navigation.reset({ index: 0, routes: [{ name: "Login" }] });
-          } catch {
-            Alert.alert("오류", "로그아웃에 실패했습니다.");
-          }
-        },
-      },
-    ]);
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    setLogoutError(null);
+    try {
+      await logout();
+      setIsLogoutModalVisible(false);
+      navigation.reset({ index: 0, routes: [{ name: "Login" }] });
+    } catch (error) {
+      setLogoutError(error instanceof Error ? error.message : "로그아웃에 실패했습니다.");
+    } finally {
+      setIsLoggingOut(false);
+    }
   };
 
   const handleDeleteAccount = async () => {
@@ -262,7 +260,10 @@ export function SettingScreen() {
           <Row
             icon={<Ionicons name="log-out-outline" size={18} color={colors.textSecondary} />}
             label="로그아웃"
-            onPress={handleLogout}
+            onPress={() => {
+              setLogoutError(null);
+              setIsLogoutModalVisible(true);
+            }}
           />
           <View style={[styles.separator, { backgroundColor: colors.border }]} />
           <Row
@@ -320,6 +321,48 @@ export function SettingScreen() {
                   <ActivityIndicator size="small" color="#FFFFFF" />
                 ) : (
                   <Text style={styles.deleteButtonText}>탈퇴</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        transparent
+        visible={isLogoutModalVisible}
+        animationType="fade"
+        onRequestClose={() => {
+          if (!isLoggingOut) setIsLogoutModalVisible(false);
+        }}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={[styles.deleteModal, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <View style={[styles.deleteIcon, { backgroundColor: colors.bg }]}>
+              <Ionicons name="log-out-outline" size={24} color={colors.text} />
+            </View>
+            <Text style={[styles.deleteTitle, { color: colors.text }]}>로그아웃</Text>
+            <Text style={[styles.deleteDescription, { color: colors.textSecondary }]}>
+              현재 계정에서 로그아웃할까요?
+            </Text>
+            {logoutError ? <Text style={styles.deleteError}>{logoutError}</Text> : null}
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={[styles.modalButton, { borderColor: colors.border }]}
+                disabled={isLoggingOut}
+                onPress={() => setIsLogoutModalVisible(false)}
+              >
+                <Text style={[styles.cancelText, { color: colors.text }]}>취소</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, { backgroundColor: colors.text, borderColor: colors.text }]}
+                disabled={isLoggingOut}
+                onPress={() => void handleLogout()}
+              >
+                {isLoggingOut ? (
+                  <ActivityIndicator size="small" color={colors.bg} />
+                ) : (
+                  <Text style={[styles.cancelText, { color: colors.bg }]}>로그아웃</Text>
                 )}
               </TouchableOpacity>
             </View>
