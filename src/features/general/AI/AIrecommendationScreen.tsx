@@ -23,6 +23,7 @@ import {
   extractInfoFromMessages,
   getNextStep,
   hasMinimumInfoForRecommendation,
+  getContextualPrompt,
 } from "./smart-flow-helper";
 
 // ─── 팔레트 (기존 유지) ────────────────────────────────────────────────────────
@@ -376,11 +377,23 @@ const toExperience = (item: RecommendationCard): Experience => ({
 export function AIrecommendationScreen() {
   const navigation = useNavigation<BottomTabNavigationProp<MainTabParamList, "AIRecommend">>();
   const { colors } = useTheme();
+
+  const initialPrompt = getContextualPrompt({
+    step: "companion",
+    userAnswers: [],
+    extractedInfo: {
+      hasCompanion: false,
+      hasInterest: false,
+      hasBudget: false,
+      hasDuration: false,
+    },
+  });
+
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "init",
       role: "ai",
-      text: FLOW.companion.aiText,
+      text: initialPrompt,
       chips: FLOW.companion.chips,
     },
   ]);
@@ -496,10 +509,18 @@ export function AIrecommendationScreen() {
       const nextStep = FLOW[currentStep]?.nextStep;
       if (nextStep && nextStep !== "done") {
         const node = FLOW[nextStep];
+
+        // 🆕 동적 프롬프트 생성
+        const dynamicPrompt = getContextualPrompt({
+          step: nextStep,
+          userAnswers,
+          extractedInfo,
+        });
+
         const aiMsg: Message = {
           id: (Date.now() + 1).toString(),
           role: "ai",
-          text: node.aiText,
+          text: dynamicPrompt || node.aiText, // fallback to static
           chips: node.chips,
         };
         setMessages((prev) => [...prev, aiMsg]);
@@ -520,11 +541,22 @@ export function AIrecommendationScreen() {
   };
 
   const handleReset = () => {
+    const resetPrompt = getContextualPrompt({
+      step: "companion",
+      userAnswers: [],
+      extractedInfo: {
+        hasCompanion: false,
+        hasInterest: false,
+        hasBudget: false,
+        hasDuration: false,
+      },
+    });
+
     setMessages([
       {
         id: "init",
         role: "ai",
-        text: FLOW.companion.aiText,
+        text: resetPrompt,
         chips: FLOW.companion.chips,
       },
     ]);
