@@ -8,6 +8,9 @@ import {
   Image,
   ScrollView,
   Platform,
+  Dimensions,
+  NativeSyntheticEvent,
+  NativeScrollEvent,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -16,9 +19,10 @@ import { Experience } from "./SearchScreen";
 import { RootStackParamList } from "@/navigation/RootNavigator";
 import { getExperience } from "@/features/experiences/api/experiencesApi";
 import { getExperienceReviews } from "@/features/reviews/api/reviewsApi";
+import { getArtisan } from "@/features/artisans/api/artisanApi";
 import { addToWishlist, checkWishlist, removeFromWishlist } from "@/features/wishlists/api/wishlistsApi";
 import { formatScheduleDate } from "@/lib/scheduling";
-import type { Experience as BackendExperience, Review } from "@/types/api";
+import type { Artisan, Experience as BackendExperience, Review } from "@/types/api";
 import { useTheme } from "@/theme/ThemeContext";
 import { KakaoMapView } from "@/components/KakaoMapView";
 
@@ -26,6 +30,32 @@ type Props = {
   exp: Experience;
   onClose: () => void;
 };
+
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
+
+const DIFFICULTY_LABELS: Record<string, string> = {
+  BEGINNER: "초급",
+  INTERMEDIATE: "중급",
+  ADVANCED: "고급",
+};
+
+function formatDuration(minutes?: number): string {
+  if (!minutes || minutes <= 0) return "시간 정보 없음";
+  if (minutes < 60) return `${minutes}분`;
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  return rest > 0 ? `${hours}시간 ${rest}분` : `${hours}시간`;
+}
+
+function formatDifficulty(difficulty?: string): string {
+  if (!difficulty) return "난이도 정보 없음";
+  return DIFFICULTY_LABELS[difficulty] ?? difficulty;
+}
+
+function formatLanguages(languages?: string[]): string {
+  if (!languages || !languages.length) return "언어 정보 없음";
+  return languages.join(", ");
+}
 
 function InfoChip({ icon, label }: { icon: React.ReactNode; label: string }) {
   const { colors } = useTheme();
@@ -56,41 +86,29 @@ function InfoChip({ icon, label }: { icon: React.ReactNode; label: string }) {
   );
 }
 
-function IncludeItem({ icon, label }: { icon: React.ReactNode; label: string }) {
-  const { colors } = useTheme();
-  return (
-    <View style={{ alignItems: "center", flex: 1, gap: 8 }}>
-      <View
-        style={{
-          width: 52,
-          height: 52,
-          borderRadius: 26,
-          backgroundColor: colors.bg,
-          justifyContent: "center",
-          alignItems: "center",
-        }}
-      >
-        {icon}
-      </View>
-      <Text style={{ fontSize: 12, color: colors.textSecondary, textAlign: "center" }}>
-        {label}
-      </Text>
-    </View>
-  );
-}
-
 export function DetailBottomSheet({ exp, onClose }: Props) {
   const [expanded, setExpanded] = useState(false);
   const [fullExperience, setFullExperience] = useState<BackendExperience | null>(null);
+  const [artisan, setArtisan] = useState<Artisan | null>(null);
   const [isLoadingExperience, setIsLoadingExperience] = useState(true);
   const [experienceError, setExperienceError] = useState<string | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [isLoadingReviews, setIsLoadingReviews] = useState(true);
   const [isWished, setIsWished] = useState(false);
   const [isWishLoading, setIsWishLoading] = useState(false);
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
   const requestIdRef = useRef(0);
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { colors } = useTheme();
+
+  const galleryImages = fullExperience?.images?.length
+    ? [...fullExperience.images].sort((a, b) => a.displayOrder - b.displayOrder).map((img) => img.imageUrl)
+    : [exp.imageUri];
+
+  const handleImageScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const index = Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH);
+    setActiveImageIndex(index);
+  };
 
   const loadExperience = useCallback(async () => {
     const requestId = requestIdRef.current + 1;
@@ -126,11 +144,33 @@ export function DetailBottomSheet({ exp, onClose }: Props) {
 
   useEffect(() => {
     loadExperience();
+    setActiveImageIndex(0);
 
     return () => {
       requestIdRef.current += 1;
     };
   }, [loadExperience]);
+
+  useEffect(() => {
+    const artisanId = fullExperience?.artisanId;
+    if (!artisanId) {
+      setArtisan(null);
+      return;
+    }
+
+    let isCurrent = true;
+    getArtisan(artisanId)
+      .then((data) => {
+        if (isCurrent) setArtisan(data);
+      })
+      .catch(() => {
+        if (isCurrent) setArtisan(null);
+      });
+
+    return () => {
+      isCurrent = false;
+    };
+  }, [fullExperience?.artisanId]);
 
   useEffect(() => {
     const experienceId = Number(exp.id);
@@ -268,13 +308,52 @@ export function DetailBottomSheet({ exp, onClose }: Props) {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 110 }}
         >
-          {/* 썸네일 이미지 */}
+          {/* 썸네일 이미지 갤러리 */}
           <View>
-            <Image
-              source={{ uri: exp.imageUri }}
-              style={{ width: "100%", height: 240 }}
-              resizeMode="cover"
-            />
+            <ScrollView
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              onScroll={handleImageScroll}
+              scrollEventThrottle={16}
+            >
+              {galleryImages.map((uri, index) => (
+                <Image
+                  key={`${uri}-${index}`}
+                  source={{ uri }}
+                  style={{ width: SCREEN_WIDTH, height: 240 }}
+                  resizeMode="cover"
+                />
+              ))}
+            </ScrollView>
+
+            {galleryImages.length > 1 && (
+              <View
+                style={{
+                  position: "absolute",
+                  bottom: 14,
+                  left: 0,
+                  right: 0,
+                  flexDirection: "row",
+                  justifyContent: "center",
+                  gap: 6,
+                }}
+              >
+                {galleryImages.map((_, index) => (
+                  <View
+                    key={index}
+                    style={{
+                      width: index === activeImageIndex ? 16 : 6,
+                      height: 6,
+                      borderRadius: 3,
+                      backgroundColor:
+                        index === activeImageIndex ? "#FFFFFF" : "rgba(255,255,255,0.5)",
+                    }}
+                  />
+                ))}
+              </View>
+            )}
+
             <TouchableOpacity
               onPress={handleToggleWishlist}
               disabled={isWishLoading}
@@ -335,6 +414,25 @@ export function DetailBottomSheet({ exp, onClose }: Props) {
               </View>
             </View>
 
+            {/* 스타일 태그 */}
+            {!!fullExperience?.tags?.length && (
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: 20 }}>
+                {fullExperience.tags.map((tag) => (
+                  <View
+                    key={tag}
+                    style={{
+                      backgroundColor: colors.border,
+                      borderRadius: 20,
+                      paddingHorizontal: 12,
+                      paddingVertical: 6,
+                    }}
+                  >
+                    <Text style={{ fontSize: 12, fontWeight: "600", color: colors.text }}>#{tag}</Text>
+                  </View>
+                ))}
+              </View>
+            )}
+
             {/* 정보 칩 4개 */}
             <View
               style={{
@@ -353,19 +451,19 @@ export function DetailBottomSheet({ exp, onClose }: Props) {
             >
               <InfoChip
                 icon={<Ionicons name="time-outline" size={20} color={colors.accent} />}
-                label="2시간"
+                label={formatDuration(fullExperience?.durationMinutes)}
               />
               <InfoChip
                 icon={<Ionicons name="construct-outline" size={20} color={colors.accent} />}
-                label="초급"
+                label={formatDifficulty(fullExperience?.difficulty)}
               />
               <InfoChip
                 icon={<Ionicons name="people-outline" size={20} color={colors.accent} />}
-                label="1~6명"
+                label={fullExperience?.maxParticipants ? `최대 ${fullExperience.maxParticipants}명` : "인원 정보 없음"}
               />
               <InfoChip
                 icon={<Ionicons name="language-outline" size={20} color={colors.accent} />}
-                label="한국어, 영어"
+                label={formatLanguages(fullExperience?.supportedLanguages)}
               />
             </View>
 
@@ -459,7 +557,11 @@ export function DetailBottomSheet({ exp, onClose }: Props) {
                     {exp.artisan}
                   </Text>
                   <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 2 }}>
-                    국가무형유산 제105호 사기장 이수자
+                    {artisan?.heritageCategory
+                      ? artisan.certificationNumber
+                        ? `${artisan.heritageCategory} · 인증번호 ${artisan.certificationNumber}`
+                        : artisan.heritageCategory
+                      : "장인 인증 정보가 아직 등록되지 않았습니다."}
                   </Text>
                 </View>
               </View>
@@ -472,58 +574,23 @@ export function DetailBottomSheet({ exp, onClose }: Props) {
                 }}
                 numberOfLines={2}
               >
-                30년간 도자기의 길을 걸어왔습니다. 전통의 가치를 현대적으로 풀어내는 즈
+                {artisan?.bio || "장인 소개가 아직 등록되지 않았습니다."}
               </Text>
             </View>
-            <TouchableOpacity
-              style={{ flexDirection: "row", alignItems: "center", gap: 2 }}
-            >
-              <Text style={{ fontSize: 14, color: colors.accent, fontWeight: "600" }}>
-                장인 이야기 보기
-              </Text>
-              <Ionicons name="chevron-forward" size={14} color={colors.accent} />
-            </TouchableOpacity>
-
-            {/* 구분선 */}
-            <View
-              style={{ height: 1, backgroundColor: colors.border, marginTop: 24, marginBottom: 24 }}
-            />
-
-            {/* 포함 사항 */}
-            <Text
-              style={{
-                fontSize: 17,
-                fontWeight: "700",
-                color: colors.text,
-                marginBottom: 16,
-              }}
-            >
-              포함 사항
-            </Text>
-            <View
-              style={{
-                flexDirection: "row",
-                justifyContent: "space-around",
-                marginBottom: 4,
-              }}
-            >
-              <IncludeItem
-                icon={<Ionicons name="construct-outline" size={22} color={colors.accent} />}
-                label="재료 및 도구"
-              />
-              <IncludeItem
-                icon={<Ionicons name="shirt-outline" size={22} color={colors.accent} />}
-                label="앞치마"
-              />
-              <IncludeItem
-                icon={<Ionicons name="cube-outline" size={22} color={colors.accent} />}
-                label="완성품 소성"
-              />
-              <IncludeItem
-                icon={<Ionicons name="cafe-outline" size={22} color={colors.accent} />}
-                label="음료 제공"
-              />
-            </View>
+            {!!fullExperience?.artisanId && (
+              <TouchableOpacity
+                style={{ flexDirection: "row", alignItems: "center", gap: 2 }}
+                onPress={() => {
+                  onClose();
+                  navigation.navigate("ArtisanDetail", { artisanId: fullExperience.artisanId });
+                }}
+              >
+                <Text style={{ fontSize: 14, color: colors.accent, fontWeight: "600" }}>
+                  장인 이야기 보기
+                </Text>
+                <Ionicons name="chevron-forward" size={14} color={colors.accent} />
+              </TouchableOpacity>
+            )}
 
             {/* 구분선 */}
             <View
@@ -645,8 +712,8 @@ export function DetailBottomSheet({ exp, onClose }: Props) {
             </Text>
             <View style={{ position: "relative" }}>
               <KakaoMapView
-                latitude={fullExperience?.locationLatitude || 37.5665}
-                longitude={fullExperience?.locationLongitude || 126.9780}
+                latitude={fullExperience?.locationLat || 37.5665}
+                longitude={fullExperience?.locationLng || 126.9780}
                 address={exp.location}
                 height={160}
                 markerTitle={fullExperience?.title || exp.title}

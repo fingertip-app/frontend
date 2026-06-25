@@ -6,6 +6,7 @@ import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "@/navigation/RootNavigator";
 import { useTheme } from "@/theme/ThemeContext";
+import { LogoMark } from "@/components/Logo";
 
 interface MasterHeaderProps {
   title?: string;
@@ -25,7 +26,10 @@ export function MasterHeader({ title = "손끝", activeItem = "홈", hasNotifica
         <TouchableOpacity onPress={() => setIsDrawerOpen(true)} hitSlop={12}>
           <Ionicons name="menu" size={28} color={colors.text} />
         </TouchableOpacity>
-        <Text style={[styles.navTitle, { color: colors.text }]}>{title}</Text>
+        <View style={styles.logoRow}>
+          <LogoMark size={26} />
+          <Text style={[styles.navTitle, { color: colors.text }]}>{title}</Text>
+        </View>
         {rightComponent ? (
           rightComponent
         ) : (
@@ -49,6 +53,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20, paddingVertical: 14, backgroundColor: "transparent",
     paddingTop: Platform.OS === "ios" ? 6 : 14,
   },
+  logoRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   navTitle: { fontSize: 17, fontWeight: "700" },
   notiBadge: { position: "absolute", top: 0, right: 0, width: 8, height: 8, borderRadius: 4, backgroundColor: "#E04848", borderWidth: 1 },
 });

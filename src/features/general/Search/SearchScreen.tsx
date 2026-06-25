@@ -30,13 +30,13 @@ import type { ThemeColors } from "@/theme/colors";
 type CategoryItem = {
   id: string;
   label: string;
-  icon: string;
+  icon: React.ComponentProps<typeof Ionicons>["name"];
 };
 
 type FilterChip = {
   id: string;
   label: string;
-  icon: string;
+  icon: React.ComponentProps<typeof Ionicons>["name"];
 };
 
 type SortOption = "추천순" | "가격 낮은순" | "가격 높은순" | "별점순" | "리뷰 많은순";
@@ -65,29 +65,29 @@ export type Experience = {
 // ─── 상수 / 데이터 ────────────────────────────────────────────────────────────
 
 // 체험의 category는 자유 텍스트(백엔드 Experience.category)라 고정된 값 목록이 없다.
-// 알려진 분야는 보기 좋은 아이콘을 붙이고, 모르는 분야는 기본 아이콘으로 표시한다.
-const CATEGORY_ICONS: Record<string, string> = {
-  도자기: "🏺",
-  한지공예: "📜",
-  목공: "🪵",
-  염색: "🎨",
-  전통음식: "🍱",
-  모시짜기: "🧵",
-  갓일: "🎩",
-  자수: "🪡",
-  매듭공예: "🪢",
-  한복: "👘",
-  탈제작: "🎭",
-  국악: "🎶",
-  전통주: "🍶",
+// 알려진 분야는 선형 아이콘으로 표시하고, 모르는 분야는 기본 아이콘으로 처리한다.
+const CATEGORY_ICONS: Record<string, React.ComponentProps<typeof Ionicons>["name"]> = {
+  도자기: "ellipse-outline",
+  한지공예: "document-text-outline",
+  목공: "hammer-outline",
+  염색: "color-palette-outline",
+  전통음식: "restaurant-outline",
+  모시짜기: "git-branch-outline",
+  갓일: "ribbon-outline",
+  자수: "cut-outline",
+  매듭공예: "link-outline",
+  한복: "shirt-outline",
+  탈제작: "happy-outline",
+  국악: "musical-notes-outline",
+  전통주: "wine-outline",
 };
-const DEFAULT_CATEGORY_ICON = "🪭";
+const DEFAULT_CATEGORY_ICON: React.ComponentProps<typeof Ionicons>["name"] = "sparkles-outline";
 
 const FILTER_CHIPS: FilterChip[] = [
-  { id: "popular",  label: "인기",       icon: "🔥" },
-  { id: "family",   label: "가족체험",    icon: "👨‍👩‍👧" },
-  { id: "foreign",  label: "외국인 추천", icon: "🌏" },
-  { id: "monthly",  label: "월정액",     icon: "📅" },
+  { id: "popular", label: "인기", icon: "flame-outline" },
+  { id: "family", label: "가족체험", icon: "people-outline" },
+  { id: "foreign", label: "외국인 추천", icon: "earth-outline" },
+  { id: "monthly", label: "월정액", icon: "calendar-outline" },
 ];
 
 const SORT_OPTIONS: SortOption[] = [
@@ -261,7 +261,11 @@ function CategoryRow({
                 justifyContent: "center",
               }}
             >
-              <Text style={{ fontSize: 22 }}>{cat.icon}</Text>
+              <Ionicons
+                name={cat.icon}
+                size={22}
+                color={active ? colors.accent : colors.textSecondary}
+              />
             </View>
             <Text
               style={{
@@ -313,7 +317,12 @@ function FilterChips({
               backgroundColor: active ? colors.accent : colors.card,
             }}
           >
-            <Text style={{ fontSize: 12, marginRight: 4 }}>{chip.icon}</Text>
+            <Ionicons
+              name={chip.icon}
+              size={14}
+              color={active ? colors.bg : colors.textSecondary}
+              style={{ marginRight: 5 }}
+            />
             <Text
               style={{
                 fontSize: 13,
@@ -737,7 +746,7 @@ export function SearchScreen() {
   const categories = useMemo<CategoryItem[]>(() => {
     const distinctCategories = Array.from(new Set(allExperiences.map((exp) => exp.category))).sort();
     return [
-      { id: "all", label: "전체", icon: "✨" },
+      { id: "all", label: "전체", icon: "grid-outline" },
       ...distinctCategories.map((category) => ({
         id: category,
         label: category,

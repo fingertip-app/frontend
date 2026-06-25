@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -16,8 +16,16 @@ import * as Location from "expo-location";
 import { createRegisteredExperience } from "../experienceManagementApi";
 import type { ExperienceRegistrationParams } from "../types";
 import { useTheme } from "@/theme/ThemeContext";
+import { searchRegions } from "@/lib/koreanRegions";
+import { KakaoMapView } from "@/components/KakaoMapView";
 
 const STEP_LABELS = ["기본 정보", "사진", "일정 등록", "가격/인원", "장소"];
+
+// 행정구역 region(시/도) 표기를 REGIONS의 짧은 키와 맞추기 위한 접미사 제거
+function normalizeCityName(raw?: string | null): string {
+  if (!raw) return "";
+  return raw.replace(/(특별자치시|특별자치도|광역시|특별시|도)$/u, "");
+}
 
 export function Step5Location() {
   const navigation = useNavigation<any>();
@@ -26,28 +34,49 @@ export function Step5Location() {
   const params = (route.params ?? {}) as Partial<ExperienceRegistrationParams>;
   const currentStep = 5;
 
-  const [address, setAddress] = useState("");
+  const [regionSearchText, setRegionSearchText] = useState("");
+  const [selectedCity, setSelectedCity] = useState<string | null>(null);
+  const [selectedDistrict, setSelectedDistrict] = useState<string | null>(null);
   const [addressDetail, setAddressDetail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
-  const [pinLabel, setPinLabel] = useState("주소를 입력하거나 현재 위치를 사용해주세요");
+  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
 
-  const handleSearch = async () => {
-    if (!address.trim()) {
-      Alert.alert("알림", "주소를 입력해주세요.");
+  const regionSuggestions = searchRegions(regionSearchText).slice(0, 8);
+  const regionLabel = selectedCity && selectedDistrict ? `${selectedCity} ${selectedDistrict}` : null;
+
+  const selectRegion = (city: string, district: string) => {
+    setSelectedCity(city);
+    setSelectedDistrict(district);
+    setRegionSearchText("");
+  };
+
+  const clearRegion = () => {
+    setSelectedCity(null);
+    setSelectedDistrict(null);
+    setCoords(null);
+  };
+
+  // 지역/상세주소가 정해지면 실제 지도용 좌표를 베스트 에포트로 추정
+  useEffect(() => {
+    if (!regionLabel) {
+      setCoords(null);
       return;
     }
-    try {
-      const results = await Location.geocodeAsync(address.trim());
-      if (!results.length) {
-        Alert.alert("알림", "입력하신 주소를 찾을 수 없어요. 다시 확인해주세요.");
-        return;
-      }
-      setPinLabel(address.trim());
-    } catch {
-      Alert.alert("알림", "주소 확인 중 오류가 발생했어요.");
-    }
-  };
+    let cancelled = false;
+    const fullAddress = addressDetail ? `${regionLabel} ${addressDetail}` : regionLabel;
+    Location.geocodeAsync(fullAddress)
+      .then((results) => {
+        if (cancelled || !results.length) return;
+        setCoords({ lat: results[0].latitude, lng: results[0].longitude });
+      })
+      .catch(() => {
+        if (!cancelled) setCoords(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [regionLabel, addressDetail]);
 
   const handleUseCurrentLocation = async () => {
     setIsLocating(true);
@@ -66,11 +95,17 @@ export function Step5Location() {
         Alert.alert("알림", "현재 위치의 주소를 확인할 수 없어요.");
         return;
       }
-      const formatted = [place.region, place.city, place.district, place.street, place.name]
-        .filter(Boolean)
-        .join(" ");
-      setAddress(formatted || "");
-      setPinLabel(formatted || "현재 위치");
+      const city = normalizeCityName(place.region);
+      const matches = searchRegions(place.district || place.city || "").filter((r) => r.city === city);
+      if (city && matches.length) {
+        selectRegion(matches[0].city, matches[0].district);
+        setAddressDetail([place.street, place.name].filter(Boolean).join(" "));
+      } else {
+        Alert.alert("알림", "현재 위치의 지역을 자동으로 찾지 못했어요. 목록에서 직접 선택해주세요.");
+        setAddressDetail(
+          [place.region, place.city, place.district, place.street, place.name].filter(Boolean).join(" "),
+        );
+      }
     } catch {
       Alert.alert("알림", "현재 위치를 가져오지 못했어요.");
     } finally {
@@ -86,6 +121,7 @@ export function Step5Location() {
         !params.shortDesc ||
         !params.detail ||
         !params.category ||
+        !params.difficulty ||
         !params.mainPhoto ||
         !params.selectedDays ||
         !params.timeSlots ||
@@ -95,9 +131,13 @@ export function Step5Location() {
       ) {
         throw new Error("체험 등록 정보가 누락되었습니다. 첫 단계부터 다시 진행해주세요.");
       }
+      if (!regionLabel) {
+        throw new Error("체험 지역을 선택해주세요.");
+      }
       await createRegisteredExperience(
         params as ExperienceRegistrationParams,
-        addressDetail ? `${address} ${addressDetail}` : address,
+        addressDetail ? `${regionLabel} ${addressDetail}` : regionLabel,
+        coords ?? undefined,
       );
       Alert.alert("등록 완료", "체험 클래스가 성공적으로 등록되었습니다!", [
         {
@@ -164,24 +204,59 @@ export function Step5Location() {
           </Text>
         </View>
 
-        {/* ── 주소 검색 ── */}
+        {/* ── 지역 선택 ── */}
         <View style={styles.block}>
-          <Text style={[styles.label, { color: colors.text }]}>주소 검색</Text>
-          <View style={styles.searchRow}>
-            <View style={[styles.searchInputBox, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <Ionicons name="search-outline" size={16} color={colors.textSecondary} style={styles.searchIcon} />
-              <TextInput
-                style={[styles.searchInput, { color: colors.text }]}
-                placeholder="서울시 종로구 북촌로 11길"
-                placeholderTextColor={colors.textSecondary}
-                value={address}
-                onChangeText={setAddress}
-              />
-            </View>
-            <TouchableOpacity style={[styles.searchBtn, { backgroundColor: colors.text }]} activeOpacity={0.8} onPress={handleSearch}>
-              <Text style={[styles.searchBtnText, { color: colors.bg }]}>검색</Text>
+          <Text style={[styles.label, { color: colors.text }]}>지역 선택</Text>
+          <View style={[styles.searchInputBox, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Ionicons name="search-outline" size={16} color={colors.textSecondary} style={styles.searchIcon} />
+            <TextInput
+              style={[styles.searchInput, { color: colors.text }]}
+              placeholder="시/군/구 검색 (예: 종로구, 전주시)"
+              placeholderTextColor={colors.textSecondary}
+              value={regionSearchText}
+              onChangeText={setRegionSearchText}
+            />
+            <TouchableOpacity
+              style={[styles.currentLocationChip, { borderColor: colors.border }]}
+              onPress={handleUseCurrentLocation}
+              disabled={isLocating}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="locate-outline" size={14} color={colors.textSecondary} />
             </TouchableOpacity>
           </View>
+
+          {/* 연관 검색어 */}
+          {regionSearchText.length > 0 && (
+            <View style={[styles.searchResults, { borderColor: colors.border, backgroundColor: colors.card }]}>
+              {regionSuggestions.length > 0 ? (
+                regionSuggestions.map((r, i) => (
+                  <TouchableOpacity
+                    key={`${r.city}-${r.district}-${i}`}
+                    style={[styles.searchResultItem, { borderBottomColor: colors.border }]}
+                    onPress={() => selectRegion(r.city, r.district)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.searchResultText, { color: colors.text }]}>
+                      {r.city} {r.district}
+                    </Text>
+                  </TouchableOpacity>
+                ))
+              ) : (
+                <Text style={[styles.noResultText, { color: colors.textSecondary }]}>검색 결과가 없습니다.</Text>
+              )}
+            </View>
+          )}
+
+          {/* 선택된 지역 */}
+          {regionLabel && (
+            <View style={[styles.selectedRegionTag, { backgroundColor: colors.text }]}>
+              <Text style={[styles.selectedRegionTagText, { color: colors.bg }]}>{regionLabel}</Text>
+              <TouchableOpacity onPress={clearRegion}>
+                <Ionicons name="close" size={14} color={colors.bg} />
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
 
         {/* ── 상세 주소 ── */}
@@ -189,7 +264,7 @@ export function Step5Location() {
           <Text style={[styles.label, { color: colors.text }]}>상세 주소</Text>
           <TextInput
             style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
-            placeholder="나머지 상세 주소 입력 (예: 2층, 201호)"
+            placeholder="나머지 상세 주소 입력 (예: 북촌로 11길, 2층)"
             placeholderTextColor={colors.textSecondary}
             value={addressDetail}
             onChangeText={setAddressDetail}
@@ -197,40 +272,26 @@ export function Step5Location() {
         </View>
 
         {/* ── 지도 영역 ── */}
-        <View style={[styles.mapBox, { borderColor: colors.border }]}>
-          {/* 지도 배경 (플레이스홀더) */}
-          <View style={styles.mapBg}>
-            {/* 지도 일러스트 느낌의 패턴 */}
-            <View style={styles.mapPattern}>
-              <View style={styles.mapRoad1} />
-              <View style={styles.mapRoad2} />
-              <View style={styles.mapBuilding1} />
-              <View style={styles.mapBuilding2} />
-              <View style={styles.mapBuilding3} />
-            </View>
-
-            {/* 핀 */}
-            <View style={styles.pinWrapper}>
-              <View style={[styles.pinLabel, { backgroundColor: colors.text }]}>
-                <Text style={[styles.pinLabelText, { color: colors.bg }]} numberOfLines={1}>{pinLabel}</Text>
+        {regionLabel && (
+          <View style={[styles.mapBox, { borderColor: colors.border }]}>
+            {coords ? (
+              <KakaoMapView
+                latitude={coords.lat}
+                longitude={coords.lng}
+                address={addressDetail ? `${regionLabel} ${addressDetail}` : regionLabel}
+                height={200}
+                markerTitle={regionLabel}
+              />
+            ) : (
+              <View style={[styles.mapFallback, { backgroundColor: colors.card }]}>
+                <Ionicons name="location-outline" size={28} color={colors.textSecondary} />
+                <Text style={[styles.mapFallbackText, { color: colors.textSecondary }]}>
+                  {regionLabel}{addressDetail ? ` ${addressDetail}` : ""}
+                </Text>
               </View>
-              <View style={[styles.pin, { backgroundColor: colors.text, borderColor: colors.card }]}>
-                <View style={[styles.pinDot, { backgroundColor: colors.card }]} />
-              </View>
-              <View style={styles.pinShadow} />
-            </View>
+            )}
           </View>
-
-          {/* 현재 위치 버튼 */}
-          <TouchableOpacity
-            style={[styles.locationBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
-            onPress={handleUseCurrentLocation}
-            disabled={isLocating}
-            activeOpacity={0.8}
-          >
-            <Ionicons name="locate-outline" size={18} color={colors.text} />
-          </TouchableOpacity>
-        </View>
+        )}
 
         {/* ── 안내 박스 ── */}
         <View style={[styles.noticeBox, { backgroundColor: colors.border }]}>
@@ -251,9 +312,9 @@ export function Step5Location() {
           <Text style={[styles.prevBtnText, { color: colors.text }]}>이전</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.nextBtn, { backgroundColor: colors.text }, (!address || isSubmitting) && styles.nextBtnDisabled]}
+          style={[styles.nextBtn, { backgroundColor: colors.text }, (!regionLabel || isSubmitting) && styles.nextBtnDisabled]}
           activeOpacity={0.8}
-          disabled={!address || isSubmitting}
+          disabled={!regionLabel || isSubmitting}
           onPress={handleComplete}
         >
           <Text style={[styles.nextBtnText, { color: colors.bg }]}>{isSubmitting ? "등록 중..." : "등록 완료"}</Text>
@@ -307,10 +368,9 @@ const styles = StyleSheet.create({
   block: { marginBottom: 16 },
   label: { fontSize: 14, fontWeight: "600", marginBottom: 10 },
 
-  // 주소 검색
-  searchRow: { flexDirection: "row", gap: 8, alignItems: "center" },
+  // 지역 검색
   searchInputBox: {
-    flex: 1, flexDirection: "row", alignItems: "center",
+    flexDirection: "row", alignItems: "center",
     borderWidth: 1,
     borderRadius: 10, paddingHorizontal: 12,
   },
@@ -319,11 +379,36 @@ const styles = StyleSheet.create({
     flex: 1, paddingVertical: 13,
     fontSize: 14,
   },
-  searchBtn: {
-    borderRadius: 10,
-    paddingHorizontal: 18, paddingVertical: 13,
+  currentLocationChip: {
+    width: 28, height: 28, borderRadius: 14,
+    borderWidth: 1,
+    justifyContent: "center", alignItems: "center",
   },
-  searchBtnText: { fontSize: 14, fontWeight: "700" },
+
+  // 연관 검색어 / 결과
+  searchResults: {
+    borderWidth: 1,
+    borderRadius: 12,
+    marginTop: 8,
+    overflow: "hidden",
+  },
+  searchResultItem: {
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+  },
+  searchResultText: { fontSize: 14 },
+  noResultText: { padding: 16, fontSize: 14 },
+
+  // 선택된 지역 태그
+  selectedRegionTag: {
+    flexDirection: "row", alignItems: "center", gap: 6,
+    alignSelf: "flex-start",
+    borderRadius: 20,
+    paddingVertical: 8, paddingHorizontal: 14,
+    marginTop: 10,
+  },
+  selectedRegionTagText: { fontSize: 13, fontWeight: "600" },
 
   // 상세주소
   input: {
@@ -335,66 +420,14 @@ const styles = StyleSheet.create({
   // 지도 박스
   mapBox: {
     height: 200, borderRadius: 14, overflow: "hidden",
-    marginBottom: 16, position: "relative",
+    marginBottom: 16,
     borderWidth: 1,
   },
-  mapBg: {
-    flex: 1, backgroundColor: "#E8E0D5",
+  mapFallback: {
+    flex: 1, gap: 8,
     justifyContent: "center", alignItems: "center",
   },
-  // 지도 패턴 (일러스트 느낌)
-  mapPattern: { ...StyleSheet.absoluteFillObject },
-  mapRoad1: {
-    position: "absolute", top: "45%", left: 0, right: 0,
-    height: 18, backgroundColor: "#D4C9BA",
-  },
-  mapRoad2: {
-    position: "absolute", left: "45%", top: 0, bottom: 0,
-    width: 14, backgroundColor: "#D4C9BA",
-  },
-  mapBuilding1: {
-    position: "absolute", top: "15%", left: "10%",
-    width: 60, height: 40, backgroundColor: "#C8BAA8",
-    borderRadius: 4,
-  },
-  mapBuilding2: {
-    position: "absolute", top: "20%", right: "12%",
-    width: 50, height: 55, backgroundColor: "#BFB09E",
-    borderRadius: 4,
-  },
-  mapBuilding3: {
-    position: "absolute", bottom: "15%", left: "20%",
-    width: 70, height: 35, backgroundColor: "#C8BAA8",
-    borderRadius: 4,
-  },
-  // 핀
-  pinWrapper: { alignItems: "center", zIndex: 10 },
-  pinLabel: {
-    borderRadius: 20,
-    paddingHorizontal: 12, paddingVertical: 6,
-    marginBottom: 6,
-  },
-  pinLabelText: { fontSize: 12, fontWeight: "700" },
-  pin: {
-    width: 28, height: 28, borderRadius: 14,
-    justifyContent: "center", alignItems: "center",
-    borderWidth: 3,
-  },
-  pinDot: { width: 8, height: 8, borderRadius: 4 },
-  pinShadow: {
-    width: 12, height: 5, borderRadius: 6,
-    backgroundColor: "rgba(0,0,0,0.2)", marginTop: 2,
-  },
-
-  // 현재 위치 버튼
-  locationBtn: {
-    position: "absolute", bottom: 12, right: 12,
-    width: 36, height: 36, borderRadius: 18,
-    borderWidth: 1,
-    justifyContent: "center", alignItems: "center",
-    shadowColor: "#000", shadowOpacity: 0.1, shadowRadius: 4,
-    elevation: 2,
-  },
+  mapFallbackText: { fontSize: 13, fontWeight: "600" },
 
   // 안내 박스
   noticeBox: {

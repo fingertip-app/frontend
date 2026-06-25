@@ -15,6 +15,7 @@ export interface ExperienceRegistrationParams {
   shortDesc: string
   detail: string
   category: string
+  difficulty: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED'
   tags: string[]
   mainPhoto: ExperiencePhoto
   detailPhotos: ExperiencePhoto[]
