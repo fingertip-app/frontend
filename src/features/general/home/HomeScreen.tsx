@@ -6,17 +6,19 @@ import {
 } from "react-native";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { Ionicons } from "@expo/vector-icons";
 import * as Location from "expo-location";
 import { RootStackParamList } from "@/navigation/RootNavigator";
 import { CardNewsCarousel } from "../cardnews/CardNewsCarousel";
 import { MainLayout } from "./MainLayout";
 import { apiGet } from "@/services/api";
 import { getMyReservations } from "@/features/reservations/api/reservationsApi";
-import { getExperience } from "@/features/experiences/api/experiencesApi";
+import { enrichExperiencesReviewStats, getExperience } from "@/features/experiences/api/experiencesApi";
 import { getMyWishlists, addToWishlist, removeFromWishlist, checkWishlist } from "@/features/wishlists/api/wishlistsApi";
 import { getHeroBanners, getRecommendedArtisan, getNearbyArtisans } from "./api/homeApi";
 import type { Reservation, Wishlist, Banner, Artisan } from "@/types/api";
 import { supabase } from "@/lib/supabase";
+import { useTheme } from "@/theme/ThemeContext";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const BANNER_WIDTH = SCREEN_WIDTH - 48;
@@ -74,8 +76,8 @@ function mapWishlistToCard(wishlist: Wishlist): ExperienceCard {
     duration: wishlist.experienceDurationMinutes ? `${wishlist.experienceDurationMinutes}분` : "시간 미정",
     category: wishlist.experienceCategory || "기타",
     price: `${Number(wishlist.experiencePrice).toLocaleString()}원`,
-    rating: 0, // TODO: 리뷰 평점 연동 필요
-    reviewCount: 0, // TODO: 리뷰 개수 연동 필요
+    rating: Number(((wishlist.averageRating ?? wishlist.rating) ?? 0).toFixed(1)),
+    reviewCount: wishlist.reviewCount ?? 0,
     image: wishlist.experienceImageUrl || "https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=400&q=80",
   };
 }
@@ -125,8 +127,8 @@ function mapExperienceToCard(exp: any): ExperienceCard {
     duration: exp.durationMinutes ? `${exp.durationMinutes}분` : "시간 미정",
     category: exp.category || "기타",
     price: `${Number(exp.price).toLocaleString()}원`,
-    rating: 0,
-    reviewCount: 0,
+    rating: Number((exp.averageRating ?? 0).toFixed(1)),
+    reviewCount: exp.reviewCount ?? 0,
     image: imageUrl,
   };
 }
@@ -142,6 +144,7 @@ function PopularExperienceCard({
 }) {
   const [isWished, setIsWished] = useState(false);
   const [loading, setLoading] = useState(false);
+  const { colors } = useTheme();
 
   // 마운트 시 + refreshTrigger 변경 시 찜 상태 확인
   useEffect(() => {
@@ -198,17 +201,21 @@ function PopularExperienceCard({
           activeOpacity={0.8}
           disabled={loading}
         >
-          <Text style={styles.wishIcon}>{isWished ? "❤️" : "🤍"}</Text>
+          <Ionicons
+            name={isWished ? "heart" : "heart-outline"}
+            size={15}
+            color={isWished ? colors.accent : colors.text}
+          />
         </TouchableOpacity>
       </View>
       <View style={styles.popularInfo}>
-        <Text style={styles.popularMeta}>{item.location} | {item.duration}</Text>
-        <Text style={styles.popularTitle} numberOfLines={1}>{item.title}</Text>
+        <Text style={[styles.popularMeta, { color: colors.textSecondary }]}>{item.location} | {item.duration}</Text>
+        <Text style={[styles.popularTitle, { color: colors.text }]} numberOfLines={1}>{item.title}</Text>
         <View style={styles.ratingRow}>
-          <Text style={styles.starIcon}>★</Text>
-          <Text style={styles.ratingText}>{item.rating} ({item.reviewCount})</Text>
+          <Text style={[styles.starIcon, { color: colors.gold }]}>★</Text>
+          <Text style={[styles.ratingText, { color: colors.textSecondary }]}>{item.rating} ({item.reviewCount})</Text>
         </View>
-        <Text style={styles.popularPrice}>{item.price}</Text>
+        <Text style={[styles.popularPrice, { color: colors.text }]}>{item.price}</Text>
       </View>
     </TouchableOpacity>
   );
@@ -223,15 +230,16 @@ function NearbyArtisanCard({
   distanceLabel: string;
   onPress: () => void;
 }) {
+  const { colors } = useTheme();
   return (
     <TouchableOpacity style={styles.nearbyCard} activeOpacity={0.9} onPress={onPress}>
       <Image source={{ uri: item.profileImageUrl || undefined }} style={styles.nearbyImage} />
       <View style={styles.nearbyInfo}>
-        <Text style={styles.nearbyName} numberOfLines={1}>{item.name}</Text>
-        <Text style={styles.nearbyMeta}>{item.heritageCategory} · {item.address || "위치 정보 없음"}</Text>
+        <Text style={[styles.nearbyName, { color: colors.text }]} numberOfLines={1}>{item.name}</Text>
+        <Text style={[styles.nearbyMeta, { color: colors.textSecondary }]}>{item.heritageCategory} · {item.address || "위치 정보 없음"}</Text>
         <View style={styles.nearbyDistanceRow}>
-          <Text style={styles.nearbyDistanceIcon}>📍</Text>
-          <Text style={styles.nearbyDistance}>{distanceLabel}</Text>
+          <Ionicons name="location-outline" size={11} color={colors.textSecondary} />
+          <Text style={[styles.nearbyDistance, { color: colors.textSecondary }]}>{distanceLabel}</Text>
         </View>
       </View>
     </TouchableOpacity>
@@ -240,6 +248,7 @@ function NearbyArtisanCard({
 
 export function HomeScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { colors } = useTheme();
   const [popularExperiences, setPopularExperiences] = useState<any[]>([]);
   const [newExperiences, setNewExperiences] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -382,7 +391,7 @@ export function HomeScreen() {
         setError(null);
         // 백엔드의 활성 체험 목록 API 호출
         const response = await apiGet<any[]>("/experiences/active");
-        const experiences = response || [];
+        const experiences = await enrichExperiencesReviewStats(response || []);
         setPopularExperiences(experiences);
         const sortedByNewest = [...experiences].sort(
           (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
@@ -406,7 +415,7 @@ export function HomeScreen() {
 
   const renderPopularExperiences = () => {
     if (isLoading) {
-      return <ActivityIndicator size="large" color="#3B2B26" style={{ height: 250 }} />;
+      return <ActivityIndicator size="large" color={colors.text} style={{ height: 250 }} />;
     }
     if (error) {
       return <Text style={styles.errorText}>{error}</Text>;
@@ -444,8 +453,8 @@ export function HomeScreen() {
           category: exp.category || "기타",
           location: exp.locationAddress || "위치 미정",
           artisan: "장인",
-          rating: 0,
-          reviewCount: 0,
+          rating: Number((exp.averageRating ?? 0).toFixed(1)),
+          reviewCount: exp.reviewCount ?? 0,
           duration: exp.durationMinutes ? `${exp.durationMinutes}분` : "시간 미정",
           price: Number(exp.price) || 0,
           tags: [],
@@ -508,7 +517,14 @@ export function HomeScreen() {
           {/* 페이지 인디케이터 */}
           <View style={styles.dotRow}>
             {banners.map((_, i) => (
-              <View key={i} style={[styles.dot, activeBanner === i && styles.dotActive]} />
+              <View
+                key={i}
+                style={[
+                  styles.dot,
+                  { backgroundColor: colors.border },
+                  activeBanner === i && { width: 18, backgroundColor: colors.text },
+                ]}
+              />
             ))}
           </View>
         </View>
@@ -517,16 +533,16 @@ export function HomeScreen() {
         {upcomingSchedule ? (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>다가오는 일정</Text>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>다가오는 일정</Text>
               <TouchableOpacity
                 activeOpacity={0.7}
                 onPress={() => navigation.navigate("MainTabs", { screen: "Bookings" })}
               >
-                <Text style={styles.viewAllText}>전체보기 &gt;</Text>
+                <Text style={[styles.viewAllText, { color: colors.textSecondary }]}>전체보기 &gt;</Text>
               </TouchableOpacity>
             </View>
             <TouchableOpacity
-              style={styles.scheduleCard}
+              style={[styles.scheduleCard, { backgroundColor: colors.card, borderColor: colors.border }]}
               activeOpacity={0.9}
               onPress={() => navigation.navigate("BookingDetail", {
                 booking: {
@@ -546,44 +562,58 @@ export function HomeScreen() {
               <Image source={{ uri: upcomingSchedule.image }} style={styles.scheduleThumb} />
               <View style={styles.scheduleInfo}>
                 <View style={styles.scheduleDateRow}>
-                  <Text style={styles.scheduleCalIcon}>📅</Text>
-                  <Text style={styles.scheduleDateTime}>
+                  <Ionicons name="calendar-outline" size={13} color={colors.textSecondary} />
+                  <Text style={[styles.scheduleDateTime, { color: colors.textSecondary }]}>
                     {upcomingSchedule.date} {upcomingSchedule.time}
                   </Text>
                 </View>
-                <Text style={styles.scheduleTitle}>{upcomingSchedule.title}</Text>
+                <Text style={[styles.scheduleTitle, { color: colors.text }]}>{upcomingSchedule.title}</Text>
                 <View style={styles.scheduleLocationRow}>
-                  <Text style={styles.scheduleLocationIcon}>📍</Text>
-                  <Text style={styles.scheduleLocation}>{upcomingSchedule.location}</Text>
+                  <Ionicons name="location-outline" size={12} color={colors.textSecondary} />
+                  <Text style={[styles.scheduleLocation, { color: colors.textSecondary }]}>{upcomingSchedule.location}</Text>
                 </View>
               </View>
             </TouchableOpacity>
           </View>
         ) : (
           <View style={styles.section}>
-            <View style={styles.emptyScheduleContainer}>
-              <Text style={styles.emptyScheduleIcon}>📋</Text>
-              <Text style={styles.emptyScheduleTitle}>예정된 체험이 없습니다</Text>
-              <Text style={styles.emptyScheduleDesc}>
+            <View style={[styles.emptyScheduleContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <Ionicons name="calendar-clear-outline" size={40} color={colors.textSecondary} style={{ marginBottom: 12 }} />
+              <Text style={[styles.emptyScheduleTitle, { color: colors.text }]}>예정된 체험이 없습니다</Text>
+              <Text style={[styles.emptyScheduleDesc, { color: colors.textSecondary }]}>
                 새로운 체험을 찾아 예약해보세요!
               </Text>
               <TouchableOpacity
-                style={styles.emptyScheduleButton}
+                style={[styles.emptyScheduleButton, { backgroundColor: colors.text }]}
                 activeOpacity={0.85}
                 onPress={() => navigation.navigate("MainTabs", { screen: "Explore" })}
               >
-                <Text style={styles.emptyScheduleButtonText}>체험 탐색하기</Text>
+                <Text style={[styles.emptyScheduleButtonText, { color: colors.bg }]}>체험 탐색하기</Text>
               </TouchableOpacity>
             </View>
           </View>
         )}
 
 
+        {/* 인기 체험 */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>인기 체험 Top 10</Text>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => navigation.navigate("MainTabs", { screen: "Explore", params: { filter: "popular" } })}
+            >
+              <Text style={[styles.viewAllText, { color: colors.textSecondary }]}>더보기 &gt;</Text>
+            </TouchableOpacity>
+          </View>
+          {renderPopularExperiences()}
+        </View>
+
         {/* 오늘의 장인 */}
         {recommendedArtisan && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>오늘의 장인</Text>
-            <TouchableOpacity style={styles.artisanCard} activeOpacity={0.9}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>오늘의 장인</Text>
+            <TouchableOpacity style={[styles.artisanCard, { backgroundColor: colors.card, borderColor: colors.border }]} activeOpacity={0.9}>
               <Image source={{ uri: recommendedArtisan.profileImageUrl || undefined }} style={styles.artisanImage} />
               <View style={styles.artisanInfo}>
                 {recommendedArtisan.heritageCategory && (
@@ -591,16 +621,16 @@ export function HomeScreen() {
                     <Text style={styles.artisanBadge}>{recommendedArtisan.heritageCategory}</Text>
                   </View>
                 )}
-                <Text style={styles.artisanName}>{recommendedArtisan.name}</Text>
+                <Text style={[styles.artisanName, { color: colors.text }]}>{recommendedArtisan.name}</Text>
                 {recommendedArtisan.bio && (
-                  <Text style={styles.artisanQuote}>{recommendedArtisan.bio}</Text>
+                  <Text style={[styles.artisanQuote, { color: colors.textSecondary }]}>{recommendedArtisan.bio}</Text>
                 )}
                 <TouchableOpacity
-                  style={styles.artisanButton}
+                  style={[styles.artisanButton, { borderColor: colors.text }]}
                   activeOpacity={0.85}
                   onPress={() => navigation.navigate("ArtisanDetail", { artisanId: recommendedArtisan.id })}
                 >
-                  <Text style={styles.artisanButtonText}>장인 스토리 보기</Text>
+                  <Text style={[styles.artisanButtonText, { color: colors.text }]}>장인 스토리 보기</Text>
                 </TouchableOpacity>
               </View>
             </TouchableOpacity>
@@ -610,7 +640,7 @@ export function HomeScreen() {
         {/* 내 주변 장인 */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>📍 내 주변 장인</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>내 주변 장인</Text>
           </View>
           <ScrollView
             horizontal
@@ -628,58 +658,15 @@ export function HomeScreen() {
           </ScrollView>
         </View>
 
-        {/* 찜한 체험 */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>❤️ 내가 찜한 체험</Text>
-            <TouchableOpacity
-              activeOpacity={0.7}
-              onPress={() => navigation.navigate("Wishlist" as any)}
-            >
-              <Text style={styles.viewAllText}>더보기 &gt;</Text>
-            </TouchableOpacity>
-          </View>
-          {wishedExperiences.length > 0 ? (
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.popularScroll}
-            >
-              {wishedExperiences.map((item) => (
-                <PopularExperienceCard key={item.id} item={item} refreshTrigger={refreshTrigger} />
-              ))}
-            </ScrollView>
-          ) : (
-            <View style={{ paddingVertical: 40, alignItems: "center" }}>
-              <Text style={{ fontSize: 28, marginBottom: 8 }}>🤍</Text>
-              <Text style={{ fontSize: 14, color: "#8A8077" }}>아직 찜한 체험이 없습니다</Text>
-            </View>
-          )}
-        </View>
-
-        {/* 인기 체험 */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>🔥 인기 체험 Top 10</Text>
-            <TouchableOpacity
-              activeOpacity={0.7}
-              onPress={() => navigation.navigate("MainTabs", { screen: "Explore", params: { filter: "popular" } })}
-            >
-              <Text style={styles.viewAllText}>더보기 &gt;</Text>
-            </TouchableOpacity>
-          </View>
-          {renderPopularExperiences()}
-        </View>
-
         {/* 신규 체험 */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>✨ 새로 나온 체험</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>새로운 체험</Text>
             <TouchableOpacity
               activeOpacity={0.7}
               onPress={() => navigation.navigate("MainTabs", { screen: "Explore", params: { filter: "new" } })}
             >
-              <Text style={styles.viewAllText}>더보기 &gt;</Text>
+              <Text style={[styles.viewAllText, { color: colors.textSecondary }]}>더보기 &gt;</Text>
             </TouchableOpacity>
           </View>
           <ScrollView
@@ -696,6 +683,40 @@ export function HomeScreen() {
               />
             ))}
           </ScrollView>
+        </View>
+
+        {/* 찜한 체험 */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>찜한 체험</Text>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => navigation.navigate("Wishlist" as any)}
+            >
+              <Text style={[styles.viewAllText, { color: colors.textSecondary }]}>더보기 &gt;</Text>
+            </TouchableOpacity>
+          </View>
+          {wishedExperiences.length > 0 ? (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.popularScroll}
+            >
+              {wishedExperiences.map((item) => (
+                <PopularExperienceCard
+                  key={item.id}
+                  item={item}
+                  onPress={() => openWishedExperienceDetail(item)}
+                  refreshTrigger={refreshTrigger}
+                />
+              ))}
+            </ScrollView>
+          ) : (
+            <View style={{ paddingVertical: 40, alignItems: "center" }}>
+              <Ionicons name="heart-outline" size={28} color={colors.border} style={{ marginBottom: 8 }} />
+              <Text style={{ fontSize: 14, color: colors.textSecondary }}>아직 찜한 체험이 없습니다</Text>
+            </View>
+          )}
         </View>
 
         {/* 카드뉴스 */}
@@ -741,33 +762,28 @@ const styles = StyleSheet.create({
   },
   bannerButtonText: { color: "#FFF", fontSize: 13, fontWeight: "600" },
   dotRow: { flexDirection: "row", justifyContent: "center", marginTop: 12, gap: 6 },
-  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: "#D4CDC4" },
-  dotActive: { width: 18, backgroundColor: "#3B2B26" },
+  dot: { width: 6, height: 6, borderRadius: 3 },
 
   // 공통 섹션
   section: { marginBottom: 30, paddingHorizontal: 24 },
   sectionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 14 },
-  sectionTitle: { fontSize: 18, fontWeight: "700", color: "#3B2B26" },
-  viewAllText: { fontSize: 13, color: "#8A8077" },
+  sectionTitle: { fontSize: 18, fontWeight: "700" },
+  viewAllText: { fontSize: 13 },
 
   // 다가오는 일정
   scheduleCard: {
     flexDirection: "row",
-    backgroundColor: "#FAF9F6",
     borderWidth: 1,
-    borderColor: "#D4CDC4",
     borderRadius: 14,
     overflow: "hidden",
   },
   scheduleThumb: { width: 80, height: 80 },
   scheduleInfo: { flex: 1, padding: 12, justifyContent: "center" },
-  scheduleDateRow: { flexDirection: "row", alignItems: "center", marginBottom: 4 },
-  scheduleCalIcon: { fontSize: 13, marginRight: 4 },
-  scheduleDateTime: { fontSize: 13, color: "#6E665F", fontWeight: "600" },
-  scheduleTitle: { fontSize: 15, fontWeight: "700", color: "#3B2B26", marginBottom: 4 },
-  scheduleLocationRow: { flexDirection: "row", alignItems: "center" },
-  scheduleLocationIcon: { fontSize: 12, marginRight: 3 },
-  scheduleLocation: { fontSize: 12, color: "#8A8077" },
+  scheduleDateRow: { flexDirection: "row", alignItems: "center", gap: 4, marginBottom: 4 },
+  scheduleDateTime: { fontSize: 13, fontWeight: "600" },
+  scheduleTitle: { fontSize: 15, fontWeight: "700", marginBottom: 4 },
+  scheduleLocationRow: { flexDirection: "row", alignItems: "center", gap: 3 },
+  scheduleLocation: { fontSize: 12 },
 
   // 인기 체험
   popularScroll: { paddingRight: 24 },
@@ -791,32 +807,28 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  wishIcon: { fontSize: 14 },
   popularInfo: {},
-  popularMeta: { fontSize: 11, color: "#8A8077", marginBottom: 3 },
-  popularTitle: { fontSize: 14, fontWeight: "700", color: "#3B2B26", marginBottom: 4 },
+  popularMeta: { fontSize: 11, marginBottom: 3 },
+  popularTitle: { fontSize: 14, fontWeight: "700", marginBottom: 4 },
   ratingRow: { flexDirection: "row", alignItems: "center", gap: 3, marginBottom: 3 },
-  starIcon: { fontSize: 12, color: "#D4A97A" },
-  ratingText: { fontSize: 11, color: "#8A8077" },
-  popularPrice: { fontSize: 14, fontWeight: "600", color: "#3B2B26" },
+  starIcon: { fontSize: 12 },
+  ratingText: { fontSize: 11 },
+  popularPrice: { fontSize: 14, fontWeight: "600" },
 
   // 내 주변 장인
   nearbyCard: { width: 168, marginRight: 14 },
   nearbyImage: { width: "100%", height: 110, borderRadius: 12, marginBottom: 10 },
   nearbyInfo: {},
-  nearbyName: { fontSize: 14, fontWeight: "700", color: "#3B2B26", marginBottom: 4 },
-  nearbyMeta: { fontSize: 11, color: "#8A8077", marginBottom: 4 },
+  nearbyName: { fontSize: 14, fontWeight: "700", marginBottom: 4 },
+  nearbyMeta: { fontSize: 11, marginBottom: 4 },
   nearbyDistanceRow: { flexDirection: "row", alignItems: "center", gap: 3 },
-  nearbyDistanceIcon: { fontSize: 11 },
-  nearbyDistance: { fontSize: 12, color: "#6E665F", fontWeight: "600" },
+  nearbyDistance: { fontSize: 12, fontWeight: "600" },
 
   // 오늘의 장인
   artisanCard: {
     borderRadius: 16,
     overflow: "hidden",
-    backgroundColor: "#FAF9F6",
     borderWidth: 1,
-    borderColor: "#D4CDC4",
   },
   artisanImage: { width: "100%", height: 200 },
   artisanInfo: { padding: 20, alignItems: "center" },
@@ -830,51 +842,40 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     overflow: "hidden",
   },
-  artisanName: { fontSize: 20, fontWeight: "700", color: "#3B2B26", marginBottom: 10 },
-  artisanQuote: { fontSize: 14, color: "#6E665F", textAlign: "center", lineHeight: 22, marginBottom: 16 },
+  artisanName: { fontSize: 20, fontWeight: "700", marginBottom: 10 },
+  artisanQuote: { fontSize: 14, textAlign: "center", lineHeight: 22, marginBottom: 16 },
   artisanButton: {
     borderWidth: 1,
-    borderColor: "#3B2B26",
     borderRadius: 20,
     paddingHorizontal: 20,
     paddingVertical: 10,
   },
-  artisanButtonText: { fontSize: 13, fontWeight: "600", color: "#3B2B26" },
+  artisanButtonText: { fontSize: 13, fontWeight: "600" },
 
   // 빈 다가오는 일정 상태
   emptyScheduleContainer: {
-    backgroundColor: "#FEF3E2",
     borderRadius: 14,
     padding: 28,
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#E8D5C4",
-  },
-  emptyScheduleIcon: {
-    fontSize: 48,
-    marginBottom: 12,
   },
   emptyScheduleTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#3B2B26",
     marginBottom: 6,
   },
   emptyScheduleDesc: {
     fontSize: 13,
-    color: "#8A8077",
     marginBottom: 16,
     textAlign: "center",
     lineHeight: 18,
   },
   emptyScheduleButton: {
-    backgroundColor: "#3B2B26",
     borderRadius: 8,
     paddingHorizontal: 24,
     paddingVertical: 10,
   },
   emptyScheduleButtonText: {
-    color: "#FFF",
     fontSize: 13,
     fontWeight: "600",
   },

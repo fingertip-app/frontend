@@ -273,8 +273,9 @@ function ResultCard({ item, onPress }: { item: RecommendationCard; onPress: () =
   return (
     <TouchableOpacity style={s.resultCard} activeOpacity={0.9} onPress={onPress}>
       <Image source={{ uri: item.imageUri }} style={s.resultImage} resizeMode="cover" />
-      <View style={s.reasonBadge}>
-        <Text style={s.reasonText}>✨ {item.reason}</Text>
+      <View style={[s.reasonBadge, { flexDirection: "row", alignItems: "center", gap: 4 }]}>
+        <Ionicons name="sparkles-outline" size={12} color={s.reasonText.color as string} />
+        <Text style={s.reasonText}>{item.reason}</Text>
       </View>
       <View style={s.resultInfo}>
         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>

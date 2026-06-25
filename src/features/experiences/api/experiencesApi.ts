@@ -1,5 +1,6 @@
-import { apiGet, apiPost, apiPut } from '@/services/api'
+import { apiDelete, apiGet, apiPost, apiPut } from '@/services/api'
 import type { Experience } from '@/types/api'
+import { getExperienceReviews } from '@/features/reviews/api/reviewsApi'
 
 export interface CreateExperienceRequest {
   title: string
@@ -28,6 +29,33 @@ export interface CreateExperienceRequest {
  */
 export async function getActiveExperiences(): Promise<Experience[]> {
   return apiGet<Experience[]>('/experiences/active')
+}
+
+export async function enrichExperienceReviewStats<T extends Experience>(experience: T): Promise<T> {
+  if (experience.averageRating !== undefined && experience.reviewCount !== undefined) {
+    return experience
+  }
+
+  const reviews = await getExperienceReviews(experience.id).catch(() => [])
+  const reviewCount = reviews.length
+  const averageRating = reviewCount > 0
+    ? Math.round((reviews.reduce((sum, review) => sum + review.rating, 0) / reviewCount) * 10) / 10
+    : 0
+
+  return {
+    ...experience,
+    averageRating,
+    reviewCount,
+  }
+}
+
+export async function enrichExperiencesReviewStats<T extends Experience>(experiences: T[]): Promise<T[]> {
+  return Promise.all(experiences.map(enrichExperienceReviewStats))
+}
+
+export async function getActiveExperiencesWithReviewStats(): Promise<Experience[]> {
+  const experiences = await getActiveExperiences()
+  return enrichExperiencesReviewStats(experiences)
 }
 
 /**
@@ -70,8 +98,13 @@ export async function createExperience(
  * PUT /experiences/{experienceId}
  */
 export async function updateExperience(
+  artisanId: number,
   experienceId: number,
   request: CreateExperienceRequest,
 ): Promise<Experience> {
-  return apiPut<CreateExperienceRequest, Experience>(`/experiences/${experienceId}`, request)
+  return apiPut<CreateExperienceRequest, Experience>(`/experiences/${experienceId}?artisanId=${artisanId}`, request)
+}
+
+export async function deleteExperience(artisanId: number, experienceId: number): Promise<void> {
+  return apiDelete(`/experiences/${experienceId}?artisanId=${artisanId}`)
 }

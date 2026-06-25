@@ -1,14 +1,16 @@
 import React, { useCallback, useState } from "react";
 import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, FlatList, Image, ActivityIndicator, Alert } from "react-native";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
 import { getMyWishlists, removeFromWishlist } from "@/features/wishlists/api/wishlistsApi";
+import { RootStackParamList } from "@/navigation/RootNavigator";
 import type { Wishlist } from "@/types/api";
 
 const PLACEHOLDER_IMAGE = "https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=400&q=80";
 
 export function WishlistScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [wishlists, setWishlists] = useState<Wishlist[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -39,6 +41,28 @@ export function WishlistScreen() {
     }
   };
 
+  const openExperienceDetail = (item: Wishlist) => {
+    navigation.navigate("MainTabs", {
+      screen: "Explore",
+      params: {
+        exp: {
+          id: String(item.experienceId),
+          title: item.experienceTitle,
+          category: item.experienceCategory || "기타",
+          location: item.experienceLocation || "위치 미정",
+          artisan: "장인",
+          rating: Number(((item.averageRating ?? item.rating) ?? 0).toFixed(1)),
+          reviewCount: item.reviewCount ?? 0,
+          duration: item.experienceDurationMinutes ? `${item.experienceDurationMinutes}분` : "시간 미정",
+          price: Number(item.experiencePrice) || 0,
+          tags: [],
+          imageUri: item.experienceImageUrl || PLACEHOLDER_IMAGE,
+          difficulty: "초급",
+        },
+      },
+    });
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       {/* ── 헤더 ── */}
@@ -61,14 +85,17 @@ export function WishlistScreen() {
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
         renderItem={({ item }) => (
-          <TouchableOpacity style={styles.card} activeOpacity={0.9}>
+          <TouchableOpacity style={styles.card} activeOpacity={0.9} onPress={() => openExperienceDetail(item)}>
             <Image source={{ uri: item.experienceImageUrl || PLACEHOLDER_IMAGE }} style={styles.cardImage} />
 
             {/* 좋아요 하트 버튼 */}
             <TouchableOpacity
               style={styles.heartButton}
               activeOpacity={0.8}
-              onPress={() => handleRemove(item.experienceId)}
+              onPress={(event) => {
+                event.stopPropagation();
+                handleRemove(item.experienceId);
+              }}
             >
               <Ionicons name="heart" size={20} color="#EF4444" />
             </TouchableOpacity>

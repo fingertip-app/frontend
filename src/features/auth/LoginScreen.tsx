@@ -6,10 +6,13 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "@/navigation/RootNavigator";
 import Svg, { Path, Circle } from "react-native-svg";
 import { login } from "@/features/auth/api/authApi";
+import { LogoMark } from "@/components/Logo";
+import { useTheme } from "@/theme/ThemeContext";
 
 type LoginMode = "USER" | "ARTISAN";
 
 export function LoginScreen() {
+  const { colors } = useTheme();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
@@ -57,7 +60,7 @@ export function LoginScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.bg }]}>
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
 
         {/* DEV 전용: 테스트 완료 후 삭제 */}
@@ -80,36 +83,35 @@ export function LoginScreen() {
 
         {/* 헤더 및 로고 영역 */}
         <View style={styles.header}>
-          <View style={styles.logoOuter}>
-            <View style={styles.logoInner} />
-            <View style={styles.logoCore} />
+          <View style={{ marginBottom: 16 }}>
+            <LogoMark size={64} radius={32} />
           </View>
-          <Text style={styles.title}>장인과 하루</Text>
-          <Text style={styles.subtitle}>TRADITION EXPERIENCED DAILY</Text>
+          <Text style={[styles.title, { color: colors.text }]}>손끝</Text>
+          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>TRADITION EXPERIENCED DAILY</Text>
         </View>
 
         {/* 환영 메시지 영역 */}
         <View style={styles.welcomeSection}>
-          <Text style={styles.welcomeTitle}>환영합니다!</Text>
-          <Text style={styles.welcomeDesc}>로그인하고 다양한 전통 공예 체험을 만나보세요.</Text>
+          <Text style={[styles.welcomeTitle, { color: colors.text }]}>환영합니다!</Text>
+          <Text style={[styles.welcomeDesc, { color: colors.textSecondary }]}>로그인하고 다양한 전통 공예 체험을 만나보세요.</Text>
         </View>
 
         {/* 일반 / 장인 로그인 모드 토글 */}
         <View style={styles.tabContainer}>
-          <View style={styles.tabBackground}>
+          <View style={[styles.tabBackground, { backgroundColor: colors.border }]}>
             <TouchableOpacity
-              style={[styles.tabButton, loginMode === "USER" && styles.activeTab]}
+              style={[styles.tabButton, loginMode === "USER" && { backgroundColor: colors.text }]}
               activeOpacity={0.8}
               onPress={() => setLoginMode("USER")}
             >
-              <Text style={[styles.tabText, loginMode === "USER" && styles.activeTabText]}>일반</Text>
+              <Text style={[styles.tabText, { color: loginMode === "USER" ? colors.bg : colors.textSecondary }]}>일반</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.tabButton, loginMode === "ARTISAN" && styles.activeTab]}
+              style={[styles.tabButton, loginMode === "ARTISAN" && { backgroundColor: colors.text }]}
               activeOpacity={0.8}
               onPress={() => setLoginMode("ARTISAN")}
             >
-              <Text style={[styles.tabText, loginMode === "ARTISAN" && styles.activeTabText]}>장인</Text>
+              <Text style={[styles.tabText, { color: loginMode === "ARTISAN" ? colors.bg : colors.textSecondary }]}>장인</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -117,11 +119,11 @@ export function LoginScreen() {
         {/* 입력 폼 영역 */}
         <View style={styles.formSection}>
           {/* 아이디 입력 */}
-          <View style={styles.inputContainer}>
+          <View style={[styles.inputContainer, { borderColor: colors.border, backgroundColor: colors.card }]}>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { color: colors.text }]}
               placeholder="아이디(이메일)"
-              placeholderTextColor="#A39B92"
+              placeholderTextColor={colors.textSecondary}
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"
@@ -130,11 +132,11 @@ export function LoginScreen() {
           </View>
 
           {/* 비밀번호 입력 */}
-          <View style={styles.inputContainer}>
+          <View style={[styles.inputContainer, { borderColor: colors.border, backgroundColor: colors.card }]}>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { color: colors.text }]}
               placeholder="비밀번호"
-              placeholderTextColor="#A39B92"
+              placeholderTextColor={colors.textSecondary}
               value={password}
               onChangeText={setPassword}
               secureTextEntry={!isPasswordVisible}
@@ -143,15 +145,15 @@ export function LoginScreen() {
                               {isPasswordVisible ? (
                                 // 눈 뜬 상태
                                 <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
-                                  <Path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="#8A8077" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"/>
-                                  <Circle cx={12} cy={12} r={3} stroke="#8A8077" strokeWidth={1.8}/>
+                                  <Path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke={colors.textSecondary} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"/>
+                                  <Circle cx={12} cy={12} r={3} stroke={colors.textSecondary} strokeWidth={1.8}/>
                                 </Svg>
                               ) : (
                                 // 눈 감은 상태 (사선)
                                 <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
-                                  <Path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94" stroke="#8A8077" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"/>
-                                  <Path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19" stroke="#8A8077" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"/>
-                                  <Path d="M1 1l22 22" stroke="#8A8077" strokeWidth={1.8} strokeLinecap="round"/>
+                                  <Path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94" stroke={colors.textSecondary} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"/>
+                                  <Path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19" stroke={colors.textSecondary} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"/>
+                                  <Path d="M1 1l22 22" stroke={colors.textSecondary} strokeWidth={1.8} strokeLinecap="round"/>
                                 </Svg>
                               )}
                       </TouchableOpacity>
@@ -164,25 +166,25 @@ export function LoginScreen() {
 
           {/* 로그인 버튼 */}
           <TouchableOpacity
-            style={[styles.loginButton, isLoading && styles.loginButtonDisabled]}
+            style={[styles.loginButton, { backgroundColor: colors.text }, isLoading && styles.loginButtonDisabled]}
             activeOpacity={0.8}
             onPress={handleLogin}
             disabled={isLoading}
           >
             {isLoading
-              ? <ActivityIndicator color="#FFF" />
-              : <Text style={styles.loginButtonText}>로그인</Text>
+              ? <ActivityIndicator color={colors.bg} />
+              : <Text style={[styles.loginButtonText, { color: colors.bg }]}>로그인</Text>
             }
           </TouchableOpacity>
 
           {/* 아이디/비밀번호 찾기 */}
           <View style={styles.findInfoContainer}>
             <TouchableOpacity onPress={() => navigation.navigate("FindId" as never)}>
-              <Text style={styles.findInfoText}>아이디 찾기</Text>
+              <Text style={[styles.findInfoText, { color: colors.textSecondary }]}>아이디 찾기</Text>
             </TouchableOpacity>
-            <Text style={styles.findInfoDot}>•</Text>
+            <Text style={[styles.findInfoDot, { color: colors.border }]}>•</Text>
             <TouchableOpacity onPress={() => navigation.navigate("FindPassword" as never)}>
-              <Text style={styles.findInfoText}>비밀번호 찾기</Text>
+              <Text style={[styles.findInfoText, { color: colors.textSecondary }]}>비밀번호 찾기</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -190,11 +192,11 @@ export function LoginScreen() {
         {/* 소셜 로그인 영역 */}
         <View style={styles.socialSection}>
           <View style={styles.dividerContainer}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>또는 간편 로그인</Text>
-            <View style={styles.dividerLine} />
+            <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+            <Text style={[styles.dividerText, { color: colors.textSecondary }]}>또는 간편 로그인</Text>
+            <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
           </View>
-          
+
           <View style={styles.socialButtonsRow}>
             {/* 카카오 */}
             <TouchableOpacity style={[styles.socialIcon, { backgroundColor: '#FEE500', borderColor: '#FEE500' }]} activeOpacity={0.7}>
@@ -213,22 +215,22 @@ export function LoginScreen() {
 
         {/* 회원가입 버튼 영역 */}
         <View style={styles.signupSection}>
-          <Text style={styles.signupPrompt}>계정이 없으신가요?</Text>
-          
+          <Text style={[styles.signupPrompt, { color: colors.textSecondary }]}>계정이 없으신가요?</Text>
+
           <TouchableOpacity
-            style={styles.primarySignupBtn}
+            style={[styles.primarySignupBtn, { backgroundColor: colors.text }]}
             activeOpacity={0.8}
             onPress={() => navigation.navigate("GeneralSignUp")}
           >
-            <Text style={styles.primarySignupText}>일반 회원가입</Text>
+            <Text style={[styles.primarySignupText, { color: colors.bg }]}>일반 회원가입</Text>
           </TouchableOpacity>
-          
+
           <TouchableOpacity
-            style={styles.secondarySignupBtn}
+            style={[styles.secondarySignupBtn, { borderColor: colors.text }]}
             activeOpacity={0.8}
             onPress={() => navigation.navigate("MasterSignUp")}
           >
-            <Text style={styles.secondarySignupText}>장인 파트너 가입</Text>
+            <Text style={[styles.secondarySignupText, { color: colors.text }]}>장인 파트너 가입</Text>
           </TouchableOpacity>
         </View>
 
@@ -240,53 +242,25 @@ export function LoginScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#F5F4F0', // 전체 베이지 톤 배경
   },
   container: {
     paddingHorizontal: 24,
     paddingTop: Platform.OS === 'ios' ? 20 : 40,
     paddingBottom: 60,
   },
-  
+
   // Header & Logo
   header: {
     alignItems: 'center',
     marginBottom: 40,
   },
-  logoOuter: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: '#EACCA5',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  logoInner: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    borderWidth: 2,
-    borderColor: '#3B2B26',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  logoCore: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: '#3B2B26',
-    position: 'absolute',
-  },
   title: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#3B2B26',
     marginBottom: 6,
   },
   subtitle: {
     fontSize: 11,
-    color: '#8A8077',
     letterSpacing: 1,
     fontWeight: '600',
   },
@@ -299,13 +273,11 @@ const styles = StyleSheet.create({
   welcomeTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#3B2B26',
     marginBottom: 8,
     textAlign: 'center',
   },
   welcomeDesc: {
     fontSize: 13,
-    color: '#6E665F',
     textAlign: 'center',
   },
 
@@ -316,7 +288,6 @@ const styles = StyleSheet.create({
   },
   tabBackground: {
     flexDirection: 'row',
-    backgroundColor: '#EAE6E1',
     borderRadius: 25,
     padding: 4,
     width: 240,
@@ -327,16 +298,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 20,
   },
-  activeTab: {
-    backgroundColor: '#3B2B26',
-  },
   tabText: {
     fontSize: 13,
-    color: '#8A8077',
     fontWeight: '600',
-  },
-  activeTabText: {
-    color: '#FFF',
   },
 
   // Input Forms
@@ -347,27 +311,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#D4CDC4',
     borderRadius: 12,
     marginBottom: 16,
     paddingHorizontal: 16,
     height: 52,
-    backgroundColor: '#FAF9F6',
-  },
-  inputIcon: {
-    fontSize: 18,
-    color: '#8A8077',
   },
   input: {
     flex: 1,
     fontSize: 14,
-    color: '#3B2B26',
   },
   eyeIcon: {
     padding: 4,
   },
   loginButton: {
-    backgroundColor: '#3B2B26',
     borderRadius: 26,
     height: 52,
     justifyContent: 'center',
@@ -385,7 +341,6 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   loginButtonText: {
-    color: '#FFF',
     fontSize: 16,
     fontWeight: 'bold',
   },
@@ -396,11 +351,9 @@ const styles = StyleSheet.create({
   },
   findInfoText: {
     fontSize: 13,
-    color: '#8A8077',
   },
   findInfoDot: {
     fontSize: 12,
-    color: '#D4CDC4',
     marginHorizontal: 16,
   },
 
@@ -416,12 +369,10 @@ const styles = StyleSheet.create({
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: '#E2DDD6',
   },
   dividerText: {
     marginHorizontal: 16,
     fontSize: 13,
-    color: '#8A8077',
   },
   socialButtonsRow: {
     flexDirection: 'row',
@@ -443,12 +394,10 @@ const styles = StyleSheet.create({
   },
   signupPrompt: {
     fontSize: 13,
-    color: '#6E665F',
     marginBottom: 20,
   },
   primarySignupBtn: {
     width: '100%',
-    backgroundColor: '#3B2B26',
     borderRadius: 26,
     height: 52,
     justifyContent: 'center',
@@ -456,7 +405,6 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   primarySignupText: {
-    color: '#FFF',
     fontSize: 15,
     fontWeight: '600',
   },
@@ -464,14 +412,12 @@ const styles = StyleSheet.create({
     width: '100%',
     backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: '#3B2B26',
     borderRadius: 26,
     height: 52,
     justifyContent: 'center',
     alignItems: 'center',
   },
   secondarySignupText: {
-    color: '#3B2B26',
     fontSize: 15,
     fontWeight: '600',
   },

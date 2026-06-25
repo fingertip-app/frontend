@@ -66,7 +66,7 @@ export function CardNewsCarousel() {
     <View style={styles.container}>
       {/* 섹션 헤더 */}
       <View style={styles.header}>
-        <Text style={styles.sectionTitle}>📖 한물결 카드뉴스</Text>
+        <Text style={styles.sectionTitle}>한물결 카드뉴스</Text>
         <TouchableOpacity
           activeOpacity={0.7}
           hitSlop={8}

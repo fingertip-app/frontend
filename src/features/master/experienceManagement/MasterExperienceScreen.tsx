@@ -19,6 +19,8 @@ import { MasterBottomTabs } from "../components/MasterBottomTabs";
 import { RootStackParamList } from "@/navigation/RootNavigator";
 import { MasterHeader } from "../components/MasterHeader";
 import { useExperienceManagement } from "./useExperienceManagement";
+import { getMyArtisan } from "@/features/artisans/api/artisanApi";
+import { deleteExperience } from "@/features/experiences/api/experiencesApi";
 
 // ─── 팔레트 ────────────────────────────────────────────────────────────────────
 const BRAND = "#3B2B26";
@@ -58,9 +60,39 @@ export function MasterExperienceScreen({
         text: "수정",
         onPress: () => navigation.navigate("MasterExperienceCreate", { experienceId: id }),
       },
+      {
+        text: "삭제",
+        style: "destructive",
+        onPress: () => confirmDelete(id),
+      },
       { text: "비활성화", onPress: () => toggleActive(id) },
       { text: "취소", style: "cancel" },
     ]);
+  };
+
+  const confirmDelete = (id: number) => {
+    Alert.alert("체험 삭제", "이 체험을 삭제하시겠습니까?", [
+      { text: "취소", style: "cancel" },
+      {
+        text: "삭제",
+        style: "destructive",
+        onPress: () => void handleDelete(id),
+      },
+    ]);
+  };
+
+  const handleDelete = async (id: number) => {
+    try {
+      const artisan = await getMyArtisan();
+      await deleteExperience(artisan.id, id);
+      await reload();
+      Alert.alert("삭제 완료", "체험이 삭제되었습니다.");
+    } catch (deleteError) {
+      Alert.alert(
+        "오류",
+        deleteError instanceof Error ? deleteError.message : "체험 삭제에 실패했습니다.",
+      );
+    }
   };
 
   const toggleActive = (_id: string | number) => {

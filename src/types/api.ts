@@ -39,6 +39,8 @@ export interface Experience {
   schedules: ExperienceSchedule[]
   images: ExperienceImage[]
   tags: string[]
+  averageRating?: number
+  reviewCount?: number
   createdAt: string
   updatedAt: string
 }
@@ -104,6 +106,9 @@ export interface Wishlist {
   experiencePrice: number
   experienceDurationMinutes: number
   experienceImageUrl: string | null
+  averageRating?: number
+  rating?: number
+  reviewCount?: number
   createdAt: string
   updatedAt?: string
 }

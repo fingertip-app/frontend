@@ -1,6 +1,7 @@
 import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import Svg, { Path, Rect, Circle, Polyline, Line } from "react-native-svg";
+import { useTheme } from "@/theme/ThemeContext";
 
 // 종목 데이터 (항목 그대로 유지)
 const CATEGORIES = [
@@ -43,8 +44,7 @@ const CATEGORIES = [
 ];
 
 // SVG 아이콘 컴포넌트
-function CategoryIcon({ type, selected }: { type: string; selected: boolean }) {
-  const color = selected ? '#FAF9F6' : '#6E665F';
+function CategoryIcon({ type, color }: { type: string; color: string }) {
   const size = 28;
   switch (type) {
     case 'pottery':
@@ -126,6 +126,7 @@ interface Step2CategoryProps {
 }
 
 export function Step2Category({ selectedCategories, setSelectedCategories }: Step2CategoryProps) {
+  const { colors } = useTheme();
   // 2열 그리드용으로 마지막 항목 분리
   const gridItems = CATEGORIES.slice(0, 6);   // 2열 그리드 (6개)
   const wideItems = CATEGORIES.slice(6);       // 가로 넓은 카드 (나머지)
@@ -145,20 +146,21 @@ export function Step2Category({ selectedCategories, setSelectedCategories }: Ste
         key={cat.id}
         style={[
           wide ? styles.wideCategoryCard : styles.categoryCard,
-          isSelected && styles.selectedCategoryCard,
+          { backgroundColor: colors.card, borderColor: colors.border },
+          isSelected && { backgroundColor: colors.text, borderColor: colors.text },
         ]}
         onPress={() => toggleCategory(cat.name)}
         activeOpacity={0.8}
       >
         <View style={wide ? styles.wideInner : styles.cardInner}>
-          <View style={[styles.iconWrap, isSelected && styles.iconWrapSelected]}>
-            <CategoryIcon type={cat.icon} selected={isSelected} />
+          <View style={[styles.iconWrap, { backgroundColor: colors.bg }, isSelected && { backgroundColor: 'rgba(255,255,255,0.15)' }]}>
+            <CategoryIcon type={cat.icon} color={isSelected ? colors.bg : colors.textSecondary} />
           </View>
           <View style={wide ? styles.wideTextWrap : undefined}>
-            <Text style={[styles.categoryName, isSelected && styles.selectedCategoryName]}>
+            <Text style={[styles.categoryName, { color: isSelected ? colors.bg : colors.text }]}>
               {cat.name}
             </Text>
-            <Text style={[styles.categoryDesc, isSelected && styles.selectedCategoryDesc]}>
+            <Text style={[styles.categoryDesc, { color: isSelected ? colors.bg : colors.textSecondary }]}>
               {cat.desc}
             </Text>
           </View>
@@ -170,8 +172,8 @@ export function Step2Category({ selectedCategories, setSelectedCategories }: Ste
   return (
     <View style={styles.formSection}>
       <View style={styles.stepHeader}>
-        <Text style={styles.stepTitle}>전문 분야를 선택해주세요</Text>
-        <Text style={styles.stepSubtitle}>장인님께서 활동하시는 공예 및 예술 분야를 중복 선택하실 수 있습니다.</Text>
+        <Text style={[styles.stepTitle, { color: colors.text }]}>전문 분야를 선택해주세요</Text>
+        <Text style={[styles.stepSubtitle, { color: colors.textSecondary }]}>장인님께서 활동하시는 공예 및 예술 분야를 중복 선택하실 수 있습니다.</Text>
       </View>
 
       {/* 2열 그리드 */}
@@ -188,8 +190,8 @@ export function Step2Category({ selectedCategories, setSelectedCategories }: Ste
 const styles = StyleSheet.create({
   formSection: { marginBottom: 24 },
   stepHeader: { marginBottom: 24 },
-  stepTitle: { fontSize: 22, fontWeight: 'bold', color: '#3B2B26', marginBottom: 8 },
-  stepSubtitle: { fontSize: 13, color: '#6E665F', lineHeight: 20 },
+  stepTitle: { fontSize: 22, fontWeight: 'bold', marginBottom: 8 },
+  stepSubtitle: { fontSize: 13, lineHeight: 20 },
 
   categoryGrid: {
     flexDirection: 'row',
@@ -201,9 +203,7 @@ const styles = StyleSheet.create({
   // 2열 카드
   categoryCard: {
     width: '48%',
-    backgroundColor: '#FAF9F6',
     borderWidth: 1,
-    borderColor: '#D4CDC4',
     borderRadius: 16,
     padding: 20,
     marginBottom: 12,
@@ -215,9 +215,7 @@ const styles = StyleSheet.create({
   // 넓은 카드 (가로 전체)
   wideCategoryCard: {
     width: '100%',
-    backgroundColor: '#FAF9F6',
     borderWidth: 1,
-    borderColor: '#D4CDC4',
     borderRadius: 16,
     padding: 16,
     marginBottom: 12,
@@ -231,39 +229,24 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 
-  // 선택 상태
-  selectedCategoryCard: {
-    backgroundColor: '#3B2B26',
-    borderColor: '#3B2B26',
-  },
-
   // 아이콘 배경
   iconWrap: {
     width: 48,
     height: 48,
     borderRadius: 12,
-    backgroundColor: '#EEE9E3',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 14,
-  },
-  iconWrapSelected: {
-    backgroundColor: 'rgba(255,255,255,0.15)',
   },
 
   // 텍스트
   categoryName: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#3B2B26',
     marginBottom: 4,
   },
-  selectedCategoryName: { color: '#FAF9F6' },
-
   categoryDesc: {
     fontSize: 12,
-    color: '#A39B92',
     lineHeight: 17,
   },
-  selectedCategoryDesc: { color: 'rgba(250,249,246,0.7)' },
 });

@@ -13,13 +13,7 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
 import { logout } from "@/features/auth/api/authApi";
 import { RootStackParamList } from "@/navigation/RootNavigator";
-
-const BG = "#F7F4EF";
-const TEXT = "#1C1410";
-const TEXT_S = "#7A6F65";
-const BORDER = "#E8E2D9";
-const CARD = "#FFFFFF";
-const BRAND = "#3D1F0D";
+import { useTheme, ThemeMode } from "@/theme/ThemeContext";
 
 type RowProps = {
   icon: React.ReactNode;
@@ -30,6 +24,7 @@ type RowProps = {
 };
 
 function Row({ icon, label, value, onPress, danger }: RowProps) {
+  const { colors } = useTheme();
   return (
     <TouchableOpacity
       style={styles.row}
@@ -38,26 +33,40 @@ function Row({ icon, label, value, onPress, danger }: RowProps) {
     >
       <View style={styles.rowLeft}>
         <View style={styles.rowIconBox}>{icon}</View>
-        <Text style={[styles.rowLabel, danger && { color: "#D04040" }]}>
+        <Text style={[styles.rowLabel, { color: danger ? "#D04040" : colors.text }]}>
           {label}
         </Text>
       </View>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
         {value ? (
-          <Text style={styles.rowValue}>{value}</Text>
+          <Text style={[styles.rowValue, { color: colors.textSecondary }]}>{value}</Text>
         ) : null}
         <Ionicons
           name="chevron-forward"
           size={16}
-          color={danger ? "#D04040" : "#C4BBB2"}
+          color={danger ? "#D04040" : colors.border}
         />
       </View>
     </TouchableOpacity>
   );
 }
 
+const THEME_LABEL: Record<ThemeMode, string> = {
+  light: "라이트",
+  dark: "다크",
+  auto: "시스템 설정",
+};
+
+const THEME_ORDER: ThemeMode[] = ["light", "dark", "auto"];
+
 export function SettingScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { mode, setMode, colors } = useTheme();
+
+  const handleCycleTheme = () => {
+    const next = THEME_ORDER[(THEME_ORDER.indexOf(mode) + 1) % THEME_ORDER.length];
+    setMode(next);
+  };
 
   const handleLogout = () => {
     Alert.alert("로그아웃", "정말 로그아웃 하시겠어요?", [
@@ -78,13 +87,13 @@ export function SettingScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.bg }]}>
       {/* 헤더 */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: colors.bg }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={10}>
-          <Ionicons name="arrow-back" size={24} color={TEXT} />
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>설정</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>설정</Text>
         <View style={{ width: 24 }} />
       </View>
 
@@ -93,42 +102,49 @@ export function SettingScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* ── 계정 설정 ── */}
-        <Text style={styles.sectionTitle}>계정 설정</Text>
-        <View style={styles.card}>
+        <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>계정 설정</Text>
+        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Row
-            icon={<Ionicons name="person-outline" size={18} color={TEXT_S} />}
+            icon={<Ionicons name="person-outline" size={18} color={colors.textSecondary} />}
             label="프로필 수정"
           />
-          <View style={styles.separator} />
+          <View style={[styles.separator, { backgroundColor: colors.border }]} />
           <Row
-            icon={<Ionicons name="lock-closed-outline" size={18} color={TEXT_S} />}
+            icon={<Ionicons name="lock-closed-outline" size={18} color={colors.textSecondary} />}
             label="비밀번호 변경"
           />
-          <View style={styles.separator} />
+          <View style={[styles.separator, { backgroundColor: colors.border }]} />
           <Row
-            icon={<Ionicons name="notifications-outline" size={18} color={TEXT_S} />}
+            icon={<Ionicons name="notifications-outline" size={18} color={colors.textSecondary} />}
             label="알림 설정"
           />
         </View>
 
         {/* ── 앱 환경설정 ── */}
-        <Text style={[styles.sectionTitle, { marginTop: 28 }]}>앱 환경설정</Text>
-        <View style={styles.card}>
+        <Text style={[styles.sectionTitle, { color: colors.textSecondary, marginTop: 28 }]}>앱 환경설정</Text>
+        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Row
-            icon={<Ionicons name="globe-outline" size={18} color={TEXT_S} />}
+            icon={<Ionicons name="globe-outline" size={18} color={colors.textSecondary} />}
             label="언어 (Language)"
             value="한국어"
+          />
+          <View style={[styles.separator, { backgroundColor: colors.border }]} />
+          <Row
+            icon={<Ionicons name="contrast-outline" size={18} color={colors.textSecondary} />}
+            label="테마"
+            value={THEME_LABEL[mode]}
+            onPress={handleCycleTheme}
           />
         </View>
 
         {/* ── 로그아웃 / 회원탈퇴 ── */}
-        <View style={[styles.card, { marginTop: 28 }]}>
+        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, marginTop: 28 }]}>
           <Row
-            icon={<Ionicons name="log-out-outline" size={18} color={TEXT_S} />}
+            icon={<Ionicons name="log-out-outline" size={18} color={colors.textSecondary} />}
             label="로그아웃"
             onPress={handleLogout}
           />
-          <View style={styles.separator} />
+          <View style={[styles.separator, { backgroundColor: colors.border }]} />
           <Row
             icon={<Ionicons name="person-remove-outline" size={18} color="#D04040" />}
             label="회원 탈퇴"
@@ -138,9 +154,9 @@ export function SettingScreen() {
 
         {/* ── 버전 / 저작권 ── */}
         <View style={styles.versionBlock}>
-          <Text style={styles.versionText}>버전 2.4.1 (최신 버전)</Text>
+          <Text style={[styles.versionText, { color: colors.textSecondary }]}>버전 2.4.1 (최신 버전)</Text>
           <Text style={styles.copyrightText}>
-            © 2024 Artisan &amp; Day. All rights reserved.
+            © 2024 Fingertip. All rights reserved.
           </Text>
         </View>
       </ScrollView>
@@ -149,7 +165,7 @@ export function SettingScreen() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: BG },
+  safeArea: { flex: 1 },
 
   header: {
     flexDirection: "row",
@@ -157,26 +173,22 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: 20,
     paddingVertical: 14,
-    backgroundColor: BG,
   },
-  headerTitle: { fontSize: 17, fontWeight: "700", color: TEXT },
+  headerTitle: { fontSize: 17, fontWeight: "700" },
 
   container: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 48 },
 
   sectionTitle: {
     fontSize: 12,
     fontWeight: "600",
-    color: TEXT_S,
     letterSpacing: 0.3,
     marginBottom: 10,
     marginLeft: 2,
   },
 
   card: {
-    backgroundColor: CARD,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: BORDER,
     overflow: "hidden",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
@@ -194,12 +206,11 @@ const styles = StyleSheet.create({
   },
   rowLeft: { flexDirection: "row", alignItems: "center", gap: 12 },
   rowIconBox: { width: 22, alignItems: "center" },
-  rowLabel: { fontSize: 15, fontWeight: "500", color: TEXT },
-  rowValue: { fontSize: 14, color: TEXT_S },
+  rowLabel: { fontSize: 15, fontWeight: "500" },
+  rowValue: { fontSize: 14 },
 
   separator: {
     height: 1,
-    backgroundColor: BORDER,
     marginLeft: 50,
   },
 
@@ -208,6 +219,6 @@ const styles = StyleSheet.create({
     marginTop: 36,
     gap: 4,
   },
-  versionText: { fontSize: 12, color: TEXT_S },
+  versionText: { fontSize: 12 },
   copyrightText: { fontSize: 11, color: "#B0A89E" },
 });
