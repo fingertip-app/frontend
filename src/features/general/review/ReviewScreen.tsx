@@ -17,12 +17,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { RootStackParamList } from "@/navigation/RootNavigator";
 import { MainLayout } from "@/features/general/home/MainLayout";
 import { createReview, updateReview } from "@/features/reviews/api/reviewsApi";
+import { useTheme } from "@/theme/ThemeContext";
 
-const BRAND = "#3D1F0D";
-const GRAY = "#8A8077";
-const BORDER = "#EAE6E1";
-const BG = "#F5F4F0";
-const CARD = "#FFFFFF";
 const MAX_PHOTOS = 5;
 const MAX_CHARS = 1000;
 
@@ -40,6 +36,7 @@ export function ReviewScreen() {
   const route = useRoute<RouteProp<RootStackParamList, "Review">>();
   const { booking, existingReview } = route.params;
   const isEditing = !!existingReview;
+  const { colors } = useTheme();
 
   const [rating, setRating] = useState(existingReview?.rating ?? 0);
   const [hovered, setHovered] = useState(0);
@@ -88,11 +85,11 @@ export function ReviewScreen() {
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         {/* 헤더 */}
-        <View style={styles.header}>
+        <View style={[styles.header, { backgroundColor: colors.bg, borderBottomColor: colors.border }]}>
           <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={10}>
-            <Ionicons name="arrow-back" size={24} color="#1C1107" />
+            <Ionicons name="arrow-back" size={24} color={colors.text} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>{isEditing ? "후기 수정하기" : "후기 작성하기"}</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>{isEditing ? "후기 수정하기" : "후기 작성하기"}</Text>
           <View style={{ width: 24 }} />
         </View>
 
@@ -102,18 +99,18 @@ export function ReviewScreen() {
           showsVerticalScrollIndicator={false}
         >
           {/* ── 체험 정보 카드 ── */}
-          <View style={styles.expCard}>
+          <View style={[styles.expCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <Image
               source={{ uri: booking.imageUri }}
-              style={styles.expThumb}
+              style={[styles.expThumb, { backgroundColor: colors.border }]}
               resizeMode="cover"
             />
             <View style={{ flex: 1 }}>
-              <Text style={styles.expLabel}>EXPERIENCE</Text>
-              <Text style={styles.expTitle} numberOfLines={2}>
+              <Text style={[styles.expLabel, { color: colors.textSecondary }]}>EXPERIENCE</Text>
+              <Text style={[styles.expTitle, { color: colors.text }]} numberOfLines={2}>
                 {booking.title}
               </Text>
-              <Text style={styles.expArtisan} numberOfLines={1}>
+              <Text style={[styles.expArtisan, { color: colors.textSecondary }]} numberOfLines={1}>
                 {booking.artisan ?? "장인"}
               </Text>
             </View>
@@ -121,7 +118,7 @@ export function ReviewScreen() {
 
           {/* ── 별점 선택 ── */}
           <View style={styles.ratingSection}>
-            <Text style={styles.ratingQuestion}>경험은 어떠셨나요?</Text>
+            <Text style={[styles.ratingQuestion, { color: colors.text }]}>경험은 어떠셨나요?</Text>
             <View style={styles.starsRow}>
               {[1, 2, 3, 4, 5].map((star) => (
                 <TouchableOpacity
@@ -135,28 +132,28 @@ export function ReviewScreen() {
                   <Ionicons
                     name={star <= displayRating ? "star" : "star-outline"}
                     size={42}
-                    color={star <= displayRating ? "#C8824A" : "#C4BBB2"}
+                    color={star <= displayRating ? colors.gold : colors.border}
                   />
                 </TouchableOpacity>
               ))}
             </View>
-            <Text style={styles.ratingLabel}>{RATING_LABELS[displayRating]}</Text>
+            <Text style={[styles.ratingLabel, { color: colors.textSecondary }]}>{RATING_LABELS[displayRating]}</Text>
           </View>
 
           {/* ── 사진 추가 ── */}
           <View style={styles.sectionBlock}>
-            <Text style={styles.sectionLabel}>ADD PHOTOS</Text>
+            <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>ADD PHOTOS</Text>
             <View style={styles.photoGrid}>
               {/* 첫 번째 셀: 추가 버튼 */}
               <TouchableOpacity
-                style={[styles.photoCell, styles.photoCellAdd]}
+                style={[styles.photoCell, styles.photoCellAdd, { borderColor: colors.border, backgroundColor: colors.card }]}
                 activeOpacity={0.7}
                 onPress={() => {
                   // TODO: ImagePicker 연동
                 }}
               >
-                <Ionicons name="camera-outline" size={24} color={GRAY} />
-                <Text style={styles.photoCount}>
+                <Ionicons name="camera-outline" size={24} color={colors.textSecondary} />
+                <Text style={[styles.photoCount, { color: colors.textSecondary }]}>
                   {photos.length}/{MAX_PHOTOS}
                 </Text>
               </TouchableOpacity>
@@ -165,7 +162,7 @@ export function ReviewScreen() {
               {Array.from({ length: MAX_PHOTOS - 1 }).map((_, i) => {
                 const uri = photos[i];
                 return (
-                  <View key={i} style={[styles.photoCell, styles.photoCellEmpty]}>
+                  <View key={i} style={[styles.photoCell, { backgroundColor: colors.border }]}>
                     {uri ? (
                       <>
                         <Image
@@ -191,11 +188,11 @@ export function ReviewScreen() {
 
           {/* ── 후기 텍스트 ── */}
           <View style={styles.sectionBlock}>
-            <Text style={styles.sectionLabel}>YOUR STORY</Text>
+            <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>YOUR STORY</Text>
             <TextInput
-              style={styles.textInput}
+              style={[styles.textInput, { color: colors.text }]}
               placeholder="명인님과의 소중한 경험을 기록해주세요."
-              placeholderTextColor="#B5ADA6"
+              placeholderTextColor={colors.textSecondary}
               multiline
               textAlignVertical="top"
               value={content}
@@ -203,8 +200,8 @@ export function ReviewScreen() {
             />
             {/* 구분선 + 글자수 */}
             <View style={styles.inputFooter}>
-              <View style={styles.inputDivider} />
-              <Text style={styles.charCount}>
+              <View style={[styles.inputDivider, { backgroundColor: colors.border }]} />
+              <Text style={[styles.charCount, { color: colors.textSecondary }]}>
                 {content.length} / {MAX_CHARS}
               </Text>
             </View>
@@ -212,17 +209,17 @@ export function ReviewScreen() {
         </ScrollView>
 
         {/* 하단 등록 버튼 */}
-        <View style={styles.footer}>
+        <View style={[styles.footer, { backgroundColor: colors.bg, borderTopColor: colors.border }]}>
           <TouchableOpacity
-            style={[styles.submitBtn, !canSubmit && styles.submitBtnDisabled]}
+            style={[styles.submitBtn, { backgroundColor: colors.accent }, !canSubmit && { backgroundColor: colors.border }]}
             activeOpacity={0.85}
             onPress={handleSubmit}
             disabled={!canSubmit}
           >
             {isSubmitting ? (
-              <ActivityIndicator color="#FFFFFF" />
+              <ActivityIndicator color={colors.bg} />
             ) : (
-              <Text style={styles.submitBtnText}>{isEditing ? "수정하기" : "등록하기"}</Text>
+              <Text style={[styles.submitBtnText, { color: colors.bg }]}>{isEditing ? "수정하기" : "등록하기"}</Text>
             )}
           </TouchableOpacity>
         </View>
@@ -234,8 +231,6 @@ export function ReviewScreen() {
 const PHOTO_CELL_SIZE = (340 - 32 - 40) / 4; // 4열 기준 (여백 고려)
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: BG },
-
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -243,10 +238,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: BORDER,
-    backgroundColor: BG,
   },
-  headerTitle: { fontSize: 17, fontWeight: "700", color: "#1C1107" },
+  headerTitle: { fontSize: 17, fontWeight: "700" },
 
   container: { padding: 20, paddingBottom: 40 },
 
@@ -254,12 +247,10 @@ const styles = StyleSheet.create({
   expCard: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: CARD,
     borderRadius: 14,
     padding: 14,
     gap: 12,
     borderWidth: 1,
-    borderColor: BORDER,
     marginBottom: 32,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
@@ -271,30 +262,27 @@ const styles = StyleSheet.create({
     width: 68,
     height: 68,
     borderRadius: 10,
-    backgroundColor: "#E8E2D9",
   },
   expLabel: {
     fontSize: 10,
     fontWeight: "700",
-    color: GRAY,
     letterSpacing: 1,
     marginBottom: 4,
   },
-  expTitle: { fontSize: 15, fontWeight: "700", color: "#1C1107", marginBottom: 4, lineHeight: 20 },
-  expArtisan: { fontSize: 12, color: GRAY },
+  expTitle: { fontSize: 15, fontWeight: "700", marginBottom: 4, lineHeight: 20 },
+  expArtisan: { fontSize: 12 },
 
   // 별점
   ratingSection: { alignItems: "center", marginBottom: 32 },
-  ratingQuestion: { fontSize: 17, fontWeight: "600", color: "#1C1107", marginBottom: 16 },
+  ratingQuestion: { fontSize: 17, fontWeight: "600", marginBottom: 16 },
   starsRow: { flexDirection: "row", gap: 8, marginBottom: 10 },
-  ratingLabel: { fontSize: 14, color: GRAY },
+  ratingLabel: { fontSize: 14 },
 
   // 섹션 공통
   sectionBlock: { marginBottom: 28 },
   sectionLabel: {
     fontSize: 11,
     fontWeight: "700",
-    color: GRAY,
     letterSpacing: 1.2,
     marginBottom: 12,
   },
@@ -312,17 +300,12 @@ const styles = StyleSheet.create({
   },
   photoCellAdd: {
     borderWidth: 1.5,
-    borderColor: "#C4BBB2",
     borderStyle: "dashed",
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: CARD,
     gap: 4,
   },
-  photoCellEmpty: {
-    backgroundColor: "#EDE8E2",
-  },
-  photoCount: { fontSize: 11, color: GRAY, fontWeight: "600" },
+  photoCount: { fontSize: 11, fontWeight: "600" },
   photoRemove: {
     position: "absolute",
     top: 4,
@@ -338,19 +321,16 @@ const styles = StyleSheet.create({
   // 텍스트 입력
   textInput: {
     fontSize: 15,
-    color: "#1C1107",
     lineHeight: 24,
     minHeight: 200,
   },
   inputFooter: { marginTop: 12 },
   inputDivider: {
     height: 1,
-    backgroundColor: BORDER,
     marginBottom: 8,
   },
   charCount: {
     fontSize: 12,
-    color: GRAY,
     textAlign: "right",
   },
 
@@ -359,16 +339,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 12,
     paddingBottom: Platform.OS === "ios" ? 34 : 20,
-    backgroundColor: BG,
     borderTopWidth: 1,
-    borderTopColor: BORDER,
   },
   submitBtn: {
-    backgroundColor: BRAND,
     borderRadius: 50,
     paddingVertical: 17,
     alignItems: "center",
   },
-  submitBtnDisabled: { backgroundColor: "#C4BDB5" },
-  submitBtnText: { color: "#FFFFFF", fontSize: 16, fontWeight: "700" },
+  submitBtnText: { fontSize: 16, fontWeight: "700" },
 });
