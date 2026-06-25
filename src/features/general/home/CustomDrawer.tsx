@@ -14,6 +14,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, NavigationProp } from "@react-navigation/native";
 import { RootStackParamList, MainTabParamList } from "@/navigation/RootNavigator";
 import { useTheme } from "@/theme/ThemeContext";
+import { useUnreadNotificationCount } from "@/features/notifications/useUnreadNotificationCount";
 
 interface CustomDrawerProps {
   isOpen: boolean;
@@ -70,6 +71,7 @@ export function CustomDrawer({
   const slideAnim = useRef(new Animated.Value(-DRAWER_WIDTH)).current;
   const [isModalVisible, setIsModalVisible] = useState(false);
   const navigation = useNavigation<DrawerNavigationProp>();
+  const unreadCount = useUnreadNotificationCount();
 
   // 브라우저 리사이즈 시 닫혀있는 메뉴의 오프셋을 동적으로 보정
   useEffect(() => {
@@ -155,11 +157,16 @@ export function CustomDrawer({
                     onPress={() => handlePress(item.key, item.route)}
                     activeOpacity={0.7}
                   >
-                    <MenuIcon
-                      name={isActive ? (item.icon as any) : `${item.icon}-outline`}
-                      size={18}
-                      color={isActive ? colors.bg : colors.textSecondary}
-                    />
+                    <View>
+                      <MenuIcon
+                        name={isActive ? (item.icon as any) : `${item.icon}-outline`}
+                        size={18}
+                        color={isActive ? colors.bg : colors.textSecondary}
+                      />
+                      {item.key === "알림" && unreadCount > 0 && (
+                        <View style={[styles.menuBadge, { borderColor: colors.bg }]} />
+                      )}
+                    </View>
                     <Text
                       style={[
                         styles.menuLabel,
@@ -272,6 +279,11 @@ const styles = StyleSheet.create({
   },
   menuLabel: {
     fontSize: 14,
+  },
+  menuBadge: {
+    position: "absolute", top: -2, right: -2,
+    width: 7, height: 7, borderRadius: 4,
+    backgroundColor: "#E04848", borderWidth: 1,
   },
 
   /* 체험 분야 섹션 */

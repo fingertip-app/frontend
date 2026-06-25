@@ -87,7 +87,7 @@ export function MasterExperienceScreen({
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.bg }]}>
       {/* ── 공통 상단바 및 서랍 ── */}
-      <MasterHeader activeItem="체험관리" hasNotification={true} />
+      <MasterHeader activeItem="체험관리" />
 
       <ScrollView
         style={{ flex: 1 }}
