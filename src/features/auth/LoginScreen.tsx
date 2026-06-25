@@ -171,30 +171,6 @@ export function LoginScreen() {
           </View>
         </View>
 
-        {/* 소셜 로그인 영역 */}
-        <View style={styles.socialSection}>
-          <View style={styles.dividerContainer}>
-            <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
-            <Text style={[styles.dividerText, { color: colors.textSecondary }]}>또는 간편 로그인</Text>
-            <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
-          </View>
-
-          <View style={styles.socialButtonsRow}>
-            {/* 카카오 */}
-            <TouchableOpacity style={[styles.socialIcon, { backgroundColor: '#FEE500', borderColor: '#FEE500' }]} activeOpacity={0.7}>
-              <Text style={{fontWeight: '900', color: '#3B2B26', fontSize: 18}}>K</Text>
-            </TouchableOpacity>
-            {/* 네이버 */}
-            <TouchableOpacity style={[styles.socialIcon, { backgroundColor: '#03C75A', borderColor: '#03C75A' }]} activeOpacity={0.7}>
-              <Text style={{fontWeight: '900', color: '#FFF', fontSize: 18}}>N</Text>
-            </TouchableOpacity>
-            {/* 기타/구글 */}
-            <TouchableOpacity style={[styles.socialIcon, { backgroundColor: '#FFF', borderColor: '#E2DDD6' }]} activeOpacity={0.7}>
-              <Text style={{fontWeight: '900', color: '#4285F4', fontSize: 18}}>G</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
         {/* 회원가입 버튼 영역 */}
         <View style={styles.signupSection}>
           <Text style={[styles.signupPrompt, { color: colors.textSecondary }]}>계정이 없으신가요?</Text>
@@ -337,37 +313,6 @@ const styles = StyleSheet.create({
   findInfoDot: {
     fontSize: 12,
     marginHorizontal: 16,
-  },
-
-  // Social Login Section
-  socialSection: {
-    marginBottom: 44,
-  },
-  dividerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-  },
-  dividerText: {
-    marginHorizontal: 16,
-    fontSize: 13,
-  },
-  socialButtonsRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 20,
-  },
-  socialIcon: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    borderWidth: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
 
   // Signup Buttons
