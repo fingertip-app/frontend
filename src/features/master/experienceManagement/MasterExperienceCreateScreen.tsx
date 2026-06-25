@@ -68,6 +68,7 @@ export function MasterExperienceCreateScreen() {
     { value: "INTERMEDIATE", label: "중급" },
     { value: "ADVANCED", label: "고급" },
   ];
+  const LANGUAGE_OPTIONS = ["한국어", "영어", "중국어", "일본어"];
   const DAYS = ["월", "화", "수", "목", "금", "토", "일"];
   const WEEKDAY_LABELS = ["일", "월", "화", "수", "목", "금", "토"];
 
@@ -144,6 +145,12 @@ export function MasterExperienceCreateScreen() {
     setMainImage("https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=600&q=80");
   };
 
+  const toggleLanguage = (lang: string) => {
+    setSupportedLanguages((current) =>
+      current.includes(lang) ? current.filter((l) => l !== lang) : [...current, lang],
+    );
+  };
+
   const handleSubmit = async () => {
     if (!mainImage) {
       Alert.alert("알림", "대표 이미지를 등록해주세요.");
@@ -151,6 +158,10 @@ export function MasterExperienceCreateScreen() {
     }
     if (!category) {
       Alert.alert("알림", "카테고리를 선택해주세요.");
+      return;
+    }
+    if (supportedLanguages.length === 0) {
+      Alert.alert("알림", "진행 가능 언어를 하나 이상 선택해주세요.");
       return;
     }
     if (!title.trim()) {
@@ -352,6 +363,32 @@ export function MasterExperienceCreateScreen() {
                 >
                   <Text style={[styles.dayBtnText, { color: selected ? colors.bg : colors.textSecondary }]}>
                     {option.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+
+        {/* 진행 가능 언어 */}
+        <View style={styles.inputGroup}>
+          <Text style={[styles.label, { color: colors.text }]}>진행 가능 언어</Text>
+          <View style={styles.dayGrid}>
+            {LANGUAGE_OPTIONS.map((lang) => {
+              const selected = supportedLanguages.includes(lang);
+              return (
+                <TouchableOpacity
+                  key={lang}
+                  style={[
+                    styles.difficultyChip,
+                    { backgroundColor: colors.card, borderColor: colors.border },
+                    selected && { backgroundColor: colors.text, borderColor: colors.text },
+                  ]}
+                  onPress={() => toggleLanguage(lang)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[styles.dayBtnText, { color: selected ? colors.bg : colors.textSecondary }]}>
+                    {lang}
                   </Text>
                 </TouchableOpacity>
               );

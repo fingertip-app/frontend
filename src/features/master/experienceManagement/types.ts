@@ -16,6 +16,7 @@ export interface ExperienceRegistrationParams {
   detail: string
   category: string
   difficulty: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED'
+  languages: string[]
   tags: string[]
   mainPhoto: ExperiencePhoto
   detailPhotos: ExperiencePhoto[]

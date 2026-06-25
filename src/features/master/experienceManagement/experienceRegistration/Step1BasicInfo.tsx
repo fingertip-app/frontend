@@ -28,6 +28,8 @@ const DIFFICULTY_OPTIONS: { value: "BEGINNER" | "INTERMEDIATE" | "ADVANCED"; lab
   { value: "ADVANCED", label: "고급" },
 ];
 
+const LANGUAGE_OPTIONS = ["한국어", "영어", "중국어", "일본어"];
+
 export function Step1BasicInfo() {
   const navigation = useNavigation<any>();
   const { colors } = useTheme();
@@ -38,8 +40,15 @@ export function Step1BasicInfo() {
   const [detail, setDetail] = useState("");
   const [category, setCategory] = useState("");
   const [difficulty, setDifficulty] = useState<"BEGINNER" | "INTERMEDIATE" | "ADVANCED">("BEGINNER");
+  const [languages, setLanguages] = useState<string[]>(["한국어"]);
   const [tagInput, setTagInput] = useState("");
   const [tags, setTags] = useState<string[]>([]);
+
+  const toggleLanguage = (lang: string) => {
+    setLanguages((current) =>
+      current.includes(lang) ? current.filter((l) => l !== lang) : [...current, lang],
+    );
+  };
 
   const SHORT_MAX = 30;
   const DETAIL_MAX = 1000;
@@ -252,6 +261,37 @@ export function Step1BasicInfo() {
           </View>
         </View>
 
+        {/* ── 진행 가능 언어 ── */}
+        <View style={styles.inputGroup}>
+          <View style={styles.labelRow}>
+            <Text style={[styles.label, { color: colors.text }]}>진행 가능 언어</Text>
+            <Text style={styles.required}>*</Text>
+          </View>
+          <View style={styles.tagList}>
+            {LANGUAGE_OPTIONS.map((lang) => {
+              const isSelected = languages.includes(lang);
+              return (
+                <TouchableOpacity
+                  key={lang}
+                  style={[
+                    styles.categoryChip,
+                    { backgroundColor: colors.card, borderColor: colors.border },
+                    isSelected && { backgroundColor: colors.text, borderColor: colors.text },
+                  ]}
+                  activeOpacity={0.8}
+                  onPress={() => toggleLanguage(lang)}
+                >
+                  <Text
+                    style={[styles.categoryChipText, { color: isSelected ? colors.bg : colors.text }]}
+                  >
+                    {lang}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+
         {/* ── 스타일 태그 ── */}
         <View style={styles.inputGroup}>
           <View style={styles.labelRow}>
@@ -298,12 +338,12 @@ export function Step1BasicInfo() {
           style={[
             styles.nextBtn,
             { backgroundColor: colors.text },
-            !(title && shortDesc && detail && category) && styles.nextBtnDisabled,
+            !(title && shortDesc && detail && category && languages.length > 0) && styles.nextBtnDisabled,
           ]}
           activeOpacity={0.8}
-          disabled={!(title && shortDesc && detail && category)}
+          disabled={!(title && shortDesc && detail && category && languages.length > 0)}
           onPress={() =>
-            navigation.navigate("Step2Photos", { title, shortDesc, detail, category, difficulty, tags })
+            navigation.navigate("Step2Photos", { title, shortDesc, detail, category, difficulty, languages, tags })
           }
         >
           <Text style={[styles.nextBtnText, { color: colors.bg }]}>다음 단계</Text>

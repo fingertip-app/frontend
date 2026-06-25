@@ -99,6 +99,7 @@ export async function createRegisteredExperience(
     price,
     maxParticipants: params.maxGuests,
     difficulty: params.difficulty,
+    supportedLanguages: params.languages,
     durationMinutes: computeDurationMinutes(params.timeSlots),
     imageUrl,
     locationAddress: locationAddress.trim(),
