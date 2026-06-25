@@ -1,16 +1,28 @@
 import React, { useCallback, useState } from "react";
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, FlatList, Image, ActivityIndicator, Alert } from "react-native";
+import {
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Image,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
-import { getMyWishlists, removeFromWishlist } from "@/features/wishlists/api/wishlistsApi";
 import { RootStackParamList } from "@/navigation/RootNavigator";
+import { getMyWishlists, removeFromWishlist } from "@/features/wishlists/api/wishlistsApi";
+import { useTheme } from "@/theme/ThemeContext";
 import type { Wishlist } from "@/types/api";
 
 const PLACEHOLDER_IMAGE = "https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=400&q=80";
 
 export function WishlistScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { colors } = useTheme();
   const [wishlists, setWishlists] = useState<Wishlist[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -29,13 +41,13 @@ export function WishlistScreen() {
   useFocusEffect(
     useCallback(() => {
       loadWishlists();
-    }, [loadWishlists])
+    }, [loadWishlists]),
   );
 
   const handleRemove = async (experienceId: number) => {
     try {
       await removeFromWishlist(experienceId);
-      setWishlists((prev) => prev.filter((w) => w.experienceId !== experienceId));
+      setWishlists((prev) => prev.filter((item) => item.experienceId !== experienceId));
     } catch {
       Alert.alert("알림", "찜 해제에 실패했습니다.");
     }
@@ -63,79 +75,148 @@ export function WishlistScreen() {
     });
   };
 
+  const renderWishlist = ({ item }: { item: Wishlist }) => (
+    <TouchableOpacity
+      style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
+      activeOpacity={0.88}
+      onPress={() => openExperienceDetail(item)}
+    >
+      <Image source={{ uri: item.experienceImageUrl || PLACEHOLDER_IMAGE }} style={styles.cardImage} />
+      <TouchableOpacity
+        style={[styles.heartButton, { backgroundColor: colors.bg, borderColor: colors.border }]}
+        activeOpacity={0.8}
+        onPress={(event) => {
+          event.stopPropagation();
+          handleRemove(item.experienceId);
+        }}
+      >
+        <Ionicons name="heart" size={18} color={colors.accent} />
+      </TouchableOpacity>
+
+      <View style={styles.cardInfo}>
+        <View style={styles.metaRow}>
+          <Text style={[styles.categoryText, { color: colors.accent }]} numberOfLines={1}>
+            {item.experienceCategory || "공방 체험"}
+          </Text>
+          <Text style={[styles.dot, { color: colors.textSecondary }]}>·</Text>
+          <Text style={[styles.locationText, { color: colors.textSecondary }]} numberOfLines={1}>
+            {item.experienceLocation || "위치 미정"}
+          </Text>
+        </View>
+        <Text style={[styles.titleText, { color: colors.text }]} numberOfLines={1}>
+          {item.experienceTitle}
+        </Text>
+        <View style={styles.bottomRow}>
+          <Text style={[styles.priceText, { color: colors.text }]}>
+            {Number(item.experiencePrice || 0).toLocaleString()}원
+          </Text>
+          <View style={[styles.ratingPill, { backgroundColor: colors.bg, borderColor: colors.border }]}>
+            <Ionicons name="star" size={12} color={colors.gold} />
+            <Text style={[styles.ratingText, { color: colors.textSecondary }]}>
+              {Number(((item.averageRating ?? item.rating) ?? 0).toFixed(1))}
+            </Text>
+          </View>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+
   return (
-    <SafeAreaView style={styles.safeArea}>
-      {/* ── 헤더 ── */}
-      <View style={styles.header}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.bg }]}>
+      <View style={[styles.header, { borderBottomColor: colors.border, backgroundColor: colors.bg }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={10}>
-          <Ionicons name="arrow-back" size={24} color="#1C1107" />
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>찜한 체험</Text>
-        {/* 중앙 정렬용 여백 */}
-        <View style={{ width: 24 }} /> 
+        <Text style={[styles.headerTitle, { color: colors.text }]}>찜한 체험</Text>
+        <View style={{ width: 24 }} />
       </View>
 
-      {/* ── 찜한 목록 ── */}
       {isLoading ? (
-        <ActivityIndicator color="#3B2B26" style={{ marginTop: 40 }} />
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator color={colors.accent} />
+        </View>
       ) : (
-      <FlatList
-        data={wishlists}
-        keyExtractor={(item) => String(item.id)}
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-        renderItem={({ item }) => (
-          <TouchableOpacity style={styles.card} activeOpacity={0.9} onPress={() => openExperienceDetail(item)}>
-            <Image source={{ uri: item.experienceImageUrl || PLACEHOLDER_IMAGE }} style={styles.cardImage} />
-
-            {/* 좋아요 하트 버튼 */}
-            <TouchableOpacity
-              style={styles.heartButton}
-              activeOpacity={0.8}
-              onPress={(event) => {
-                event.stopPropagation();
-                handleRemove(item.experienceId);
-              }}
-            >
-              <Ionicons name="heart" size={20} color="#EF4444" />
-            </TouchableOpacity>
-
-            <View style={styles.cardInfo}>
-              <Text style={styles.categoryText}>{item.experienceLocation} · {item.experienceCategory}</Text>
-              <Text style={styles.titleText} numberOfLines={1}>{item.experienceTitle}</Text>
-              <Text style={styles.priceText}>{item.experiencePrice.toLocaleString()}원~</Text>
+        <FlatList
+          data={wishlists}
+          keyExtractor={(item) => String(item.id)}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+          renderItem={renderWishlist}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <View style={[styles.emptyIcon, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                <Ionicons name="heart-outline" size={34} color={colors.textSecondary} />
+              </View>
+              <Text style={[styles.emptyText, { color: colors.text }]}>아직 찜한 체험이 없습니다</Text>
+              <Text style={[styles.emptyDesc, { color: colors.textSecondary }]}>
+                마음에 드는 공방 체험을 저장해두면 여기서 다시 볼 수 있어요.
+              </Text>
             </View>
-          </TouchableOpacity>
-        )}
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Ionicons name="heart-outline" size={48} color="#D4CDC4" />
-            <Text style={styles.emptyText}>아직 찜한 체험이 없습니다.</Text>
-          </View>
-        }
-      />
+          }
+        />
       )}
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: "#F7F4EF" },
-  
-  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: "#E8E2D9", backgroundColor: "#F7F4EF" },
-  headerTitle: { fontSize: 17, fontWeight: "700", color: "#1C1107" },
-  
-  listContent: { padding: 20 },
-  card: { backgroundColor: "#FFFFFF", borderRadius: 16, marginBottom: 16, overflow: "hidden", shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 },
-  cardImage: { width: "100%", height: 160, backgroundColor: "#E8E2D9" },
-  
-  heartButton: { position: "absolute", top: 12, right: 12, backgroundColor: "rgba(255,255,255,0.9)", width: 32, height: 32, borderRadius: 16, justifyContent: "center", alignItems: "center" },
-  
+  safeArea: { flex: 1 },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+  },
+  headerTitle: { fontSize: 18, fontWeight: "800" },
+  listContent: { padding: 20, paddingBottom: 40 },
+  loadingContainer: { flex: 1, alignItems: "center", justifyContent: "center" },
+  card: {
+    borderRadius: 18,
+    marginBottom: 16,
+    overflow: "hidden",
+    borderWidth: 1,
+  },
+  cardImage: { width: "100%", height: 164 },
+  heartButton: {
+    position: "absolute",
+    top: 12,
+    right: 12,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    borderWidth: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
   cardInfo: { padding: 16 },
-  categoryText: { fontSize: 12, color: "#8A8077", marginBottom: 4 },
-  titleText: { fontSize: 16, fontWeight: "bold", color: "#1C1107", marginBottom: 8 },
-  priceText: { fontSize: 16, fontWeight: "800", color: "#3B2314" },
-  
+  metaRow: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 6 },
+  categoryText: { maxWidth: "42%", fontSize: 12, fontWeight: "800" },
+  dot: { fontSize: 12 },
+  locationText: { flex: 1, fontSize: 12 },
+  titleText: { fontSize: 16, fontWeight: "800", marginBottom: 10 },
+  bottomRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  priceText: { fontSize: 17, fontWeight: "800" },
+  ratingPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+  },
+  ratingText: { fontSize: 12, fontWeight: "700" },
   emptyContainer: { alignItems: "center", justifyContent: "center", paddingTop: 100 },
-  emptyText: { marginTop: 16, fontSize: 15, color: "#8A8077" },
+  emptyIcon: {
+    width: 72,
+    height: 72,
+    borderRadius: 20,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  emptyText: { marginTop: 16, fontSize: 17, fontWeight: "800" },
+  emptyDesc: { marginTop: 8, fontSize: 14, lineHeight: 20, textAlign: "center", paddingHorizontal: 28 },
 });

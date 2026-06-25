@@ -11,14 +11,7 @@ import {
   Alert,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
-
-// ─── 팔레트 ────────────────────────────────────────────────────────────────────
-const BRAND = "#3B2B26";
-const BG = "#F5F4F0";
-const CARD = "#FFFFFF";
-const GRAY = "#A89F96";
-const BORDER = "#E8E3DC";
-const PLACEHOLDER = "#C4BCB4";
+import { useTheme } from "@/theme/ThemeContext";
 
 // ─── 스텝 레이블 ───────────────────────────────────────────────────────────────
 const STEP_LABELS = ["기본 정보", "사진", "일정 등록", "가격/인원", "장소"];
@@ -31,6 +24,7 @@ const CATEGORY_OPTIONS = [
 
 export function Step1BasicInfo() {
   const navigation = useNavigation<any>();
+  const { colors } = useTheme();
   const currentStep = 1;
 
   const [title, setTitle] = useState("");
@@ -64,13 +58,13 @@ export function Step1BasicInfo() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.bg }]}>
       {/* ── 상단 헤더 바 ── */}
-      <View style={styles.headerBar}>
+      <View style={[styles.headerBar, { backgroundColor: colors.bg, borderBottomColor: colors.border }]}>
         <TouchableOpacity style={styles.closeBtn} onPress={() => navigation.goBack()}>
-          <Text style={styles.closeBtnText}>✕</Text>
+          <Text style={[styles.closeBtnText, { color: colors.text }]}>✕</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>체험 등록</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>체험 등록</Text>
         <View style={{ width: 32 }} />
       </View>
 
@@ -91,13 +85,14 @@ export function Step1BasicInfo() {
                   <View
                     style={[
                       styles.stepCircle,
-                      isActive && styles.activeStepCircle,
+                      { backgroundColor: colors.border },
+                      isActive && { backgroundColor: colors.text },
                     ]}
                   >
                     <Text
                       style={[
                         styles.stepNum,
-                        isActive && styles.activeStepNum,
+                        { color: isActive ? colors.bg : colors.textSecondary },
                       ]}
                     >
                       {step}
@@ -106,7 +101,8 @@ export function Step1BasicInfo() {
                   <Text
                     style={[
                       styles.stepLabel,
-                      isCurrent && styles.activeStepLabel,
+                      { color: colors.textSecondary },
+                      isCurrent && { color: colors.text, fontWeight: "600" },
                     ]}
                   >
                     {label}
@@ -116,7 +112,8 @@ export function Step1BasicInfo() {
                   <View
                     style={[
                       styles.stepLine,
-                      currentStep > step && styles.activeStepLine,
+                      { backgroundColor: colors.border },
+                      currentStep > step && { backgroundColor: colors.text },
                     ]}
                   />
                 )}
@@ -128,13 +125,13 @@ export function Step1BasicInfo() {
         {/* ── 체험 제목 ── */}
         <View style={styles.inputGroup}>
           <View style={styles.labelRow}>
-            <Text style={styles.label}>체험 제목</Text>
+            <Text style={[styles.label, { color: colors.text }]}>체험 제목</Text>
             <Text style={styles.required}>*</Text>
           </View>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
             placeholder="예) 나만의 도자기 찻잔 만들기"
-            placeholderTextColor={PLACEHOLDER}
+            placeholderTextColor={colors.textSecondary}
             value={title}
             onChangeText={setTitle}
           />
@@ -143,16 +140,16 @@ export function Step1BasicInfo() {
         {/* ── 한 줄 소개 ── */}
         <View style={styles.inputGroup}>
           <View style={styles.labelRow}>
-            <Text style={styles.label}>한 줄 소개</Text>
+            <Text style={[styles.label, { color: colors.text }]}>한 줄 소개</Text>
             <Text style={styles.required}>*</Text>
-            <Text style={styles.counter}>
+            <Text style={[styles.counter, { color: colors.textSecondary }]}>
               {shortDesc.length} / {SHORT_MAX}
             </Text>
           </View>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
             placeholder="체험을 한 줄로 소개해 주세요."
-            placeholderTextColor={PLACEHOLDER}
+            placeholderTextColor={colors.textSecondary}
             value={shortDesc}
             onChangeText={(t) =>
               setShortDesc(t.length <= SHORT_MAX ? t : t.slice(0, SHORT_MAX))
@@ -164,43 +161,43 @@ export function Step1BasicInfo() {
         {/* ── 상세 설명 ── */}
         <View style={styles.inputGroup}>
           <View style={styles.labelRow}>
-            <Text style={styles.label}>상세 설명</Text>
+            <Text style={[styles.label, { color: colors.text }]}>상세 설명</Text>
             <Text style={styles.required}>*</Text>
-            <Text style={styles.counter}>
+            <Text style={[styles.counter, { color: colors.textSecondary }]}>
               {detail.length} / {DETAIL_MAX}
             </Text>
           </View>
-          <View style={styles.detailBox}>
+          <View style={[styles.detailBox, { backgroundColor: colors.card, borderColor: colors.border }]}>
             {/* 간단한 텍스트 서식 툴바 (장식용 — 실제 포맷팅은 추후 연결 가능) */}
-            <View style={styles.toolbar}>
+            <View style={[styles.toolbar, { borderBottomColor: colors.border, backgroundColor: colors.bg }]}>
               <View style={styles.toolbarLeft}>
                 {["B", "I", "≡"].map((icon) => (
                   <TouchableOpacity key={icon} style={styles.toolBtn}>
-                    <Text style={styles.toolBtnText}>{icon}</Text>
+                    <Text style={[styles.toolBtnText, { color: colors.text }]}>{icon}</Text>
                   </TouchableOpacity>
                 ))}
-                <View style={styles.toolDivider} />
+                <View style={[styles.toolDivider, { backgroundColor: colors.border }]} />
                 {["≡L", "≡C", "≡R"].map((icon) => (
                   <TouchableOpacity key={icon} style={styles.toolBtn}>
-                    <Text style={styles.toolBtnText}>{icon}</Text>
+                    <Text style={[styles.toolBtnText, { color: colors.text }]}>{icon}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
               <View style={styles.toolbarRight}>
                 <TouchableOpacity style={styles.toolBtn}>
-                  <Text style={styles.toolBtnText}>⊟</Text>
+                  <Text style={[styles.toolBtnText, { color: colors.text }]}>⊟</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.toolBtn}>
-                  <Text style={styles.toolBtnText}>⊠</Text>
+                  <Text style={[styles.toolBtnText, { color: colors.text }]}>⊠</Text>
                 </TouchableOpacity>
               </View>
             </View>
 
             {/* 실제 텍스트 입력 */}
             <TextInput
-              style={styles.detailInput}
+              style={[styles.detailInput, { color: colors.text }]}
               placeholder="체험에 대해 자세히 설명해 주세요."
-              placeholderTextColor={PLACEHOLDER}
+              placeholderTextColor={colors.textSecondary}
               value={detail}
               onChangeText={(t) =>
                 setDetail(t.length <= DETAIL_MAX ? t : t.slice(0, DETAIL_MAX))
@@ -215,7 +212,7 @@ export function Step1BasicInfo() {
         {/* ── 체험 분야 ── */}
         <View style={styles.inputGroup}>
           <View style={styles.labelRow}>
-            <Text style={styles.label}>체험 분야</Text>
+            <Text style={[styles.label, { color: colors.text }]}>체험 분야</Text>
             <Text style={styles.required}>*</Text>
           </View>
           <View style={styles.tagList}>
@@ -224,12 +221,16 @@ export function Step1BasicInfo() {
               return (
                 <TouchableOpacity
                   key={option}
-                  style={[styles.categoryChip, isSelected && styles.categoryChipSelected]}
+                  style={[
+                    styles.categoryChip,
+                    { backgroundColor: colors.card, borderColor: colors.border },
+                    isSelected && { backgroundColor: colors.text, borderColor: colors.text },
+                  ]}
                   activeOpacity={0.8}
                   onPress={() => setCategory(option)}
                 >
                   <Text
-                    style={[styles.categoryChipText, isSelected && styles.categoryChipTextSelected]}
+                    style={[styles.categoryChipText, { color: isSelected ? colors.bg : colors.text }]}
                   >
                     {option}
                   </Text>
@@ -242,23 +243,23 @@ export function Step1BasicInfo() {
         {/* ── 스타일 태그 ── */}
         <View style={styles.inputGroup}>
           <View style={styles.labelRow}>
-            <Text style={styles.label}>스타일 태그</Text>
-            <Text style={styles.counter}>
+            <Text style={[styles.label, { color: colors.text }]}>스타일 태그</Text>
+            <Text style={[styles.counter, { color: colors.textSecondary }]}>
               {tags.length} / {TAG_MAX}
             </Text>
           </View>
           <View style={styles.tagInputRow}>
             <TextInput
-              style={[styles.input, styles.tagInput]}
+              style={[styles.input, styles.tagInput, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
               placeholder="예) 전통섬유, 여름공예"
-              placeholderTextColor={PLACEHOLDER}
+              placeholderTextColor={colors.textSecondary}
               value={tagInput}
               onChangeText={setTagInput}
               onSubmitEditing={handleAddTag}
               returnKeyType="done"
             />
-            <TouchableOpacity style={styles.tagAddBtn} activeOpacity={0.8} onPress={handleAddTag}>
-              <Text style={styles.tagAddBtnText}>추가</Text>
+            <TouchableOpacity style={[styles.tagAddBtn, { backgroundColor: colors.text }]} activeOpacity={0.8} onPress={handleAddTag}>
+              <Text style={[styles.tagAddBtnText, { color: colors.bg }]}>추가</Text>
             </TouchableOpacity>
           </View>
           {tags.length > 0 && (
@@ -266,12 +267,12 @@ export function Step1BasicInfo() {
               {tags.map((tag) => (
                 <TouchableOpacity
                   key={tag}
-                  style={styles.tagChip}
+                  style={[styles.tagChip, { backgroundColor: colors.border }]}
                   activeOpacity={0.7}
                   onPress={() => handleRemoveTag(tag)}
                 >
-                  <Text style={styles.tagChipText}>#{tag}</Text>
-                  <Text style={styles.tagChipRemove}>✕</Text>
+                  <Text style={[styles.tagChipText, { color: colors.text }]}>#{tag}</Text>
+                  <Text style={[styles.tagChipRemove, { color: colors.textSecondary }]}>✕</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -280,10 +281,11 @@ export function Step1BasicInfo() {
       </ScrollView>
 
       {/* ── 하단 다음 버튼 ── */}
-      <View style={styles.footer}>
+      <View style={[styles.footer, { backgroundColor: colors.bg, borderTopColor: colors.border }]}>
         <TouchableOpacity
           style={[
             styles.nextBtn,
+            { backgroundColor: colors.text },
             !(title && shortDesc && detail && category) && styles.nextBtnDisabled,
           ]}
           activeOpacity={0.8}
@@ -292,7 +294,7 @@ export function Step1BasicInfo() {
             navigation.navigate("Step2Photos", { title, shortDesc, detail, category, tags })
           }
         >
-          <Text style={styles.nextBtnText}>다음 단계</Text>
+          <Text style={[styles.nextBtnText, { color: colors.bg }]}>다음 단계</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -303,7 +305,6 @@ export function Step1BasicInfo() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: BG,
   },
 
   // 헤더 바
@@ -313,9 +314,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: BG,
     borderBottomWidth: 1,
-    borderBottomColor: BORDER,
   },
   closeBtn: {
     width: 32,
@@ -325,12 +324,10 @@ const styles = StyleSheet.create({
   },
   closeBtnText: {
     fontSize: 16,
-    color: BRAND,
   },
   headerTitle: {
     fontSize: 16,
     fontWeight: "600",
-    color: BRAND,
   },
 
   // 스크롤 컨텐츠
@@ -359,40 +356,23 @@ const styles = StyleSheet.create({
     width: 26,
     height: 26,
     borderRadius: 13,
-    backgroundColor: BORDER,
     justifyContent: "center",
     alignItems: "center",
   },
-  activeStepCircle: {
-    backgroundColor: BRAND,
-  },
   stepNum: {
     fontSize: 12,
-    color: GRAY,
     fontWeight: "700",
-  },
-  activeStepNum: {
-    color: "#FFF",
   },
   stepLabel: {
     fontSize: 10,
-    color: GRAY,
     marginTop: 2,
     textAlign: "center",
-  },
-  activeStepLabel: {
-    color: BRAND,
-    fontWeight: "600",
   },
   stepLine: {
     width: 20,
     height: 1.5,
-    backgroundColor: BORDER,
     marginHorizontal: 4,
     marginBottom: 14, // 레이블 공간 만큼 올림
-  },
-  activeStepLine: {
-    backgroundColor: BRAND,
   },
 
   // 입력 그룹
@@ -407,7 +387,6 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: "600",
-    color: BRAND,
   },
   required: {
     fontSize: 14,
@@ -417,18 +396,14 @@ const styles = StyleSheet.create({
   },
   counter: {
     fontSize: 12,
-    color: GRAY,
     marginLeft: "auto",
   },
   input: {
-    backgroundColor: CARD,
     borderWidth: 1,
-    borderColor: BORDER,
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 14,
     fontSize: 15,
-    color: "#1C1107",
   },
 
   // 스타일 태그
@@ -440,13 +415,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   tagAddBtn: {
-    backgroundColor: BRAND,
     borderRadius: 10,
     paddingHorizontal: 18,
     justifyContent: "center",
   },
   tagAddBtnText: {
-    color: "#FFF",
     fontSize: 14,
     fontWeight: "700",
   },
@@ -460,48 +433,33 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    backgroundColor: "#EDE8E3",
     borderRadius: 20,
     paddingHorizontal: 12,
     paddingVertical: 7,
   },
   tagChipText: {
     fontSize: 13,
-    color: BRAND,
     fontWeight: "600",
   },
   tagChipRemove: {
     fontSize: 11,
-    color: GRAY,
   },
 
   // 체험 분야 칩
   categoryChip: {
-    backgroundColor: CARD,
     borderWidth: 1,
-    borderColor: BORDER,
     borderRadius: 20,
     paddingHorizontal: 14,
     paddingVertical: 8,
   },
-  categoryChipSelected: {
-    backgroundColor: BRAND,
-    borderColor: BRAND,
-  },
   categoryChipText: {
     fontSize: 13,
-    color: BRAND,
     fontWeight: "600",
-  },
-  categoryChipTextSelected: {
-    color: "#FFF",
   },
 
   // 상세 설명 박스
   detailBox: {
-    backgroundColor: CARD,
     borderWidth: 1,
-    borderColor: BORDER,
     borderRadius: 10,
     overflow: "hidden",
   },
@@ -512,8 +470,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: BORDER,
-    backgroundColor: "#FAF8F5",
   },
   toolbarLeft: {
     flexDirection: "row",
@@ -532,13 +488,11 @@ const styles = StyleSheet.create({
   },
   toolBtnText: {
     fontSize: 13,
-    color: BRAND,
     fontWeight: "600",
   },
   toolDivider: {
     width: 1,
     height: 14,
-    backgroundColor: BORDER,
     marginHorizontal: 6,
   },
   detailInput: {
@@ -546,7 +500,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 14,
     fontSize: 14,
-    color: "#1C1107",
     lineHeight: 22,
   },
 
@@ -555,12 +508,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 12,
     paddingBottom: Platform.OS === "ios" ? 34 : 20,
-    backgroundColor: BG,
     borderTopWidth: 1,
-    borderTopColor: BORDER,
   },
   nextBtn: {
-    backgroundColor: BRAND,
     borderRadius: 50,
     paddingVertical: 17,
     alignItems: "center",
@@ -569,7 +519,6 @@ const styles = StyleSheet.create({
     opacity: 0.45,
   },
   nextBtnText: {
-    color: "#FFFFFF",
     fontSize: 16,
     fontWeight: "700",
   },

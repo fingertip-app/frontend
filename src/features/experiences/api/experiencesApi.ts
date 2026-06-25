@@ -105,6 +105,17 @@ export async function updateExperience(
   return apiPut<CreateExperienceRequest, Experience>(`/experiences/${experienceId}?artisanId=${artisanId}`, request)
 }
 
+export async function addExperienceImages(
+  artisanId: number,
+  experienceId: number,
+  imageUrls: string[],
+): Promise<Experience> {
+  return apiPost<{ imageUrls: string[] }, Experience>(
+    `/experiences/${experienceId}/images?artisanId=${artisanId}`,
+    { imageUrls },
+  )
+}
+
 export async function deleteExperience(artisanId: number, experienceId: number): Promise<void> {
   return apiDelete(`/experiences/${experienceId}?artisanId=${artisanId}`)
 }

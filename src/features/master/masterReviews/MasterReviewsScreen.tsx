@@ -16,16 +16,10 @@ import { Ionicons } from "@expo/vector-icons";
 import { MasterBottomTabs } from "../components/MasterBottomTabs";
 import { MasterHeader } from "../components/MasterHeader";
 import { useMasterReviews } from "./useMasterReviews";
-
-// ─── 팔레트 ────────────────────────────────────────────────────────────────────
-const BRAND = "#3B2B26";
-const BG = "#F5F4F0";
-const CARD = "#FFFFFF";
-const GRAY = "#8A8077";
-const BORDER = "#EAE6E1";
+import { useTheme } from "@/theme/ThemeContext";
 
 // 별점 렌더링 헬퍼
-const renderStars = (rating: number) => {
+const renderStars = (rating: number, goldColor: string, emptyColor: string) => {
   return (
     <View style={{ flexDirection: "row", gap: 2 }}>
       {[1, 2, 3, 4, 5].map((star) => (
@@ -33,7 +27,7 @@ const renderStars = (rating: number) => {
           key={star}
           name={star <= rating ? "star" : "star-outline"}
           size={14}
-          color={star <= rating ? "#F59E0B" : "#D4CDC4"}
+          color={star <= rating ? goldColor : emptyColor}
         />
       ))}
     </View>
@@ -41,6 +35,7 @@ const renderStars = (rating: number) => {
 };
 
 export function MasterReviewsScreen() {
+  const { colors } = useTheme();
   const [sortOption, setSortOption] = useState<"latest" | "rating">("latest");
   const { data, isLoading, error, reload } = useMasterReviews();
   const reviews = data?.reviews ?? [];
@@ -80,39 +75,39 @@ export function MasterReviewsScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.bg }]}>
       {/* ── 공통 상단바 및 서랍 ── */}
-      <MasterHeader 
-        activeItem="후기" 
+      <MasterHeader
+        activeItem="후기"
         rightComponent={
           <TouchableOpacity hitSlop={8} onPress={handleFilterPress} style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-            <Text style={{ fontSize: 13, color: BRAND, fontWeight: "600" }}>
+            <Text style={{ fontSize: 13, color: colors.text, fontWeight: "600" }}>
               {sortOption === "latest" ? "최신순" : "별점순"}
             </Text>
-            <Ionicons name="filter" size={18} color={BRAND} />
+            <Ionicons name="filter" size={18} color={colors.text} />
           </TouchableOpacity>
         }
       />
 
       {/* ── 상단 요약 통계 ── */}
-      <View style={styles.summaryContainer}>
+      <View style={[styles.summaryContainer, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
         <View style={styles.summaryBox}>
-          <Text style={styles.summaryLabel}>평균 평점</Text>
+          <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>평균 평점</Text>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 4 }}>
-            <Ionicons name="star" size={24} color="#F59E0B" />
-            <Text style={styles.summaryValue}>{(data?.averageRating ?? 0).toFixed(1)}</Text>
+            <Ionicons name="star" size={24} color={colors.gold} />
+            <Text style={[styles.summaryValue, { color: colors.text }]}>{(data?.averageRating ?? 0).toFixed(1)}</Text>
           </View>
         </View>
-        <View style={styles.summaryDivider} />
+        <View style={[styles.summaryDivider, { backgroundColor: colors.border }]} />
         <View style={styles.summaryBox}>
-          <Text style={styles.summaryLabel}>전체 후기</Text>
-          <Text style={[styles.summaryValue, { marginTop: 4 }]}>
-            {data?.reviewCount ?? 0}<Text style={styles.summaryUnit}> 개</Text>
+          <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>전체 후기</Text>
+          <Text style={[styles.summaryValue, { color: colors.text, marginTop: 4 }]}>
+            {data?.reviewCount ?? 0}<Text style={[styles.summaryUnit, { color: colors.textSecondary }]}> 개</Text>
           </Text>
         </View>
-        <View style={styles.summaryDivider} />
+        <View style={[styles.summaryDivider, { backgroundColor: colors.border }]} />
         <View style={styles.summaryBox}>
-          <Text style={styles.summaryLabel}>미답변</Text>
+          <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>미답변</Text>
           <Text style={[styles.summaryValue, { marginTop: 4, color: "#E05252" }]}>
             -
           </Text>
@@ -121,12 +116,12 @@ export function MasterReviewsScreen() {
 
       {/* ── 미답변 토글 스위치 ── */}
       <View style={styles.toggleRow}>
-        <Text style={styles.toggleLabel}>미답변 리뷰만 보기 (준비 중)</Text>
+        <Text style={[styles.toggleLabel, { color: colors.textSecondary }]}>미답변 리뷰만 보기 (준비 중)</Text>
         <Switch
           value={false}
           disabled
-          trackColor={{ false: "#D1CBC4", true: BRAND }}
-          thumbColor={CARD}
+          trackColor={{ false: "#D1CBC4", true: colors.text }}
+          thumbColor={colors.card}
           ios_backgroundColor="#D1CBC4"
           style={Platform.OS === "android" ? { transform: [{ scaleX: 0.9 }, { scaleY: 0.9 }] } : { transform: [{ scaleX: 0.8 }, { scaleY: 0.8 }] }}
         />
@@ -143,46 +138,46 @@ export function MasterReviewsScreen() {
         refreshing={isLoading}
         ListEmptyComponent={
           isLoading ? (
-            <ActivityIndicator color={BRAND} style={{ marginTop: 40 }} />
+            <ActivityIndicator color={colors.accent} style={{ marginTop: 40 }} />
           ) : (
-            <Text style={{ color: GRAY, textAlign: "center", marginTop: 40 }}>
+            <Text style={{ color: colors.textSecondary, textAlign: "center", marginTop: 40 }}>
               등록된 후기가 없습니다.
             </Text>
           )
         }
         renderItem={({ item }) => (
-          <View style={styles.card}>
+          <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
             {/* 리뷰 작성자 정보 & 별점 */}
             <View style={styles.cardHeader}>
               <View style={styles.userInfo}>
-                <View style={styles.avatarPlaceholder}>
-                  <Ionicons name="person" size={16} color="#A39B92" />
+                <View style={[styles.avatarPlaceholder, { backgroundColor: colors.border }]}>
+                  <Ionicons name="person" size={16} color={colors.textSecondary} />
                 </View>
                 <View>
-                  <Text style={styles.userName}>{item.userName}</Text>
-                  <Text style={styles.dateText}>{item.date}</Text>
+                  <Text style={[styles.userName, { color: colors.text }]}>{item.userName}</Text>
+                  <Text style={[styles.dateText, { color: colors.textSecondary }]}>{item.date}</Text>
                 </View>
               </View>
-              {renderStars(item.rating)}
+              {renderStars(item.rating, colors.gold, colors.border)}
             </View>
 
             {/* 클래스 정보 */}
-            <View style={styles.classInfoBox}>
-              <Text style={styles.classText}>체험: {item.className}</Text>
+            <View style={[styles.classInfoBox, { backgroundColor: colors.bg }]}>
+              <Text style={[styles.classText, { color: colors.textSecondary }]}>체험: {item.className}</Text>
             </View>
 
             {/* 후기 내용 */}
-            <Text style={styles.reviewContent}>{item.content}</Text>
+            <Text style={[styles.reviewContent, { color: colors.text }]}>{item.content}</Text>
 
             {/* 하단 액션 (답글 달기) */}
-            <View style={styles.cardFooter}>
-              <TouchableOpacity 
-                style={styles.replyBtn} 
+            <View style={[styles.cardFooter, { borderTopColor: colors.bg }]}>
+              <TouchableOpacity
+                style={[styles.replyBtn, { backgroundColor: colors.bg, borderColor: colors.border }]}
                 activeOpacity={0.7}
                 onPress={handleUnsupportedReply}
               >
-                <Ionicons name="chatbubble-ellipses-outline" size={16} color={BRAND} />
-                <Text style={styles.replyBtnText}>답글 기능 준비 중</Text>
+                <Ionicons name="chatbubble-ellipses-outline" size={16} color={colors.text} />
+                <Text style={[styles.replyBtnText, { color: colors.text }]}>답글 기능 준비 중</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -197,41 +192,33 @@ export function MasterReviewsScreen() {
 
 // ─── 스타일 ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: BG },
+  safeArea: { flex: 1 },
 
-  summaryContainer: { flexDirection: "row", backgroundColor: CARD, paddingVertical: 20, borderBottomWidth: 1, borderBottomColor: BORDER },
+  summaryContainer: { flexDirection: "row", paddingVertical: 20, borderBottomWidth: 1 },
   summaryBox: { flex: 1, alignItems: "center", justifyContent: "center" },
-  summaryDivider: { width: 1, backgroundColor: BORDER, marginVertical: 4 },
-  summaryLabel: { fontSize: 13, color: GRAY, fontWeight: "600" },
-  summaryValue: { fontSize: 22, fontWeight: "800", color: BRAND },
-  summaryUnit: { fontSize: 14, fontWeight: "600", color: GRAY },
+  summaryDivider: { width: 1, marginVertical: 4 },
+  summaryLabel: { fontSize: 13, fontWeight: "600" },
+  summaryValue: { fontSize: 22, fontWeight: "800" },
+  summaryUnit: { fontSize: 14, fontWeight: "600" },
 
   toggleRow: { flexDirection: "row", justifyContent: "flex-end", alignItems: "center", paddingHorizontal: 20, paddingTop: 16, paddingBottom: 4 },
-  toggleLabel: { fontSize: 13, color: GRAY, fontWeight: "600", marginRight: 6 },
+  toggleLabel: { fontSize: 13, fontWeight: "600", marginRight: 6 },
 
   listContent: { padding: 20, paddingBottom: 40 },
 
-  card: { backgroundColor: CARD, borderRadius: 16, padding: 18, marginBottom: 16, borderWidth: 1, borderColor: BORDER, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 6, elevation: 2 },
+  card: { borderRadius: 16, padding: 18, marginBottom: 16, borderWidth: 1, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 6, elevation: 2 },
   cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 },
   userInfo: { flexDirection: "row", alignItems: "center", gap: 10 },
-  avatarPlaceholder: { width: 36, height: 36, borderRadius: 18, backgroundColor: "#EAE6E1", alignItems: "center", justifyContent: "center" },
-  userName: { fontSize: 15, fontWeight: "700", color: BRAND, marginBottom: 2 },
-  dateText: { fontSize: 12, color: GRAY },
-  
-  classInfoBox: { backgroundColor: "#FAF9F6", paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, marginBottom: 12 },
-  classText: { fontSize: 13, color: GRAY, fontWeight: "500" },
-  
-  reviewContent: { fontSize: 15, color: "#3B2B26", lineHeight: 22, marginBottom: 12 },
+  avatarPlaceholder: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" },
+  userName: { fontSize: 15, fontWeight: "700", marginBottom: 2 },
+  dateText: { fontSize: 12 },
 
-  replyBox: { backgroundColor: "#F5F4F0", borderRadius: 10, padding: 14, marginBottom: 16 },
-  replyHeader: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 6 },
-  replyTitle: { fontSize: 13, fontWeight: "700", color: BRAND },
-  replyText: { fontSize: 14, color: "#5C5651", lineHeight: 20 },
-  
-  cardFooter: { flexDirection: "row", justifyContent: "flex-end", borderTopWidth: 1, borderTopColor: "#F5F4F0", paddingTop: 12 },
-  replyBtn: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#FAF9F6", paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8, borderWidth: 1, borderColor: BORDER },
-  replyBtnText: { fontSize: 13, fontWeight: "600", color: BRAND },
-  repliedBadge: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 10, paddingVertical: 6 },
-  repliedText: { fontSize: 13, fontWeight: "600", color: "#166534" },
-  actionText: { fontSize: 13, fontWeight: "600", color: GRAY, paddingVertical: 4 },
+  classInfoBox: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, marginBottom: 12 },
+  classText: { fontSize: 13, fontWeight: "500" },
+
+  reviewContent: { fontSize: 15, lineHeight: 22, marginBottom: 12 },
+
+  cardFooter: { flexDirection: "row", justifyContent: "flex-end", borderTopWidth: 1, paddingTop: 12 },
+  replyBtn: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8, borderWidth: 1 },
+  replyBtnText: { fontSize: 13, fontWeight: "600" },
 });

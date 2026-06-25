@@ -6,12 +6,11 @@ import { BarCodeScanner } from "expo-barcode-scanner";
 import { Ionicons } from "@expo/vector-icons";
 import { RootStackParamList } from "@/navigation/RootNavigator";
 import { verifyQrCode, QrVerifyResponse } from "@/features/qr/api/qrApi";
-
-const BRAND = "#3D1F0D";
-const GRAY = "#8C7B6E";
+import { useTheme } from "@/theme/ThemeContext";
 
 export function QrScannerScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { colors } = useTheme();
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -49,16 +48,16 @@ export function QrScannerScreen() {
 
   if (hasPermission === null) {
     return (
-      <SafeAreaView style={styles.safeArea}>
-        <View style={styles.header}>
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.bg }]}>
+        <View style={[styles.header, { backgroundColor: colors.bg }]}>
           <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={10}>
-            <Ionicons name="arrow-back" size={24} color="#1C1107" />
+            <Ionicons name="arrow-back" size={24} color={colors.text} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>QR 스캔</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>QR 스캔</Text>
           <View style={{ width: 24 }} />
         </View>
-        <View style={styles.centerContainer}>
-          <Text>카메라 권한 확인 중...</Text>
+        <View style={[styles.centerContainer, { backgroundColor: colors.bg }]}>
+          <Text style={{ color: colors.textSecondary }}>카메라 권한 확인 중...</Text>
         </View>
       </SafeAreaView>
     );
@@ -66,18 +65,18 @@ export function QrScannerScreen() {
 
   if (hasPermission === false) {
     return (
-      <SafeAreaView style={styles.safeArea}>
-        <View style={styles.header}>
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.bg }]}>
+        <View style={[styles.header, { backgroundColor: colors.bg }]}>
           <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={10}>
-            <Ionicons name="arrow-back" size={24} color="#1C1107" />
+            <Ionicons name="arrow-back" size={24} color={colors.text} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>QR 스캔</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>QR 스캔</Text>
           <View style={{ width: 24 }} />
         </View>
-        <View style={styles.centerContainer}>
-          <Ionicons name="camera-outline" size={64} color={GRAY} />
-          <Text style={styles.errorText}>카메라 권한이 필요합니다</Text>
-          <Text style={styles.errorDesc}>설정에서 카메라 권한을 허용해주세요</Text>
+        <View style={[styles.centerContainer, { backgroundColor: colors.bg }]}>
+          <Ionicons name="camera-outline" size={64} color={colors.textSecondary} />
+          <Text style={[styles.errorText, { color: colors.text }]}>카메라 권한이 필요합니다</Text>
+          <Text style={[styles.errorDesc, { color: colors.textSecondary }]}>설정에서 카메라 권한을 허용해주세요</Text>
         </View>
       </SafeAreaView>
     );
@@ -85,11 +84,11 @@ export function QrScannerScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: colors.bg }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={10}>
-          <Ionicons name="arrow-back" size={24} color="#1C1107" />
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>QR 스캔</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>QR 스캔</Text>
         <View style={{ width: 24 }} />
       </View>
 
@@ -110,6 +109,7 @@ export function QrScannerScreen() {
 }
 
 const styles = StyleSheet.create({
+  // 카메라 화면은 다크/라이트 무관하게 항상 검정 배경 유지
   safeArea: { flex: 1, backgroundColor: "#000" },
   header: {
     flexDirection: "row",
@@ -117,19 +117,17 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: 20,
     paddingVertical: 14,
-    backgroundColor: "#fff",
   },
-  headerTitle: { fontSize: 17, fontWeight: "700", color: "#1C1107" },
+  headerTitle: { fontSize: 17, fontWeight: "700" },
 
   centerContainer: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#FAFAF8",
     paddingHorizontal: 32,
   },
-  errorText: { fontSize: 17, fontWeight: "700", color: "#1C1107", marginTop: 16 },
-  errorDesc: { fontSize: 13, color: GRAY, textAlign: "center", marginTop: 8 },
+  errorText: { fontSize: 17, fontWeight: "700", marginTop: 16 },
+  errorDesc: { fontSize: 13, textAlign: "center", marginTop: 8 },
 
   scannerContainer: { flex: 1 },
   overlay: {

@@ -27,16 +27,11 @@ import {
   parseLocalDate,
   parseTimeLabel,
 } from "@/features/experiences/utils/scheduleBuilder";
-
-// ─── 팔레트 ────────────────────────────────────────────────────────────────────
-const BRAND = "#3B2B26";
-const BG = "#F5F4F0";
-const CARD = "#FFFFFF";
-const GRAY = "#8A8077";
-const BORDER = "#EAE6E1";
+import { useTheme } from "@/theme/ThemeContext";
 
 export function MasterExperienceCreateScreen() {
   const navigation = useNavigation<any>();
+  const { colors } = useTheme();
   const route = useRoute<any>();
   const experienceId = route.params?.experienceId as number | undefined;
   const isEditing = experienceId !== undefined;
@@ -243,27 +238,31 @@ export function MasterExperienceCreateScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.bg }]}>
       {/* ── 헤더 ── */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: colors.bg, borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={10}>
-          <Ionicons name="arrow-back" size={24} color={BRAND} />
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{isEditing ? "체험 수정" : "새 체험 등록"}</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>{isEditing ? "체험 수정" : "새 체험 등록"}</Text>
         <View style={{ width: 24 }} />
       </View>
 
       {isLoading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={BRAND} />
+          <ActivityIndicator size="large" color={colors.accent} />
         </View>
       ) : (
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         {/* 대표 이미지 업로드 */}
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>대표 이미지</Text>
+          <Text style={[styles.label, { color: colors.text }]}>대표 이미지</Text>
           <TouchableOpacity
-            style={[styles.imageUploadBox, !!mainImage && styles.imageUploadBoxDone]}
+            style={[
+              styles.imageUploadBox,
+              { backgroundColor: colors.card, borderColor: colors.border },
+              !!mainImage && styles.imageUploadBoxDone,
+            ]}
             onPress={handleAddImage}
             activeOpacity={0.8}
           >
@@ -277,11 +276,11 @@ export function MasterExperienceCreateScreen() {
               </>
             ) : (
               <>
-                <View style={styles.uploadIconWrap}>
-                  <Ionicons name="image-outline" size={28} color={GRAY} />
+                <View style={[styles.uploadIconWrap, { backgroundColor: colors.bg }]}>
+                  <Ionicons name="image-outline" size={28} color={colors.textSecondary} />
                 </View>
-                <Text style={styles.uploadText}>터치하여 사진 업로드</Text>
-                <Text style={styles.uploadSubText}>권장 크기: 1200 x 900 (4:3 비율)</Text>
+                <Text style={[styles.uploadText, { color: colors.text }]}>터치하여 사진 업로드</Text>
+                <Text style={[styles.uploadSubText, { color: colors.textSecondary }]}>권장 크기: 1200 x 900 (4:3 비율)</Text>
               </>
             )}
           </TouchableOpacity>
@@ -289,34 +288,38 @@ export function MasterExperienceCreateScreen() {
 
         {/* 카테고리 선택 */}
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>카테고리</Text>
+          <Text style={[styles.label, { color: colors.text }]}>카테고리</Text>
           <TouchableOpacity
-            style={styles.dropdownHeader}
+            style={[styles.dropdownHeader, { backgroundColor: colors.card, borderColor: colors.border }]}
             activeOpacity={0.8}
             onPress={() => setIsCategoryOpen(!isCategoryOpen)}
           >
-            <Text style={[styles.dropdownHeaderText, !category && { color: GRAY }]}>
+            <Text style={[styles.dropdownHeaderText, { color: category ? colors.text : colors.textSecondary }]}>
               {category || "카테고리를 선택해주세요"}
             </Text>
-            <Ionicons name={isCategoryOpen ? "chevron-up" : "chevron-down"} size={20} color={GRAY} />
+            <Ionicons name={isCategoryOpen ? "chevron-up" : "chevron-down"} size={20} color={colors.textSecondary} />
           </TouchableOpacity>
 
           {isCategoryOpen && (
-            <View style={styles.dropdownList}>
+            <View style={[styles.dropdownList, { backgroundColor: colors.card, borderColor: colors.border }]}>
               {CATEGORIES.map((cat, idx) => (
                 <TouchableOpacity
                   key={cat}
-                  style={[styles.dropdownItem, idx === CATEGORIES.length - 1 && { borderBottomWidth: 0 }]}
+                  style={[
+                    styles.dropdownItem,
+                    { borderBottomColor: colors.border },
+                    idx === CATEGORIES.length - 1 && { borderBottomWidth: 0 },
+                  ]}
                   onPress={() => {
                     setCategory(cat);
                     setIsCategoryOpen(false);
                   }}
                   activeOpacity={0.7}
                 >
-                  <Text style={[styles.dropdownItemText, category === cat && { color: BRAND, fontWeight: "700" }]}>
+                  <Text style={[styles.dropdownItemText, { color: colors.text }, category === cat && { fontWeight: "700" }]}>
                     {cat}
                   </Text>
-                  {category === cat && <Ionicons name="checkmark" size={18} color={BRAND} />}
+                  {category === cat && <Ionicons name="checkmark" size={18} color={colors.accent} />}
                 </TouchableOpacity>
               ))}
             </View>
@@ -325,11 +328,11 @@ export function MasterExperienceCreateScreen() {
 
         {/* 체험명 입력 */}
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>체험명</Text>
+          <Text style={[styles.label, { color: colors.text }]}>체험명</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
             placeholder="예: 이천 도자기 물레 체험"
-            placeholderTextColor={GRAY}
+            placeholderTextColor={colors.textSecondary}
             value={title}
             onChangeText={setTitle}
           />
@@ -337,11 +340,11 @@ export function MasterExperienceCreateScreen() {
 
         {/* 가격 입력 */}
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>가격 (1인 기준)</Text>
+          <Text style={[styles.label, { color: colors.text }]}>가격 (1인 기준)</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
             placeholder="예: 35000"
-            placeholderTextColor={GRAY}
+            placeholderTextColor={colors.textSecondary}
             keyboardType="numeric"
             value={price}
             onChangeText={setPrice}
@@ -350,11 +353,11 @@ export function MasterExperienceCreateScreen() {
 
         {/* 상세 설명 입력 */}
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>상세 설명</Text>
+          <Text style={[styles.label, { color: colors.text }]}>상세 설명</Text>
           <TextInput
-            style={[styles.input, styles.textArea]}
+            style={[styles.input, styles.textArea, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
             placeholder="체험에 대한 상세한 설명을 적어주세요."
-            placeholderTextColor={GRAY}
+            placeholderTextColor={colors.textSecondary}
             multiline
             numberOfLines={4}
             textAlignVertical="top"
@@ -365,34 +368,38 @@ export function MasterExperienceCreateScreen() {
 
         {/* 체험 일정 입력 */}
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>운영 시작일</Text>
+          <Text style={[styles.label, { color: colors.text }]}>운영 시작일</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
             placeholder="YYYY-MM-DD (예: 2026-07-01)"
-            placeholderTextColor={GRAY}
+            placeholderTextColor={colors.textSecondary}
             value={operationStartDate}
             onChangeText={setOperationStartDate}
           />
         </View>
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>운영 종료일</Text>
+          <Text style={[styles.label, { color: colors.text }]}>운영 종료일</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
             placeholder="YYYY-MM-DD (예: 2026-07-31)"
-            placeholderTextColor={GRAY}
+            placeholderTextColor={colors.textSecondary}
             value={operationEndDate}
             onChangeText={setOperationEndDate}
           />
         </View>
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>운영 요일</Text>
+          <Text style={[styles.label, { color: colors.text }]}>운영 요일</Text>
           <View style={styles.dayGrid}>
             {DAYS.map((day) => {
               const selected = selectedDays.includes(day);
               return (
                 <TouchableOpacity
                   key={day}
-                  style={[styles.dayBtn, selected && styles.dayBtnSelected]}
+                  style={[
+                    styles.dayBtn,
+                    { backgroundColor: colors.card, borderColor: colors.border },
+                    selected && { backgroundColor: colors.text, borderColor: colors.text },
+                  ]}
                   onPress={() =>
                     setSelectedDays((current) =>
                       current.includes(day)
@@ -401,7 +408,7 @@ export function MasterExperienceCreateScreen() {
                     )
                   }
                 >
-                  <Text style={[styles.dayBtnText, selected && styles.dayBtnTextSelected]}>
+                  <Text style={[styles.dayBtnText, { color: selected ? colors.bg : colors.textSecondary }]}>
                     {day}
                   </Text>
                 </TouchableOpacity>
@@ -410,15 +417,15 @@ export function MasterExperienceCreateScreen() {
           </View>
         </View>
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>운영 시간대</Text>
+          <Text style={[styles.label, { color: colors.text }]}>운영 시간대</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
             placeholder="10:00, 14:00, 16:00"
-            placeholderTextColor={GRAY}
+            placeholderTextColor={colors.textSecondary}
             value={scheduleTimes}
             onChangeText={setScheduleTimes}
           />
-          <Text style={styles.helperText}>여러 시간은 쉼표로 구분해주세요.</Text>
+          <Text style={[styles.helperText, { color: colors.textSecondary }]}>여러 시간은 쉼표로 구분해주세요.</Text>
           {hasReservedSchedules && (
             <Text style={styles.scheduleNotice}>
               예약이 연결된 체험이라 기존 일정은 유지되고 기본 정보만 수정됩니다.
@@ -426,22 +433,22 @@ export function MasterExperienceCreateScreen() {
           )}
         </View>
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>모집 인원</Text>
+          <Text style={[styles.label, { color: colors.text }]}>모집 인원</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
             placeholder="예: 6"
-            placeholderTextColor={GRAY}
+            placeholderTextColor={colors.textSecondary}
             keyboardType="numeric"
             value={availableSlots}
             onChangeText={setAvailableSlots}
           />
         </View>
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>소요 시간 (분)</Text>
+          <Text style={[styles.label, { color: colors.text }]}>소요 시간 (분)</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
             placeholder="예: 90"
-            placeholderTextColor={GRAY}
+            placeholderTextColor={colors.textSecondary}
             keyboardType="numeric"
             value={durationMinutes}
             onChangeText={setDurationMinutes}
@@ -451,14 +458,14 @@ export function MasterExperienceCreateScreen() {
       )}
 
       {/* ── 하단 등록 버튼 ── */}
-      <View style={styles.footer}>
+      <View style={[styles.footer, { backgroundColor: colors.bg, borderTopColor: colors.border }]}>
         <TouchableOpacity
-          style={[styles.submitBtn, isSubmitting && { opacity: 0.6 }]}
+          style={[styles.submitBtn, { backgroundColor: colors.text }, isSubmitting && { opacity: 0.6 }]}
           activeOpacity={0.8}
           onPress={handleSubmit}
           disabled={isSubmitting}
         >
-          <Text style={styles.submitBtnText}>
+          <Text style={[styles.submitBtnText, { color: colors.bg }]}>
             {isSubmitting ? (isEditing ? "수정 중..." : "등록 중...") : (isEditing ? "수정하기" : "등록하기")}
           </Text>
         </TouchableOpacity>
@@ -469,45 +476,43 @@ export function MasterExperienceCreateScreen() {
 
 // ─── 스타일 ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: BG },
+  safeArea: { flex: 1 },
   loadingContainer: { flex: 1, alignItems: "center", justifyContent: "center" },
-  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingVertical: 14, backgroundColor: BG, borderBottomWidth: 1, borderBottomColor: BORDER },
-  headerTitle: { fontSize: 17, fontWeight: "700", color: BRAND },
-  
+  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1 },
+  headerTitle: { fontSize: 17, fontWeight: "700" },
+
   content: { padding: 20 },
   inputGroup: { marginBottom: 20 },
-  label: { fontSize: 14, fontWeight: "600", color: BRAND, marginBottom: 8 },
-  input: { backgroundColor: CARD, borderWidth: 1, borderColor: BORDER, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, color: "#1C1107" },
+  label: { fontSize: 14, fontWeight: "600", marginBottom: 8 },
+  input: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15 },
   textArea: { height: 120, paddingTop: 12 },
-  helperText: { marginTop: 6, fontSize: 12, color: GRAY },
+  helperText: { marginTop: 6, fontSize: 12 },
   scheduleNotice: { marginTop: 8, fontSize: 12, color: "#B45309", lineHeight: 18 },
   dayGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   dayBtn: {
     width: 40, height: 40, borderRadius: 20,
     alignItems: "center", justifyContent: "center",
-    backgroundColor: CARD, borderWidth: 1, borderColor: BORDER,
+    borderWidth: 1,
   },
-  dayBtnSelected: { backgroundColor: BRAND, borderColor: BRAND },
-  dayBtnText: { color: GRAY, fontWeight: "600" },
-  dayBtnTextSelected: { color: "#FFF" },
-  
-  dropdownHeader: { backgroundColor: CARD, borderWidth: 1, borderColor: BORDER, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12, flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  dropdownHeaderText: { fontSize: 15, color: "#1C1107" },
-  dropdownList: { backgroundColor: CARD, borderWidth: 1, borderColor: BORDER, borderRadius: 10, marginTop: 8, overflow: "hidden" },
-  dropdownItem: { paddingHorizontal: 14, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: BORDER, flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  dropdownItemText: { fontSize: 15, color: "#1C1107" },
+  dayBtnText: { fontWeight: "600" },
+
+  dropdownHeader: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12, flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  dropdownHeaderText: { fontSize: 15 },
+  dropdownList: { borderWidth: 1, borderRadius: 10, marginTop: 8, overflow: "hidden" },
+  dropdownItem: { paddingHorizontal: 14, paddingVertical: 14, borderBottomWidth: 1, flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  dropdownItemText: { fontSize: 15 },
 
   // 이미지 업로드
-  imageUploadBox: { backgroundColor: CARD, borderWidth: 1.5, borderColor: BORDER, borderStyle: "dashed", borderRadius: 12, height: 180, justifyContent: "center", alignItems: "center", overflow: "hidden" },
+  imageUploadBox: { borderWidth: 1.5, borderStyle: "dashed", borderRadius: 12, height: 180, justifyContent: "center", alignItems: "center", overflow: "hidden" },
   imageUploadBoxDone: { borderStyle: "solid", borderWidth: 1 },
-  uploadIconWrap: { width: 52, height: 52, borderRadius: 26, backgroundColor: "#FAF9F6", justifyContent: "center", alignItems: "center", marginBottom: 12 },
-  uploadText: { fontSize: 14, fontWeight: "700", color: BRAND, marginBottom: 6 },
-  uploadSubText: { fontSize: 12, color: GRAY },
+  uploadIconWrap: { width: 52, height: 52, borderRadius: 26, justifyContent: "center", alignItems: "center", marginBottom: 12 },
+  uploadText: { fontSize: 14, fontWeight: "700", marginBottom: 6 },
+  uploadSubText: { fontSize: 12 },
   uploadedImage: { width: "100%", height: "100%", resizeMode: "cover" },
   changeImageOverlay: { position: "absolute", bottom: 12, right: 12, flexDirection: "row", alignItems: "center", backgroundColor: "rgba(0,0,0,0.6)", paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, gap: 6 },
   changeImageText: { color: "#FFF", fontSize: 12, fontWeight: "600" },
 
-  footer: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: Platform.OS === "ios" ? 34 : 20, backgroundColor: BG, borderTopWidth: 1, borderTopColor: BORDER },
-  submitBtn: { backgroundColor: BRAND, borderRadius: 50, paddingVertical: 17, alignItems: "center" },
-  submitBtnText: { color: "#FFFFFF", fontSize: 16, fontWeight: "700" },
+  footer: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: Platform.OS === "ios" ? 34 : 20, borderTopWidth: 1 },
+  submitBtn: { borderRadius: 50, paddingVertical: 17, alignItems: "center" },
+  submitBtnText: { fontSize: 16, fontWeight: "700" },
 });

@@ -2,11 +2,7 @@ import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Platform } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
-
-const BRAND = "#3B2B26";
-const GRAY = "#8A8077";
-const BORDER = "#EAE6E1";
-const CARD = "#FFFFFF";
+import { useTheme } from "@/theme/ThemeContext";
 
 const BOTTOM_TABS = [
   { key: "홈", icon: "home", label: "홈", route: "MasterHome" },
@@ -23,6 +19,7 @@ interface MasterBottomTabsProps {
 
 export function MasterBottomTabs({ activeTab = "홈", onTabPress }: MasterBottomTabsProps) {
   const navigation = useNavigation<any>();
+  const { colors } = useTheme();
 
   const handlePress = (tab: typeof BOTTOM_TABS[0]) => {
     onTabPress?.(tab.key);
@@ -32,7 +29,7 @@ export function MasterBottomTabs({ activeTab = "홈", onTabPress }: MasterBottom
   };
 
   return (
-    <View style={styles.tabBar}>
+    <View style={[styles.tabBar, { backgroundColor: colors.card, borderTopColor: colors.border }]}>
       {BOTTOM_TABS.map((tab) => {
         const isActive = tab.key === activeTab;
         return (
@@ -40,9 +37,9 @@ export function MasterBottomTabs({ activeTab = "홈", onTabPress }: MasterBottom
             <Ionicons
               name={isActive ? tab.icon.replace("-outline", "") as any : tab.icon as any}
               size={22}
-              color={isActive ? BRAND : GRAY}
+              color={isActive ? colors.text : colors.textSecondary}
             />
-            <Text style={[styles.tabLabel, isActive && styles.tabLabelActive]}>
+            <Text style={[styles.tabLabel, { color: isActive ? colors.text : colors.textSecondary, fontWeight: isActive ? "700" : "500" }]}>
               {tab.label}
             </Text>
           </TouchableOpacity>
@@ -55,13 +52,10 @@ export function MasterBottomTabs({ activeTab = "홈", onTabPress }: MasterBottom
 const styles = StyleSheet.create({
   tabBar: {
     flexDirection: "row",
-    backgroundColor: CARD,
     borderTopWidth: 1,
-    borderTopColor: BORDER,
     paddingBottom: Platform.OS === "ios" ? 20 : 8,
     paddingTop: 8,
   },
   tabItem: { flex: 1, alignItems: "center", gap: 3 },
-  tabLabel: { fontSize: 10, color: GRAY, fontWeight: "500" },
-  tabLabelActive: { color: BRAND, fontWeight: "700" },
+  tabLabel: { fontSize: 10 },
 });

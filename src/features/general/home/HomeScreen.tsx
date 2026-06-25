@@ -14,6 +14,7 @@ import { MainLayout } from "./MainLayout";
 import { apiGet } from "@/services/api";
 import { getMyReservations } from "@/features/reservations/api/reservationsApi";
 import { enrichExperiencesReviewStats, getExperience } from "@/features/experiences/api/experiencesApi";
+import { getExperienceReviews } from "@/features/reviews/api/reviewsApi";
 import { getMyWishlists, addToWishlist, removeFromWishlist, checkWishlist } from "@/features/wishlists/api/wishlistsApi";
 import { getHeroBanners, getRecommendedArtisan, getNearbyArtisans } from "./api/homeApi";
 import type { Reservation, Wishlist, Banner, Artisan } from "@/types/api";
@@ -67,8 +68,24 @@ interface ExperienceCard {
   image: string;
 }
 
+// 백엔드 Wishlist 응답에는 averageRating/reviewCount가 채워지지 않으므로,
+// 인기/신규 체험과 동일하게 리뷰 API에서 직접 계산해 보강한다.
+async function getWishlistReviewStats(wishlist: Wishlist): Promise<{ rating: number; reviewCount: number }> {
+  const known = wishlist.averageRating ?? wishlist.rating;
+  if (known !== undefined && wishlist.reviewCount !== undefined) {
+    return { rating: Number(known.toFixed(1)), reviewCount: wishlist.reviewCount };
+  }
+
+  const reviews = await getExperienceReviews(wishlist.experienceId).catch(() => []);
+  const reviewCount = reviews.length;
+  const rating = reviewCount > 0
+    ? Math.round((reviews.reduce((sum, r) => sum + r.rating, 0) / reviewCount) * 10) / 10
+    : 0;
+  return { rating, reviewCount };
+}
+
 // Wishlist를 UI 카드 형식으로 변환
-function mapWishlistToCard(wishlist: Wishlist): ExperienceCard {
+function mapWishlistToCard(wishlist: Wishlist, stats: { rating: number; reviewCount: number }): ExperienceCard {
   return {
     id: String(wishlist.experienceId),
     title: wishlist.experienceTitle,
@@ -76,8 +93,8 @@ function mapWishlistToCard(wishlist: Wishlist): ExperienceCard {
     duration: wishlist.experienceDurationMinutes ? `${wishlist.experienceDurationMinutes}분` : "시간 미정",
     category: wishlist.experienceCategory || "기타",
     price: `${Number(wishlist.experiencePrice).toLocaleString()}원`,
-    rating: Number(((wishlist.averageRating ?? wishlist.rating) ?? 0).toFixed(1)),
-    reviewCount: wishlist.reviewCount ?? 0,
+    rating: stats.rating,
+    reviewCount: stats.reviewCount,
     image: wishlist.experienceImageUrl || "https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=400&q=80",
   };
 }
@@ -273,7 +290,8 @@ export function HomeScreen() {
       }
 
       const wishlists = await getMyWishlists();
-      const wishlistCards = wishlists.map(mapWishlistToCard);
+      const statsList = await Promise.all(wishlists.map(getWishlistReviewStats));
+      const wishlistCards = wishlists.map((w, i) => mapWishlistToCard(w, statsList[i]));
       setWishedExperiences(wishlistCards);
       console.log("✅ 찜한 체험 목록 갱신:", wishlistCards.length);
     } catch (e) {

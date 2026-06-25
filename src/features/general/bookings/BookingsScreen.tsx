@@ -1,27 +1,25 @@
 import React, { useCallback, useState } from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-  FlatList,
-  Platform,
   ActivityIndicator,
   Alert,
+  FlatList,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
-import { RootStackParamList } from "@/navigation/RootNavigator";
-import { MainLayout } from "@/features/general/home/MainLayout";
-import { getCurrentProfile } from "@/features/auth/api/authApi";
-import { getMyReservations } from "@/features/reservations/api/reservationsApi";
-import { getExperience } from "@/features/experiences/api/experiencesApi";
 import { getArtisan } from "@/features/artisans/api/artisanApi";
+import { getCurrentProfile } from "@/features/auth/api/authApi";
+import { getExperience } from "@/features/experiences/api/experiencesApi";
+import { MainLayout } from "@/features/general/home/MainLayout";
+import { getMyReservations } from "@/features/reservations/api/reservationsApi";
+import { RootStackParamList } from "@/navigation/RootNavigator";
+import { useTheme } from "@/theme/ThemeContext";
 import type { Reservation, ReservationStatus } from "@/types/api";
-
-// ─── 타입 ───────────────────────────────────────────────────────────────────────
 
 type TabType = "upcoming" | "pending" | "past" | "cancelled";
 
@@ -42,20 +40,20 @@ export interface Booking {
   paidAt?: string;
   payMethod?: string;
   totalPrice?: number;
-  // 장인 승인은 끝났지만 아직 결제 전인 예약 (결제는 승인 후에만 가능)
   paymentRequired?: boolean;
   rejectionReason?: string | null;
   cancellationReason?: string | null;
 }
 
 const TABS: { id: TabType; label: string }[] = [
-  { id: "upcoming", label: "예정된 체험" },
+  { id: "upcoming", label: "예정" },
   { id: "pending", label: "승인 대기" },
   { id: "past", label: "지난 체험" },
-  { id: "cancelled", label: "취소 내역" },
+  { id: "cancelled", label: "취소" },
 ];
 
-// 백엔드 ReservationStatus → 화면 탭(TabType) 매핑
+const PAID_STATUSES: ReservationStatus[] = ["PAID", "CONFIRMED", "COMPLETED"];
+
 function toTabType(status: ReservationStatus): TabType {
   switch (status) {
     case "PENDING":
@@ -73,34 +71,29 @@ function toTabType(status: ReservationStatus): TabType {
 
 function formatDate(iso: string | null) {
   if (!iso) return "-";
-  const d = new Date(iso);
-  const weekday = ["일", "월", "화", "수", "목", "금", "토"][d.getDay()];
-  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")} (${weekday})`;
+  const date = new Date(iso);
+  const weekday = ["일", "월", "화", "수", "목", "금", "토"][date.getDay()];
+  return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, "0")}.${String(date.getDate()).padStart(2, "0")} (${weekday})`;
 }
 
 function formatTime(iso: string | null) {
   if (!iso) return "-";
-  const d = new Date(iso);
-  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  const date = new Date(iso);
+  return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
 }
 
-// 결제 완료 시점을 정확히 기록하는 컬럼이 없어, 상태 변경 시각(updatedAt)을 결제 일시로 대신 사용
 function formatPaidAt(iso: string | null) {
   if (!iso) return undefined;
-  const d = new Date(iso);
-  const hours = d.getHours();
+  const date = new Date(iso);
+  const hours = date.getHours();
   const period = hours < 12 ? "오전" : "오후";
   const displayHour = hours % 12 === 0 ? 12 : hours % 12;
-  return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일 ${period} ${displayHour}:${String(d.getMinutes()).padStart(2, "0")}`;
+  return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일 ${period} ${displayHour}:${String(date.getMinutes()).padStart(2, "0")}`;
 }
-
-const PAID_STATUSES: ReservationStatus[] = ["PAID", "CONFIRMED", "COMPLETED"];
 
 async function toBooking(reservation: Reservation): Promise<Booking> {
   const experience = await getExperience(reservation.experienceId).catch(() => null);
-  const artisan = experience
-    ? await getArtisan(experience.artisanId).catch(() => null)
-    : null;
+  const artisan = experience ? await getArtisan(experience.artisanId).catch(() => null) : null;
 
   return {
     id: String(reservation.id),
@@ -119,35 +112,25 @@ async function toBooking(reservation: Reservation): Promise<Booking> {
     rejectionReason: reservation.rejectionReason,
     cancellationReason: reservation.cancellationReason,
     orderNo: reservation.paymentOrderId ?? undefined,
-    paidAt: PAID_STATUSES.includes(reservation.status)
-      ? formatPaidAt(reservation.updatedAt)
-      : undefined,
+    paidAt: PAID_STATUSES.includes(reservation.status) ? formatPaidAt(reservation.updatedAt) : undefined,
   };
 }
 
-// 예약 상태 배지 (탭 상태 + 결제 여부를 합쳐 하나의 배지로 표시)
-function getStatusBadge(item: Booking): { label: string; bg: string; color: string } {
-  if (item.status === "upcoming") {
-    return item.paymentRequired
-      ? { label: "결제 필요", bg: "#FFF3E0", color: "#E65100" }
-      : { label: "결제 완료", bg: "#E8F5E9", color: "#2E7D32" };
-  }
-  if (item.status === "pending") {
-    return { label: "승인 대기", bg: "#FFF3E0", color: "#E65100" };
-  }
-  if (item.status === "cancelled") {
-    return { label: "취소", bg: "#FFEBEE", color: "#C62828" };
-  }
-  return { label: "지난 체험", bg: "#EAE6E1", color: "#6E665F" };
+function getStatusBadge(item: Booking): { label: string; tone: "accent" | "gold" | "muted" | "danger" } {
+  if (item.status === "pending") return { label: "승인 대기", tone: "gold" };
+  if (item.status === "cancelled") return { label: "취소", tone: "danger" };
+  if (item.status === "past") return { label: "완료", tone: "muted" };
+  return item.paymentRequired
+    ? { label: "결제 필요", tone: "gold" }
+    : { label: "예약 확정", tone: "accent" };
 }
-
-// ─── 메인 컴포넌트 ─────────────────────────────────────────────────────────────
 
 export function BookingsScreen() {
   const [activeTab, setActiveTab] = useState<TabType>("upcoming");
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { colors } = useTheme();
 
   const loadBookings = useCallback(async () => {
     setLoading(true);
@@ -170,89 +153,91 @@ export function BookingsScreen() {
   useFocusEffect(
     useCallback(() => {
       loadBookings();
-    }, [loadBookings])
+    }, [loadBookings]),
   );
 
-  // 현재 탭에 맞는 예약 내역 필터링
-  const filteredBookings = bookings.filter(
-    (booking) => booking.status === activeTab
-  );
+  const filteredBookings = bookings.filter((booking) => booking.status === activeTab);
 
-  // 예약 카드 렌더링 함수
   const renderBookingCard = ({ item }: { item: Booking }) => {
     const badge = getStatusBadge(item);
+    const badgeColor =
+      badge.tone === "accent"
+        ? colors.accent
+        : badge.tone === "gold"
+          ? colors.gold
+          : badge.tone === "danger"
+            ? "#C24438"
+            : colors.textSecondary;
+
     return (
-    <View style={styles.card}>
-      {/* 상단 (상태 배지 + 날짜, 시간) */}
-      <View style={styles.cardHeader}>
-        <View style={styles.statusRow}>
-          <View style={[styles.statusBadge, { backgroundColor: badge.bg }]}>
-            <Text style={[styles.statusBadgeText, { color: badge.color }]}>
-              {badge.label}
-            </Text>
+      <TouchableOpacity
+        style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
+        activeOpacity={0.86}
+        onPress={() => navigation.navigate("BookingDetail", { booking: item })}
+      >
+        <View style={styles.cardTopRow}>
+          <View style={[styles.statusBadge, { backgroundColor: colors.bg, borderColor: colors.border }]}>
+            <View style={[styles.statusDot, { backgroundColor: badgeColor }]} />
+            <Text style={[styles.statusBadgeText, { color: badgeColor }]}>{badge.label}</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
+        </View>
+
+        <Text style={[styles.cardTitle, { color: colors.text }]} numberOfLines={1}>
+          {item.title}
+        </Text>
+
+        <View style={styles.datePanel}>
+          <View style={[styles.dateIcon, { backgroundColor: colors.bg, borderColor: colors.border }]}>
+            <Ionicons name="calendar-outline" size={17} color={colors.accent} />
+          </View>
+          <View style={styles.dateTextBlock}>
+            <Text style={[styles.dateText, { color: colors.text }]}>{item.date}</Text>
+            <Text style={[styles.timeText, { color: colors.textSecondary }]}>{item.time}</Text>
           </View>
         </View>
-        <View style={styles.dateContainer}>
-          <Ionicons name="calendar-outline" size={16} color="#3B2B26" />
-          <Text style={styles.dateText}>
-            {item.date} · {item.time}
+
+        <View style={styles.infoGrid}>
+          <View style={styles.infoItem}>
+            <Ionicons name="person-outline" size={14} color={colors.textSecondary} />
+            <Text style={[styles.infoText, { color: colors.textSecondary }]} numberOfLines={1}>
+              {item.artisan}
+            </Text>
+          </View>
+          <View style={styles.infoItem}>
+            <Ionicons name="people-outline" size={14} color={colors.textSecondary} />
+            <Text style={[styles.infoText, { color: colors.textSecondary }]}>{item.guests}명</Text>
+          </View>
+        </View>
+
+        <View style={styles.locationRow}>
+          <Ionicons name="location-outline" size={14} color={colors.textSecondary} />
+          <Text style={[styles.locationText, { color: colors.textSecondary }]} numberOfLines={1}>
+            {item.location}
           </Text>
         </View>
-      </View>
-
-      {/* 본문 (정보) */}
-      <View style={styles.cardBody}>
-        <Text style={styles.cardTitle}>{item.title}</Text>
-
-        <View style={styles.infoRow}>
-          <Ionicons name="person-outline" size={14} color="#8A8077" />
-          <Text style={styles.infoText}>장인 : {item.artisan}</Text>
-        </View>
-
-        <View style={styles.infoRow}>
-          <Ionicons name="people-outline" size={14} color="#8A8077" />
-          <Text style={styles.infoText}>예약 인원 : {item.guests}명</Text>
-        </View>
-
-        <View style={styles.infoRow}>
-          <Ionicons name="location-outline" size={14} color="#8A8077" />
-          <Text style={styles.infoText} numberOfLines={1}>{item.location}</Text>
-        </View>
-      </View>
-
-      {/* 하단 버튼 */}
-      <View style={styles.cardFooter}>
-        <TouchableOpacity
-          style={styles.detailButton}
-          activeOpacity={0.8}
-          onPress={() => navigation.navigate("BookingDetail", { booking: item })}
-        >
-          <Text style={styles.detailButtonText}>상세보기</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
+      </TouchableOpacity>
     );
   };
 
   return (
     <MainLayout activeItem="예약내역">
-      {/* 탭 네비게이션 (가로 스크롤) */}
-      <View style={styles.tabContainer}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.tabScrollContent}
-        >
+      <View style={[styles.tabContainer, { borderBottomColor: colors.border }]}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabScrollContent}>
           {TABS.map((tab) => {
             const isActive = activeTab === tab.id;
             return (
               <TouchableOpacity
                 key={tab.id}
-                style={[styles.tabButton, isActive && styles.activeTabButton]}
+                style={[
+                  styles.tabButton,
+                  { backgroundColor: colors.card, borderColor: colors.border },
+                  isActive && { backgroundColor: colors.accent, borderColor: colors.accent },
+                ]}
                 onPress={() => setActiveTab(tab.id)}
-                activeOpacity={0.7}
+                activeOpacity={0.75}
               >
-                <Text style={[styles.tabText, isActive && styles.activeTabText]}>
+                <Text style={[styles.tabText, { color: isActive ? colors.bg : colors.textSecondary }]}>
                   {tab.label}
                 </Text>
               </TouchableOpacity>
@@ -261,10 +246,9 @@ export function BookingsScreen() {
         </ScrollView>
       </View>
 
-      {/* 예약 목록 */}
       {loading ? (
         <View style={styles.emptyContainer}>
-          <ActivityIndicator color="#3B2B26" />
+          <ActivityIndicator color={colors.accent} />
         </View>
       ) : (
         <FlatList
@@ -277,8 +261,13 @@ export function BookingsScreen() {
           refreshing={loading}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
-              <Ionicons name="document-text-outline" size={48} color="#D4CDC4" />
-              <Text style={styles.emptyText}>해당하는 예약 내역이 없습니다.</Text>
+              <View style={[styles.emptyIcon, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                <Ionicons name="calendar-outline" size={34} color={colors.textSecondary} />
+              </View>
+              <Text style={[styles.emptyText, { color: colors.text }]}>예약 내역이 없습니다</Text>
+              <Text style={[styles.emptyDesc, { color: colors.textSecondary }]}>
+                선택한 상태에 해당하는 예약이 없어요.
+              </Text>
             </View>
           }
         />
@@ -287,57 +276,72 @@ export function BookingsScreen() {
   );
 }
 
-// ─── 스타일 ────────────────────────────────────────────────────────────────────
-
 const styles = StyleSheet.create({
-  // 탭
-  tabContainer: { borderBottomWidth: 1, borderBottomColor: "#EAE6E1", paddingBottom: 12 },
+  tabContainer: { borderBottomWidth: 1, paddingBottom: 12 },
   tabScrollContent: { paddingHorizontal: 20, gap: 8 },
-  tabButton: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, backgroundColor: "#EAE6E1" },
-  activeTabButton: { backgroundColor: "#3B2B26" },
-  tabText: { fontSize: 14, fontWeight: "600", color: "#8A8077" },
-  activeTabText: { color: "#FFFFFF" },
-
-  // 리스트
-  listContent: { padding: 20, paddingBottom: 40 },
-  emptyContainer: { alignItems: "center", justifyContent: "center", paddingTop: 80 },
-  emptyText: { marginTop: 16, fontSize: 15, color: "#8A8077" },
-
-  // 예약 카드
-  card: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 16,
+  tabButton: {
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    borderRadius: 18,
     borderWidth: 1,
-    borderColor: "#EAE6E1",
-    // 그림자
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 2,
   },
-  cardHeader: { marginBottom: 12, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: "#F5F4F0" },
-  statusRow: { flexDirection: "row", justifyContent: "flex-end", marginBottom: 8 },
-  dateContainer: { flexDirection: "row", alignItems: "center" },
-  dateText: { fontSize: 14, fontWeight: "700", color: "#3B2B26", marginLeft: 6 },
+  tabText: { fontSize: 13, fontWeight: "800" },
+  listContent: { padding: 20, paddingBottom: 40 },
+  emptyContainer: { alignItems: "center", justifyContent: "center", paddingTop: 84 },
+  emptyIcon: {
+    width: 72,
+    height: 72,
+    borderRadius: 20,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  emptyText: { marginTop: 16, fontSize: 17, fontWeight: "800" },
+  emptyDesc: { marginTop: 8, fontSize: 14 },
+  card: {
+    borderRadius: 18,
+    padding: 16,
+    marginBottom: 14,
+    borderWidth: 1,
+  },
+  cardTopRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 12,
+  },
   statusBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
     paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 10,
+    paddingVertical: 6,
+    borderRadius: 13,
+    borderWidth: 1,
   },
-  statusBadgeText: { fontSize: 12, fontWeight: "700" },
-
-  cardBody: { marginBottom: 16 },
-  cardTitle: { fontSize: 18, fontWeight: "bold", color: "#3B2B26", marginBottom: 12 },
-  infoRow: { flexDirection: "row", alignItems: "center", marginBottom: 6 },
-  infoText: { fontSize: 13, color: "#6E665F", marginLeft: 8, flex: 1 },
-
-  cardFooter: { marginTop: 4 },
-  detailButton: {
-    width: "100%", backgroundColor: "#FAF9F6", paddingVertical: 12, borderRadius: 10,
-    alignItems: "center", borderWidth: 1, borderColor: "#D4CDC4",
+  statusDot: { width: 6, height: 6, borderRadius: 3 },
+  statusBadgeText: { fontSize: 12, fontWeight: "800" },
+  cardTitle: { fontSize: 17, fontWeight: "900", marginBottom: 14 },
+  datePanel: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 11,
+    marginBottom: 14,
   },
-  detailButtonText: { fontSize: 14, fontWeight: "600", color: "#3B2B26" },
+  dateIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 13,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  dateTextBlock: { flex: 1 },
+  dateText: { fontSize: 14, fontWeight: "800" },
+  timeText: { fontSize: 12, marginTop: 2 },
+  infoGrid: { flexDirection: "row", gap: 12, marginBottom: 8 },
+  infoItem: { flex: 1, flexDirection: "row", alignItems: "center", gap: 6 },
+  infoText: { flex: 1, fontSize: 13 },
+  locationRow: { flexDirection: "row", alignItems: "center", gap: 6 },
+  locationText: { flex: 1, fontSize: 13 },
 });

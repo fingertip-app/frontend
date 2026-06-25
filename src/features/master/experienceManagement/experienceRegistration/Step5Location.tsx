@@ -15,20 +15,14 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Location from "expo-location";
 import { createRegisteredExperience } from "../experienceManagementApi";
 import type { ExperienceRegistrationParams } from "../types";
-
-// ─── 팔레트 (Step1~4와 동일) ──────────────────────────────────────────────────
-const BRAND = "#3B2B26";
-const BG = "#F5F4F0";
-const CARD = "#FFFFFF";
-const GRAY = "#A89F96";
-const BORDER = "#E8E3DC";
-const PLACEHOLDER = "#C4BCB4";
+import { useTheme } from "@/theme/ThemeContext";
 
 const STEP_LABELS = ["기본 정보", "사진", "일정 등록", "가격/인원", "장소"];
 
 export function Step5Location() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
+  const { colors } = useTheme();
   const params = (route.params ?? {}) as Partial<ExperienceRegistrationParams>;
   const currentStep = 5;
 
@@ -119,15 +113,15 @@ export function Step5Location() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.bg }]}>
       {/* ── 헤더 바 ── */}
-      <View style={styles.headerBar}>
+      <View style={[styles.headerBar, { backgroundColor: colors.bg, borderBottomColor: colors.border }]}>
         <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={20} color={BRAND} />
-          <Text style={styles.backBtnText}>장인 홈</Text>
+          <Ionicons name="arrow-back" size={20} color={colors.text} />
+          <Text style={[styles.backBtnText, { color: colors.text }]}>장인 홈</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.bellBtn}>
-          <Ionicons name="notifications-outline" size={20} color={BRAND} />
+          <Ionicons name="notifications-outline" size={20} color={colors.text} />
         </TouchableOpacity>
       </View>
 
@@ -145,17 +139,17 @@ export function Step5Location() {
             return (
               <View key={step} style={styles.stepWrapper}>
                 <View style={styles.stepItem}>
-                  <View style={[styles.stepCircle, isActive && styles.activeStepCircle]}>
-                    <Text style={[styles.stepNum, isActive && styles.activeStepNum]}>
+                  <View style={[styles.stepCircle, { backgroundColor: colors.border }, isActive && { backgroundColor: colors.text }]}>
+                    <Text style={[styles.stepNum, { color: isActive ? colors.bg : colors.textSecondary }]}>
                       {step}
                     </Text>
                   </View>
-                  <Text style={[styles.stepLabel, isCurrent && styles.activeStepLabel]}>
+                  <Text style={[styles.stepLabel, { color: colors.textSecondary }, isCurrent && { color: colors.text, fontWeight: "600" }]}>
                     {label}
                   </Text>
                 </View>
                 {step < 5 && (
-                  <View style={[styles.stepLine, currentStep > step && styles.activeStepLine]} />
+                  <View style={[styles.stepLine, { backgroundColor: colors.border }, currentStep > step && { backgroundColor: colors.text }]} />
                 )}
               </View>
             );
@@ -164,46 +158,46 @@ export function Step5Location() {
 
         {/* ── 섹션 헤더 ── */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>체험 장소를 등록해 주세요</Text>
-          <Text style={styles.sectionSubtitle}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>체험 장소를 등록해 주세요</Text>
+          <Text style={[styles.sectionSubtitle, { color: colors.textSecondary }]}>
             참가자들이 찾아오기 쉽도록 정확한 위치를 입력해 주세요.
           </Text>
         </View>
 
         {/* ── 주소 검색 ── */}
         <View style={styles.block}>
-          <Text style={styles.label}>주소 검색</Text>
+          <Text style={[styles.label, { color: colors.text }]}>주소 검색</Text>
           <View style={styles.searchRow}>
-            <View style={styles.searchInputBox}>
-              <Ionicons name="search-outline" size={16} color={GRAY} style={styles.searchIcon} />
+            <View style={[styles.searchInputBox, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <Ionicons name="search-outline" size={16} color={colors.textSecondary} style={styles.searchIcon} />
               <TextInput
-                style={styles.searchInput}
+                style={[styles.searchInput, { color: colors.text }]}
                 placeholder="서울시 종로구 북촌로 11길"
-                placeholderTextColor={PLACEHOLDER}
+                placeholderTextColor={colors.textSecondary}
                 value={address}
                 onChangeText={setAddress}
               />
             </View>
-            <TouchableOpacity style={styles.searchBtn} activeOpacity={0.8} onPress={handleSearch}>
-              <Text style={styles.searchBtnText}>검색</Text>
+            <TouchableOpacity style={[styles.searchBtn, { backgroundColor: colors.text }]} activeOpacity={0.8} onPress={handleSearch}>
+              <Text style={[styles.searchBtnText, { color: colors.bg }]}>검색</Text>
             </TouchableOpacity>
           </View>
         </View>
 
         {/* ── 상세 주소 ── */}
         <View style={styles.block}>
-          <Text style={styles.label}>상세 주소</Text>
+          <Text style={[styles.label, { color: colors.text }]}>상세 주소</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
             placeholder="나머지 상세 주소 입력 (예: 2층, 201호)"
-            placeholderTextColor={PLACEHOLDER}
+            placeholderTextColor={colors.textSecondary}
             value={addressDetail}
             onChangeText={setAddressDetail}
           />
         </View>
 
         {/* ── 지도 영역 ── */}
-        <View style={styles.mapBox}>
+        <View style={[styles.mapBox, { borderColor: colors.border }]}>
           {/* 지도 배경 (플레이스홀더) */}
           <View style={styles.mapBg}>
             {/* 지도 일러스트 느낌의 패턴 */}
@@ -217,11 +211,11 @@ export function Step5Location() {
 
             {/* 핀 */}
             <View style={styles.pinWrapper}>
-              <View style={styles.pinLabel}>
-                <Text style={styles.pinLabelText} numberOfLines={1}>{pinLabel}</Text>
+              <View style={[styles.pinLabel, { backgroundColor: colors.text }]}>
+                <Text style={[styles.pinLabelText, { color: colors.bg }]} numberOfLines={1}>{pinLabel}</Text>
               </View>
-              <View style={styles.pin}>
-                <View style={styles.pinDot} />
+              <View style={[styles.pin, { backgroundColor: colors.text, borderColor: colors.card }]}>
+                <View style={[styles.pinDot, { backgroundColor: colors.card }]} />
               </View>
               <View style={styles.pinShadow} />
             </View>
@@ -229,40 +223,40 @@ export function Step5Location() {
 
           {/* 현재 위치 버튼 */}
           <TouchableOpacity
-            style={styles.locationBtn}
+            style={[styles.locationBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
             onPress={handleUseCurrentLocation}
             disabled={isLocating}
             activeOpacity={0.8}
           >
-            <Ionicons name="locate-outline" size={18} color={BRAND} />
+            <Ionicons name="locate-outline" size={18} color={colors.text} />
           </TouchableOpacity>
         </View>
 
         {/* ── 안내 박스 ── */}
-        <View style={styles.noticeBox}>
-          <Ionicons name="information-circle-outline" size={16} color={BRAND} style={{ marginTop: 1 }} />
-          <Text style={styles.noticeText}>
+        <View style={[styles.noticeBox, { backgroundColor: colors.border }]}>
+          <Ionicons name="information-circle-outline" size={16} color={colors.text} style={{ marginTop: 1 }} />
+          <Text style={[styles.noticeText, { color: colors.textSecondary }]}>
             등록된 주소는 체험 예약이 확정된 참가자들에게만 상세히 노출됩니다.
           </Text>
         </View>
       </ScrollView>
 
       {/* ── 하단 버튼 ── */}
-      <View style={styles.footer}>
+      <View style={[styles.footer, { backgroundColor: colors.bg, borderTopColor: colors.border }]}>
         <TouchableOpacity
-          style={styles.prevBtn}
+          style={[styles.prevBtn, { borderColor: colors.text }]}
           activeOpacity={0.8}
           onPress={() => navigation.goBack()}
         >
-          <Text style={styles.prevBtnText}>이전</Text>
+          <Text style={[styles.prevBtnText, { color: colors.text }]}>이전</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.nextBtn, (!address || isSubmitting) && styles.nextBtnDisabled]}
+          style={[styles.nextBtn, { backgroundColor: colors.text }, (!address || isSubmitting) && styles.nextBtnDisabled]}
           activeOpacity={0.8}
           disabled={!address || isSubmitting}
           onPress={handleComplete}
         >
-          <Text style={styles.nextBtnText}>{isSubmitting ? "등록 중..." : "등록 완료"}</Text>
+          <Text style={[styles.nextBtnText, { color: colors.bg }]}>{isSubmitting ? "등록 중..." : "등록 완료"}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -271,16 +265,16 @@ export function Step5Location() {
 
 // ─── 스타일 ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: BG },
+  safeArea: { flex: 1 },
 
   // 헤더 바
   headerBar: {
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
     paddingHorizontal: 16, paddingVertical: 12,
-    backgroundColor: BG, borderBottomWidth: 1, borderBottomColor: BORDER,
+    borderBottomWidth: 1,
   },
   backBtn: { flexDirection: "row", alignItems: "center", gap: 4 },
-  backBtnText: { fontSize: 15, fontWeight: "600", color: BRAND },
+  backBtnText: { fontSize: 15, fontWeight: "600" },
   bellBtn: { width: 32, height: 32, justifyContent: "center", alignItems: "center" },
 
   // 스크롤
@@ -295,58 +289,54 @@ const styles = StyleSheet.create({
   stepItem: { alignItems: "center", gap: 4 },
   stepCircle: {
     width: 26, height: 26, borderRadius: 13,
-    backgroundColor: BORDER, justifyContent: "center", alignItems: "center",
+    justifyContent: "center", alignItems: "center",
   },
-  activeStepCircle: { backgroundColor: BRAND },
-  stepNum: { fontSize: 12, color: GRAY, fontWeight: "700" },
-  activeStepNum: { color: "#FFF" },
-  stepLabel: { fontSize: 10, color: GRAY, marginTop: 2, textAlign: "center" },
-  activeStepLabel: { color: BRAND, fontWeight: "600" },
+  stepNum: { fontSize: 12, fontWeight: "700" },
+  stepLabel: { fontSize: 10, marginTop: 2, textAlign: "center" },
   stepLine: {
     width: 20, height: 1.5,
-    backgroundColor: BORDER, marginHorizontal: 4, marginBottom: 14,
+    marginHorizontal: 4, marginBottom: 14,
   },
-  activeStepLine: { backgroundColor: BRAND },
 
   // 섹션 헤더
   sectionHeader: { marginBottom: 28 },
-  sectionTitle: { fontSize: 22, fontWeight: "700", color: BRAND, marginBottom: 8 },
-  sectionSubtitle: { fontSize: 13, color: GRAY, lineHeight: 20 },
+  sectionTitle: { fontSize: 22, fontWeight: "700", marginBottom: 8 },
+  sectionSubtitle: { fontSize: 13, lineHeight: 20 },
 
   // 공통 블록
   block: { marginBottom: 16 },
-  label: { fontSize: 14, fontWeight: "600", color: BRAND, marginBottom: 10 },
+  label: { fontSize: 14, fontWeight: "600", marginBottom: 10 },
 
   // 주소 검색
   searchRow: { flexDirection: "row", gap: 8, alignItems: "center" },
   searchInputBox: {
     flex: 1, flexDirection: "row", alignItems: "center",
-    backgroundColor: CARD, borderWidth: 1, borderColor: BORDER,
+    borderWidth: 1,
     borderRadius: 10, paddingHorizontal: 12,
   },
   searchIcon: { marginRight: 6 },
   searchInput: {
     flex: 1, paddingVertical: 13,
-    fontSize: 14, color: "#1C1107",
+    fontSize: 14,
   },
   searchBtn: {
-    backgroundColor: BRAND, borderRadius: 10,
+    borderRadius: 10,
     paddingHorizontal: 18, paddingVertical: 13,
   },
-  searchBtnText: { color: "#FFF", fontSize: 14, fontWeight: "700" },
+  searchBtnText: { fontSize: 14, fontWeight: "700" },
 
   // 상세주소
   input: {
-    backgroundColor: CARD, borderWidth: 1, borderColor: BORDER,
+    borderWidth: 1,
     borderRadius: 10, paddingHorizontal: 14, paddingVertical: 14,
-    fontSize: 14, color: "#1C1107",
+    fontSize: 14,
   },
 
   // 지도 박스
   mapBox: {
     height: 200, borderRadius: 14, overflow: "hidden",
     marginBottom: 16, position: "relative",
-    borderWidth: 1, borderColor: BORDER,
+    borderWidth: 1,
   },
   mapBg: {
     flex: 1, backgroundColor: "#E8E0D5",
@@ -380,18 +370,17 @@ const styles = StyleSheet.create({
   // 핀
   pinWrapper: { alignItems: "center", zIndex: 10 },
   pinLabel: {
-    backgroundColor: BRAND, borderRadius: 20,
+    borderRadius: 20,
     paddingHorizontal: 12, paddingVertical: 6,
     marginBottom: 6,
   },
-  pinLabelText: { color: "#FFF", fontSize: 12, fontWeight: "700" },
+  pinLabelText: { fontSize: 12, fontWeight: "700" },
   pin: {
     width: 28, height: 28, borderRadius: 14,
-    backgroundColor: BRAND,
     justifyContent: "center", alignItems: "center",
-    borderWidth: 3, borderColor: CARD,
+    borderWidth: 3,
   },
-  pinDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: CARD },
+  pinDot: { width: 8, height: 8, borderRadius: 4 },
   pinShadow: {
     width: 12, height: 5, borderRadius: 6,
     backgroundColor: "rgba(0,0,0,0.2)", marginTop: 2,
@@ -401,7 +390,7 @@ const styles = StyleSheet.create({
   locationBtn: {
     position: "absolute", bottom: 12, right: 12,
     width: 36, height: 36, borderRadius: 18,
-    backgroundColor: CARD, borderWidth: 1, borderColor: BORDER,
+    borderWidth: 1,
     justifyContent: "center", alignItems: "center",
     shadowColor: "#000", shadowOpacity: 0.1, shadowRadius: 4,
     elevation: 2,
@@ -410,28 +399,28 @@ const styles = StyleSheet.create({
   // 안내 박스
   noticeBox: {
     flexDirection: "row", gap: 8,
-    backgroundColor: "#EDE8E3", borderRadius: 12,
+    borderRadius: 12,
     paddingHorizontal: 14, paddingVertical: 12,
     alignItems: "flex-start",
   },
-  noticeText: { flex: 1, fontSize: 12, color: GRAY, lineHeight: 18 },
+  noticeText: { flex: 1, fontSize: 12, lineHeight: 18 },
 
   // 하단 푸터
   footer: {
     flexDirection: "row", gap: 10,
     paddingHorizontal: 20, paddingTop: 12,
     paddingBottom: Platform.OS === "ios" ? 34 : 20,
-    backgroundColor: BG, borderTopWidth: 1, borderTopColor: BORDER,
+    borderTopWidth: 1,
   },
   prevBtn: {
-    flex: 1, borderWidth: 1.5, borderColor: BRAND,
+    flex: 1, borderWidth: 1.5,
     borderRadius: 50, paddingVertical: 17, alignItems: "center",
   },
-  prevBtnText: { color: BRAND, fontSize: 16, fontWeight: "700" },
+  prevBtnText: { fontSize: 16, fontWeight: "700" },
   nextBtn: {
-    flex: 2, backgroundColor: BRAND,
+    flex: 2,
     borderRadius: 50, paddingVertical: 17, alignItems: "center",
   },
   nextBtnDisabled: { opacity: 0.45 },
-  nextBtnText: { color: "#FFFFFF", fontSize: 16, fontWeight: "700" },
+  nextBtnText: { fontSize: 16, fontWeight: "700" },
 });

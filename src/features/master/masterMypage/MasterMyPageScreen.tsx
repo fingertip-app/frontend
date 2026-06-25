@@ -18,36 +18,30 @@ import { MasterBottomTabs } from "../components/MasterBottomTabs";
 import { MasterHeader } from "../components/MasterHeader";
 import { logout } from "@/features/auth/api/authApi";
 import { useMasterAccount } from "@/features/master/hooks/useMasterAccount";
-
-// ─── 기존 테마 팔레트 재사용 ──────────────────────────────────────────────────
-const BG       = "#F7F4EF";
-const BRAND    = "#3B2314";
-const TEXT     = "#1C1410";
-const TEXT_S   = "#7A6F65";
-const BORDER   = "#E8E2D9";
-const CARD_BG  = "#FFFFFF";
-const ICON_BG  = "#F0EBE4";
+import { useTheme } from "@/theme/ThemeContext";
 
 // ─── 통계 아이템 ──────────────────────────────────────────────────────────────
 function StatItem({ label, value, onPress }: { label: string; value: string; onPress?: () => void }) {
+  const { colors } = useTheme();
   return (
     <View style={{ flex: 1 }}>
       <TouchableOpacity style={ss.item} activeOpacity={0.7} onPress={onPress} disabled={!onPress}>
-        <Text style={ss.label} numberOfLines={1}>{label}</Text>
-        <Text style={ss.value} numberOfLines={1}>{value}</Text>
+        <Text style={[ss.label, { color: colors.textSecondary }]} numberOfLines={1}>{label}</Text>
+        <Text style={[ss.value, { color: colors.text }]} numberOfLines={1}>{value}</Text>
       </TouchableOpacity>
     </View>
   );
 }
 const ss = StyleSheet.create({
   item: { alignItems: "center", paddingVertical: 4, width: "100%" },
-  label: { fontSize: 12, color: TEXT_S, marginBottom: 5, fontWeight: "400" },
-  value: { fontSize: 20, fontWeight: "800", color: TEXT },
+  label: { fontSize: 12, marginBottom: 5, fontWeight: "400" },
+  value: { fontSize: 20, fontWeight: "800" },
 });
 
 // ─── 장인(Master) 메인 스크린 ──────────────────────────────────────────────────
 export function MasterMyPageScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { colors } = useTheme();
   const { data, error, reload } = useMasterAccount();
 
   useFocusEffect(
@@ -74,10 +68,10 @@ export function MasterMyPageScreen() {
   };
 
   return (
-    <SafeAreaView style={ms.safeArea} edges={["top"]}>
+    <SafeAreaView style={[ms.safeArea, { backgroundColor: colors.bg }]} edges={["top"]}>
       {/* ── 공통 상단바 및 서랍 ── */}
-      <MasterHeader 
-        activeItem="프로필" 
+      <MasterHeader
+        activeItem="프로필"
         rightComponent={
           <View style={{ flexDirection: "row", alignItems: "center" }}>
             <TouchableOpacity
@@ -85,40 +79,40 @@ export function MasterMyPageScreen() {
               style={{ marginRight: 16 }}
               onPress={() => navigation.navigate("Notifications")}
             >
-              <Ionicons name="notifications-outline" size={23} color={TEXT} />
+              <Ionicons name="notifications-outline" size={23} color={colors.text} />
             </TouchableOpacity>
             <TouchableOpacity hitSlop={10} onPress={() => navigation.navigate("Settings")}>
-              <Ionicons name="settings-outline" size={23} color={TEXT} />
+              <Ionicons name="settings-outline" size={23} color={colors.text} />
             </TouchableOpacity>
           </View>
         }
       />
 
-      <ScrollView 
-        style={{ flex: 1 }} 
-        showsVerticalScrollIndicator={false} 
+      <ScrollView
+        style={{ flex: 1 }}
+        showsVerticalScrollIndicator={false}
         contentContainerStyle={ms.scroll}
       >
 
         {/* ── 프로필 카드 (공방 정보) ── */}
-        <View style={ms.profileCard}>
+        <View style={[ms.profileCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={ms.profileRow}>
             <Image
               source={{ uri: data?.profile.imageUrl }}
-              style={ms.avatar}
+              style={[ms.avatar, { backgroundColor: colors.border }]}
             />
             <View style={{ flex: 1, marginLeft: 14 }}>
               <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 4 }}>
-                <Text style={ms.profileName}>{data?.profile.name ?? "-"}</Text>
-                <TouchableOpacity 
-                  hitSlop={8} 
+                <Text style={[ms.profileName, { color: colors.text }]}>{data?.profile.name ?? "-"}</Text>
+                <TouchableOpacity
+                  hitSlop={8}
                   style={{ marginLeft: 6 }}
                   onPress={() => navigation.navigate("MasterProfile")}
                 >
-                  <Feather name="edit-2" size={14} color={TEXT_S} />
+                  <Feather name="edit-2" size={14} color={colors.textSecondary} />
                 </TouchableOpacity>
               </View>
-              <Text style={ms.profileBio}>
+              <Text style={[ms.profileBio, { color: colors.textSecondary }]}>
                 {data
                   ? `${data.profile.heritageCategory} · 마스터 ${data.profile.masterName} 님`
                   : "-"}
@@ -133,12 +127,12 @@ export function MasterMyPageScreen() {
             label="신규 예약"
             value={`${data?.stats.pendingReservationCount ?? 0}건`}
           />
-          <View style={ms.statDivider} />
+          <View style={[ms.statDivider, { backgroundColor: colors.border }]} />
           <StatItem
             label="운영 클래스"
             value={`${data?.stats.activeExperienceCount ?? 0}개`}
           />
-          <View style={ms.statDivider} />
+          <View style={[ms.statDivider, { backgroundColor: colors.border }]} />
           <StatItem
             label="이달의 수익"
             value={
@@ -150,48 +144,48 @@ export function MasterMyPageScreen() {
         </View>
 
         {/* ── 공방 관리 메뉴 (버튼형) ── */}
-        <Text style={ms.sectionTitle}>공방 관리</Text>
+        <Text style={[ms.sectionTitle, { color: colors.text }]}>공방 관리</Text>
         <View style={ms.actionContainer}>
-          <TouchableOpacity 
-            style={ms.actionCard} 
-            activeOpacity={0.8} 
+          <TouchableOpacity
+            style={[ms.actionCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+            activeOpacity={0.8}
             onPress={() => navigation.navigate("MasterBookings")}
           >
-            <Ionicons name="calendar-outline" size={28} color={BRAND} />
-            <Text style={ms.actionLabel}>예약 관리</Text>
+            <Ionicons name="calendar-outline" size={28} color={colors.accent} />
+            <Text style={[ms.actionLabel, { color: colors.text }]}>예약 관리</Text>
           </TouchableOpacity>
-          <TouchableOpacity 
-            style={ms.actionCard} 
+          <TouchableOpacity
+            style={[ms.actionCard, { backgroundColor: colors.card, borderColor: colors.border }]}
             activeOpacity={0.8}
             onPress={() => navigation.navigate("MasterExperience")}
           >
-            <Ionicons name="hammer-outline" size={28} color={BRAND} />
-            <Text style={ms.actionLabel}>클래스 관리</Text>
+            <Ionicons name="hammer-outline" size={28} color={colors.accent} />
+            <Text style={[ms.actionLabel, { color: colors.text }]}>클래스 관리</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={ms.actionCard}
+            style={[ms.actionCard, { backgroundColor: colors.card, borderColor: colors.border }]}
             activeOpacity={0.8}
             onPress={() => Alert.alert("알림", "정산 API 구현이 필요합니다.")}
           >
-            <Ionicons name="wallet-outline" size={28} color={BRAND} />
-            <Text style={ms.actionLabel}>정산 관리</Text>
+            <Ionicons name="wallet-outline" size={28} color={colors.accent} />
+            <Text style={[ms.actionLabel, { color: colors.text }]}>정산 관리</Text>
           </TouchableOpacity>
-          <TouchableOpacity 
-            style={ms.actionCard} 
+          <TouchableOpacity
+            style={[ms.actionCard, { backgroundColor: colors.card, borderColor: colors.border }]}
             activeOpacity={0.8}
             onPress={() => navigation.navigate("MasterReviews")}
           >
-            <Ionicons name="chatbubbles-outline" size={28} color={BRAND} />
-            <Text style={ms.actionLabel}>후기 관리</Text>
+            <Ionicons name="chatbubbles-outline" size={28} color={colors.accent} />
+            <Text style={[ms.actionLabel, { color: colors.text }]}>후기 관리</Text>
           </TouchableOpacity>
         </View>
 
         {/* ── 기타 설정 메뉴 ── */}
         <View style={ms.menuSection}>
           {["프로필 수정", "일반 유저 모드로 전환", "로그아웃"].map((item) => (
-            <TouchableOpacity 
-              key={item} 
-              style={ms.menuItem} 
+            <TouchableOpacity
+              key={item}
+              style={[ms.menuItem, { borderBottomColor: colors.border }]}
               activeOpacity={0.7}
               onPress={() => {
                 if (item === "프로필 수정") {
@@ -205,12 +199,13 @@ export function MasterMyPageScreen() {
             >
               <Text style={[
                 ms.menuItemText,
+                { color: colors.text },
                 item === "로그아웃" && { color: "#EF4444" },
                 item === "일반 유저 모드로 전환" && { color: "#3B82F6", fontWeight: "600" }
               ]}>
                 {item}
               </Text>
-              {item !== "로그아웃" && <Ionicons name="chevron-forward" size={18} color="#D4CDC4" />}
+              {item !== "로그아웃" && <Ionicons name="chevron-forward" size={18} color={colors.border} />}
             </TouchableOpacity>
           ))}
         </View>
@@ -224,19 +219,19 @@ export function MasterMyPageScreen() {
 }
 
 const ms = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: BG },
+  safeArea: { flex: 1 },
   scroll: { paddingBottom: 48 },
-  
-  profileCard: { backgroundColor: CARD_BG, marginHorizontal: 16, borderRadius: 18, padding: 18, borderWidth: 1, borderColor: BORDER, marginBottom: 20, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 },
+
+  profileCard: { marginHorizontal: 16, borderRadius: 18, padding: 18, borderWidth: 1, marginBottom: 20, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 },
   profileRow: { flexDirection: "row", alignItems: "center" },
-  avatar: { width: 62, height: 62, borderRadius: 31, backgroundColor: ICON_BG },
-  profileName: { fontSize: 18, fontWeight: "800", color: TEXT },
-  profileBio: { fontSize: 13, color: TEXT_S, lineHeight: 18 },
+  avatar: { width: 62, height: 62, borderRadius: 31 },
+  profileName: { fontSize: 18, fontWeight: "800" },
+  profileBio: { fontSize: 13, lineHeight: 18 },
 
   statsRow: { flexDirection: "row", alignItems: "center", marginHorizontal: 16, marginBottom: 26, paddingVertical: 6 },
-  statDivider: { width: 1, height: 28, backgroundColor: BORDER },
+  statDivider: { width: 1, height: 28 },
 
-  sectionTitle: { fontSize: 18, fontWeight: "800", color: TEXT, marginHorizontal: 20, marginBottom: 14 },
+  sectionTitle: { fontSize: 18, fontWeight: "800", marginHorizontal: 20, marginBottom: 14 },
 
   actionContainer: {
     flexDirection: "row",
@@ -248,17 +243,15 @@ const ms = StyleSheet.create({
   },
   actionCard: {
     width: "48%",
-    backgroundColor: CARD_BG,
     borderRadius: 16,
     paddingVertical: 20,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: BORDER,
   },
-  actionLabel: { fontSize: 14, fontWeight: "600", color: TEXT, marginTop: 10 },
+  actionLabel: { fontSize: 14, fontWeight: "600", marginTop: 10 },
 
   menuSection: { marginHorizontal: 20, marginTop: 8 },
-  menuItem: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: BORDER },
-  menuItemText: { fontSize: 15, fontWeight: "500", color: TEXT },
+  menuItem: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 16, borderBottomWidth: 1 },
+  menuItemText: { fontSize: 15, fontWeight: "500" },
 });

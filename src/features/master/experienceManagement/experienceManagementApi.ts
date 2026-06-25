@@ -1,5 +1,9 @@
 import { getMyArtisan } from '@/features/artisans/api/artisanApi'
-import { createExperience, getArtisanExperiences } from '@/features/experiences/api/experiencesApi'
+import {
+  addExperienceImages,
+  createExperience,
+  getArtisanExperiences,
+} from '@/features/experiences/api/experiencesApi'
 import { uploadImage } from '@/features/files/api/filesApi'
 import { getExperienceReviews } from '@/features/reviews/api/reviewsApi'
 import {
@@ -87,7 +91,7 @@ export async function createRegisteredExperience(
   )
   if (!schedules.length) throw new Error('운영 기간, 요일, 시간대를 다시 확인해주세요.')
 
-  return createExperience(artisan.id, {
+  const experience = await createExperience(artisan.id, {
     title: params.title.trim(),
     description,
     category: params.category,
@@ -100,4 +104,14 @@ export async function createRegisteredExperience(
     tags: params.tags,
     schedules,
   })
+
+  if (!params.detailPhotos.length) {
+    return experience
+  }
+
+  const detailImageUrls = await Promise.all(
+    params.detailPhotos.map((photo) => uploadImage(photo, 'experience')),
+  )
+
+  return addExperienceImages(artisan.id, experience.id, detailImageUrls)
 }

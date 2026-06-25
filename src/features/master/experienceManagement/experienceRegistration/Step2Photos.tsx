@@ -14,14 +14,7 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import type { ExperiencePhoto } from "../types";
-
-// ─── 팔레트 (Step1과 동일) ─────────────────────────────────────────────────────
-const BRAND = "#3B2B26";
-const BG = "#F5F4F0";
-const CARD = "#FFFFFF";
-const GRAY = "#A89F96";
-const BORDER = "#E8E3DC";
-const PLACEHOLDER = "#C4BCB4";
+import { useTheme } from "@/theme/ThemeContext";
 
 const STEP_LABELS = ["기본 정보", "사진", "일정 등록", "가격/인원", "장소"];
 
@@ -31,6 +24,7 @@ const MAX_DETAIL = 10;
 export function Step2Photos() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
+  const { colors } = useTheme();
   const currentStep = 2;
 
   // 대표 사진: 1장
@@ -96,15 +90,15 @@ export function Step2Photos() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.bg }]}>
       {/* ── 상단 헤더 바 ── */}
-      <View style={styles.headerBar}>
+      <View style={[styles.headerBar, { backgroundColor: colors.bg, borderBottomColor: colors.border }]}>
         <TouchableOpacity style={styles.closeBtn} onPress={() => navigation.goBack()}>
-          <Text style={styles.closeBtnText}>✕</Text>
+          <Text style={[styles.closeBtnText, { color: colors.text }]}>✕</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>체험 등록</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>체험 등록</Text>
         <TouchableOpacity>
-          <Text style={styles.tempSaveText}>임시 저장</Text>
+          <Text style={[styles.tempSaveText, { color: colors.textSecondary }]}>임시 저장</Text>
         </TouchableOpacity>
       </View>
 
@@ -122,17 +116,17 @@ export function Step2Photos() {
             return (
               <View key={step} style={styles.stepWrapper}>
                 <View style={styles.stepItem}>
-                  <View style={[styles.stepCircle, isActive && styles.activeStepCircle]}>
-                    <Text style={[styles.stepNum, isActive && styles.activeStepNum]}>
+                  <View style={[styles.stepCircle, { backgroundColor: colors.border }, isActive && { backgroundColor: colors.text }]}>
+                    <Text style={[styles.stepNum, { color: isActive ? colors.bg : colors.textSecondary }]}>
                       {step}
                     </Text>
                   </View>
-                  <Text style={[styles.stepLabel, isCurrent && styles.activeStepLabel]}>
+                  <Text style={[styles.stepLabel, { color: colors.textSecondary }, isCurrent && { color: colors.text, fontWeight: "600" }]}>
                     {label}
                   </Text>
                 </View>
                 {step < 5 && (
-                  <View style={[styles.stepLine, currentStep > step && styles.activeStepLine]} />
+                  <View style={[styles.stepLine, { backgroundColor: colors.border }, currentStep > step && { backgroundColor: colors.text }]} />
                 )}
               </View>
             );
@@ -141,8 +135,8 @@ export function Step2Photos() {
 
         {/* ── 섹션 헤더 ── */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>체험의 매력을{"\n"}사진으로 보여주세요</Text>
-          <Text style={styles.sectionSubtitle}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>체험의 매력을{"\n"}사진으로 보여주세요</Text>
+          <Text style={[styles.sectionSubtitle, { color: colors.textSecondary }]}>
             정갈하고 선명한 사진은 장인의 손길을 더욱 돋보이게 합니다.
           </Text>
         </View>
@@ -150,28 +144,28 @@ export function Step2Photos() {
         {/* ── 대표 사진 ── */}
         <View style={styles.block}>
           <View style={styles.labelRow}>
-            <Text style={styles.label}>대표 사진 (최대 1장)</Text>
-            <Text style={styles.badge}>필수 항목</Text>
+            <Text style={[styles.label, { color: colors.text }]}>대표 사진 (최대 1장)</Text>
+            <Text style={[styles.badge, { color: colors.text }]}>필수 항목</Text>
           </View>
 
           {mainPhoto ? (
-            <View style={styles.mainPhotoBox}>
+            <View style={[styles.mainPhotoBox, { backgroundColor: colors.border }]}>
               <Image source={{ uri: mainPhoto.uri }} style={styles.mainPhotoPlaceholder} />
               <View style={styles.mainPhotoOverlay}>
                 <Text style={styles.mainPhotoLabel}>현재 대표 사진으로 설정됨</Text>
               </View>
               <TouchableOpacity style={styles.mainDeleteBtn} onPress={handleRemoveMain}>
-                <Ionicons name="trash-outline" size={16} color={CARD} />
+                <Ionicons name="trash-outline" size={16} color={colors.card} />
               </TouchableOpacity>
             </View>
           ) : (
             <TouchableOpacity
-              style={styles.mainPhotoEmpty}
+              style={[styles.mainPhotoEmpty, { backgroundColor: colors.card, borderColor: colors.textSecondary }]}
               activeOpacity={0.7}
               onPress={handleAddMain}
             >
-              <Ionicons name="camera-outline" size={32} color={PLACEHOLDER} />
-              <Text style={styles.photoAddText}>사진 추가</Text>
+              <Ionicons name="camera-outline" size={32} color={colors.textSecondary} />
+              <Text style={[styles.photoAddText, { color: colors.textSecondary }]}>사진 추가</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -179,8 +173,8 @@ export function Step2Photos() {
         {/* ── 상세 사진 ── */}
         <View style={styles.block}>
           <View style={styles.labelRow}>
-            <Text style={styles.label}>상세 사진 (최대 {MAX_DETAIL}장)</Text>
-            <Text style={styles.countText}>
+            <Text style={[styles.label, { color: colors.text }]}>상세 사진 (최대 {MAX_DETAIL}장)</Text>
+            <Text style={[styles.countText, { color: colors.textSecondary }]}>
               {detailPhotos.length} / {MAX_DETAIL}
             </Text>
           </View>
@@ -188,7 +182,7 @@ export function Step2Photos() {
           <View style={styles.detailGrid}>
             {/* 등록된 사진들 */}
             {detailPhotos.map((photo, i) => (
-              <View key={`${photo.uri}-${i}`} style={styles.detailCell}>
+              <View key={`${photo.uri}-${i}`} style={[styles.detailCell, { backgroundColor: colors.border }]}>
                 <Image source={{ uri: photo.uri }} style={styles.detailPlaceholder} />
                 <TouchableOpacity
                   style={styles.detailRemoveBtn}
@@ -203,22 +197,22 @@ export function Step2Photos() {
             {/* 추가 버튼 */}
             {detailPhotos.length < MAX_DETAIL && (
               <TouchableOpacity
-                style={[styles.detailCell, styles.detailAddCell]}
+                style={[styles.detailCell, { backgroundColor: colors.card, borderColor: colors.textSecondary, borderWidth: 1.5, borderStyle: "dashed" }]}
                 activeOpacity={0.7}
                 onPress={handleAddDetail}
               >
-                <Ionicons name="camera-outline" size={24} color={PLACEHOLDER} />
-                <Text style={styles.photoAddText}>사진 추가</Text>
+                <Ionicons name="camera-outline" size={24} color={colors.textSecondary} />
+                <Text style={[styles.photoAddText, { color: colors.textSecondary }]}>사진 추가</Text>
               </TouchableOpacity>
             )}
           </View>
         </View>
 
         {/* ── 사진 등록 가이드 ── */}
-        <View style={styles.guideBox}>
+        <View style={[styles.guideBox, { backgroundColor: colors.border }]}>
           <View style={styles.guideRow}>
-            <Text style={styles.guideDot}>ℹ</Text>
-            <Text style={styles.guideTitle}>사진 등록 가이드</Text>
+            <Text style={[styles.guideDot, { color: colors.text }]}>ℹ</Text>
+            <Text style={[styles.guideTitle, { color: colors.text }]}>사진 등록 가이드</Text>
           </View>
           {[
             "밝고 선명한 사진일수록 예약률이 2.5배 높습니다.",
@@ -226,7 +220,7 @@ export function Step2Photos() {
             "텍스트나 로고가 포함된 사진은 승인이 거절될 수 있습니다.",
             "권장 사이즈: 1200 x 900px 이상 (4:3 비율)",
           ].map((line, i) => (
-            <Text key={i} style={styles.guideLine}>
+            <Text key={i} style={[styles.guideLine, { color: colors.textSecondary }]}>
               · {line}
             </Text>
           ))}
@@ -234,23 +228,23 @@ export function Step2Photos() {
       </ScrollView>
 
       {/* ── 하단 버튼 ── */}
-      <View style={styles.footer}>
+      <View style={[styles.footer, { backgroundColor: colors.bg, borderTopColor: colors.border }]}>
         <TouchableOpacity
-          style={styles.prevBtn}
+          style={[styles.prevBtn, { borderColor: colors.text }]}
           activeOpacity={0.8}
           onPress={() => navigation.goBack()}
         >
-          <Text style={styles.prevBtnText}>이전</Text>
+          <Text style={[styles.prevBtnText, { color: colors.text }]}>이전</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.nextBtn, !mainPhoto && styles.nextBtnDisabled]}
+          style={[styles.nextBtn, { backgroundColor: colors.text }, !mainPhoto && styles.nextBtnDisabled]}
           activeOpacity={0.8}
           disabled={!mainPhoto}
           onPress={() =>
             navigation.navigate("Step3Schedule", { ...route.params, mainPhoto, detailPhotos })
           }
         >
-          <Text style={styles.nextBtnText}>다음 단계</Text>
+          <Text style={[styles.nextBtnText, { color: colors.bg }]}>다음 단계</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -261,7 +255,7 @@ export function Step2Photos() {
 const DETAIL_CELL = 100;
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: BG },
+  safeArea: { flex: 1 },
 
   // 헤더 바
   headerBar: {
@@ -270,14 +264,12 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: BG,
     borderBottomWidth: 1,
-    borderBottomColor: BORDER,
   },
   closeBtn: { width: 32, height: 32, justifyContent: "center", alignItems: "center" },
-  closeBtnText: { fontSize: 16, color: BRAND },
-  headerTitle: { fontSize: 16, fontWeight: "600", color: BRAND },
-  tempSaveText: { fontSize: 13, color: GRAY },
+  closeBtnText: { fontSize: 16 },
+  headerTitle: { fontSize: 16, fontWeight: "600" },
+  tempSaveText: { fontSize: 13 },
 
   // 스크롤
   content: { padding: 20, paddingBottom: 40 },
@@ -294,44 +286,38 @@ const styles = StyleSheet.create({
   stepItem: { alignItems: "center", gap: 4 },
   stepCircle: {
     width: 26, height: 26, borderRadius: 13,
-    backgroundColor: BORDER, justifyContent: "center", alignItems: "center",
+    justifyContent: "center", alignItems: "center",
   },
-  activeStepCircle: { backgroundColor: BRAND },
-  stepNum: { fontSize: 12, color: GRAY, fontWeight: "700" },
-  activeStepNum: { color: "#FFF" },
-  stepLabel: { fontSize: 10, color: GRAY, marginTop: 2, textAlign: "center" },
-  activeStepLabel: { color: BRAND, fontWeight: "600" },
-  stepLine: { width: 20, height: 1.5, backgroundColor: BORDER, marginHorizontal: 4, marginBottom: 14 },
-  activeStepLine: { backgroundColor: BRAND },
+  stepNum: { fontSize: 12, fontWeight: "700" },
+  stepLabel: { fontSize: 10, marginTop: 2, textAlign: "center" },
+  stepLine: { width: 20, height: 1.5, marginHorizontal: 4, marginBottom: 14 },
 
   // 섹션 헤더
   sectionHeader: { marginBottom: 28 },
-  sectionTitle: { fontSize: 22, fontWeight: "700", color: BRAND, lineHeight: 30, marginBottom: 8 },
-  sectionSubtitle: { fontSize: 13, color: GRAY, lineHeight: 20 },
+  sectionTitle: { fontSize: 22, fontWeight: "700", lineHeight: 30, marginBottom: 8 },
+  sectionSubtitle: { fontSize: 13, lineHeight: 20 },
 
   // 공통 블록
   block: { marginBottom: 28 },
   labelRow: { flexDirection: "row", alignItems: "center", marginBottom: 12 },
-  label: { fontSize: 14, fontWeight: "600", color: BRAND },
+  label: { fontSize: 14, fontWeight: "600" },
   badge: {
     marginLeft: "auto",
-    fontSize: 11, color: BRAND,
+    fontSize: 11,
     backgroundColor: "#EDE8E3",
     paddingHorizontal: 8, paddingVertical: 3,
     borderRadius: 20, fontWeight: "600",
   },
-  countText: { marginLeft: "auto", fontSize: 12, color: GRAY },
+  countText: { marginLeft: "auto", fontSize: 12 },
 
   // 대표 사진
   mainPhotoBox: {
     width: "100%", height: 200,
     borderRadius: 12, overflow: "hidden",
-    backgroundColor: BORDER,
     position: "relative",
   },
   mainPhotoPlaceholder: {
     flex: 1, justifyContent: "center", alignItems: "center",
-    backgroundColor: "#E8E3DC",
   },
   mainPhotoOverlay: {
     position: "absolute", bottom: 0, left: 0, right: 0,
@@ -348,24 +334,18 @@ const styles = StyleSheet.create({
   mainPhotoEmpty: {
     width: "100%", height: 160,
     borderRadius: 12,
-    borderWidth: 1.5, borderColor: PLACEHOLDER, borderStyle: "dashed",
-    backgroundColor: CARD,
+    borderWidth: 1.5, borderStyle: "dashed",
     justifyContent: "center", alignItems: "center", gap: 8,
   },
-  photoAddText: { fontSize: 12, color: GRAY, marginTop: 4 },
+  photoAddText: { fontSize: 12, marginTop: 4 },
 
   // 상세 사진 그리드
   detailGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
   detailCell: {
     width: DETAIL_CELL, height: DETAIL_CELL,
     borderRadius: 10, overflow: "hidden",
-    backgroundColor: "#E8E3DC",
     justifyContent: "center", alignItems: "center",
     position: "relative",
-  },
-  detailAddCell: {
-    backgroundColor: CARD,
-    borderWidth: 1.5, borderColor: PLACEHOLDER, borderStyle: "dashed",
   },
   detailPlaceholder: { flex: 1, justifyContent: "center", alignItems: "center" },
   detailRemoveBtn: {
@@ -378,14 +358,13 @@ const styles = StyleSheet.create({
 
   // 가이드 박스
   guideBox: {
-    backgroundColor: "#EDE8E3",
     borderRadius: 12, padding: 16,
     marginBottom: 8,
   },
   guideRow: { flexDirection: "row", alignItems: "center", marginBottom: 8, gap: 6 },
-  guideDot: { fontSize: 14, color: BRAND },
-  guideTitle: { fontSize: 13, fontWeight: "700", color: BRAND },
-  guideLine: { fontSize: 12, color: GRAY, lineHeight: 20, marginBottom: 2 },
+  guideDot: { fontSize: 14 },
+  guideTitle: { fontSize: 13, fontWeight: "700" },
+  guideLine: { fontSize: 12, lineHeight: 20, marginBottom: 2 },
 
   // 하단 푸터
   footer: {
@@ -394,20 +373,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 12,
     paddingBottom: Platform.OS === "ios" ? 34 : 20,
-    backgroundColor: BG,
-    borderTopWidth: 1, borderTopColor: BORDER,
+    borderTopWidth: 1,
   },
   prevBtn: {
     flex: 1,
-    borderWidth: 1.5, borderColor: BRAND,
+    borderWidth: 1.5,
     borderRadius: 50, paddingVertical: 17, alignItems: "center",
   },
-  prevBtnText: { color: BRAND, fontSize: 16, fontWeight: "700" },
+  prevBtnText: { fontSize: 16, fontWeight: "700" },
   nextBtn: {
     flex: 2,
-    backgroundColor: BRAND,
     borderRadius: 50, paddingVertical: 17, alignItems: "center",
   },
   nextBtnDisabled: { opacity: 0.45 },
-  nextBtnText: { color: "#FFFFFF", fontSize: 16, fontWeight: "700" },
+  nextBtnText: { fontSize: 16, fontWeight: "700" },
 });

@@ -20,12 +20,7 @@ import { getCurrentProfile } from "@/features/auth/api/authApi";
 import { createReservation } from "@/features/reservations/api/reservationsApi";
 import { ApiError } from "@/services/api";
 import type { ExperienceSchedule } from "@/types/api";
-
-const BRAND = "#3D1F0D";
-const BRAND_LIGHT = "#F5F0EB";
-const GRAY = "#8C7B6E";
-const BORDER = "#EDE8E2";
-const BG = "#FAFAF8";
+import { useTheme } from "@/theme/ThemeContext";
 
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
 
@@ -99,6 +94,7 @@ function groupSchedulesByDate(schedules: ExperienceSchedule[]) {
 export function BookingCreateScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const route = useRoute<RouteProp<RootStackParamList, "BookingCreate">>();
+  const { colors } = useTheme();
   const { exp, experience } = route.params;
 
   const schedulesByDate = useMemo(
@@ -269,13 +265,13 @@ export function BookingCreateScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.bg }]}>
       {/* 헤더 */}
-      <View style={styles.header}>
+      <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={10}>
-          <Ionicons name="arrow-back" size={24} color="#1C1107" />
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>예약하기</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>예약하기</Text>
         <View style={{ width: 24 }} />
       </View>
 
@@ -284,47 +280,47 @@ export function BookingCreateScreen() {
         contentContainerStyle={{ paddingBottom: 110 }}
       >
         {/* 체험 요약 카드 */}
-        <View style={styles.expCard}>
+        <View style={[styles.expCard, { backgroundColor: colors.card }]}>
           <Image
             source={{ uri: exp?.imageUri }}
             style={styles.expThumb}
             resizeMode="cover"
           />
           <View style={{ flex: 1 }}>
-            <Text style={styles.expTitle} numberOfLines={1}>
+            <Text style={[styles.expTitle, { color: colors.text }]} numberOfLines={1}>
               {exp?.title ?? "이천 도자기 물레 체험"}
             </Text>
-            <Text style={styles.expSub} numberOfLines={1}>
+            <Text style={[styles.expSub, { color: colors.textSecondary }]} numberOfLines={1}>
               {exp?.location ?? "경기 이천시"} · {exp?.artisan ?? "김도예 장인"}
             </Text>
             <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 6 }}>
-              <Text style={styles.expPrice}>
+              <Text style={[styles.expPrice, { color: colors.text }]}>
                 {pricePerPerson.toLocaleString()}<Text style={{ fontSize: 13, fontWeight: "500" }}>원~</Text>
               </Text>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-                <Ionicons name="time-outline" size={13} color={GRAY} />
-                <Text style={{ fontSize: 13, color: GRAY }}>2시간</Text>
+                <Ionicons name="time-outline" size={13} color={colors.textSecondary} />
+                <Text style={{ fontSize: 13, color: colors.textSecondary }}>2시간</Text>
               </View>
             </View>
           </View>
         </View>
 
-        <View style={styles.divider} />
+        <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
         {/* ── 날짜 선택 ── */}
         <View style={styles.section}>
           {/* 섹션 헤더 */}
           <View style={styles.calHeader}>
-            <Text style={styles.sectionTitle}>날짜 선택</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>날짜 선택</Text>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
               <TouchableOpacity onPress={prevMonth} hitSlop={8}>
-                <Ionicons name="chevron-back" size={18} color="#1C1107" />
+                <Ionicons name="chevron-back" size={18} color={colors.text} />
               </TouchableOpacity>
-              <Text style={styles.monthLabel}>
+              <Text style={[styles.monthLabel, { color: colors.text }]}>
                 {viewYear}년 {viewMonth + 1}월
               </Text>
               <TouchableOpacity onPress={nextMonth} hitSlop={8}>
-                <Ionicons name="chevron-forward" size={18} color="#1C1107" />
+                <Ionicons name="chevron-forward" size={18} color={colors.text} />
               </TouchableOpacity>
             </View>
           </View>
@@ -336,6 +332,7 @@ export function BookingCreateScreen() {
                 key={w}
                 style={[
                   styles.weekdayLabel,
+                  { color: colors.textSecondary },
                   i === 0 && { color: "#D97B6C" },
                   i === 6 && { color: "#6B9BD2" },
                 ]}
@@ -360,8 +357,8 @@ export function BookingCreateScreen() {
                     key={ci}
                     style={[
                       styles.dayCell,
-                      isAvailable && styles.dayCellAvailable,
-                      isSelected && styles.dayCellSelected,
+                      isAvailable && { backgroundColor: colors.card },
+                      isSelected && { backgroundColor: colors.accent },
                     ]}
                     onPress={() => isAvailable && handleSelectDate(cell.day)}
                     activeOpacity={isAvailable ? 0.7 : 1}
@@ -369,10 +366,11 @@ export function BookingCreateScreen() {
                     <Text
                       style={[
                         styles.dayText,
-                        (isOther || !isAvailable) && { color: "#C8BDB4" },
+                        { color: colors.text },
+                        (isOther || !isAvailable) && { color: colors.border },
                         !isOther && isAvailable && isSun && { color: "#D97B6C" },
                         !isOther && isAvailable && isSat && { color: "#6B9BD2" },
-                        isSelected && { color: "#FFFFFF", fontWeight: "700" },
+                        isSelected && { color: colors.bg, fontWeight: "700" },
                       ]}
                     >
                       {cell.day}
@@ -384,14 +382,14 @@ export function BookingCreateScreen() {
           ))}
         </View>
 
-        <View style={styles.divider} />
+        <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
         {/* ── 시간 선택 ── */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>시간 선택</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>시간 선택</Text>
           <View style={styles.timeGrid}>
             {selectedDateSchedules.length === 0 ? (
-              <Text style={styles.emptyText}>예약 가능한 날짜를 선택해주세요.</Text>
+              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>예약 가능한 날짜를 선택해주세요.</Text>
             ) : selectedDateSchedules.map((schedule) => {
               const active = selectedSchedule?.id === schedule.id;
               return (
@@ -399,7 +397,8 @@ export function BookingCreateScreen() {
                   key={schedule.id}
                   style={[
                     styles.timeChip,
-                    active && styles.timeChipActive,
+                    { backgroundColor: colors.card, borderColor: colors.border },
+                    active && { backgroundColor: colors.accent, borderColor: colors.accent },
                   ]}
                   onPress={() => handleSelectSchedule(schedule)}
                   activeOpacity={0.75}
@@ -407,12 +406,13 @@ export function BookingCreateScreen() {
                   <Text
                     style={[
                       styles.timeText,
-                      active && { color: "#FFFFFF", fontWeight: "700" },
+                      { color: colors.text },
+                      active && { color: colors.bg, fontWeight: "700" },
                     ]}
                   >
                     {formatScheduleTime(schedule)}
                   </Text>
-                  <Text style={[styles.remainingText, active && { color: "#F5F0EB" }]}>
+                  <Text style={[styles.remainingText, { color: colors.textSecondary }, active && { color: colors.bg }]}>
                     {schedule.remainingSlots}자리
                   </Text>
                 </TouchableOpacity>
@@ -421,44 +421,44 @@ export function BookingCreateScreen() {
           </View>
         </View>
 
-        <View style={styles.divider} />
+        <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
         {/* ── 인원 선택 ── */}
         <View style={[styles.section, { flexDirection: "row", alignItems: "center", justifyContent: "space-between" }]}>
           <View>
-            <Text style={styles.sectionTitle}>인원 선택</Text>
-            <Text style={{ fontSize: 12, color: GRAY, marginTop: 2 }}>최대 {maxHeadcount}명</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>인원 선택</Text>
+            <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>최대 {maxHeadcount}명</Text>
           </View>
-          <View style={styles.stepper}>
+          <View style={[styles.stepper, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <TouchableOpacity
               style={styles.stepBtn}
               onPress={() => setHeadcount(h => Math.max(1, h - 1))}
             >
-              <Ionicons name="remove" size={18} color="#1C1107" />
+              <Ionicons name="remove" size={18} color={colors.text} />
             </TouchableOpacity>
-            <Text style={styles.stepValue}>{headcount}</Text>
+            <Text style={[styles.stepValue, { color: colors.text }]}>{headcount}</Text>
             <TouchableOpacity
               style={styles.stepBtn}
               onPress={() => setHeadcount(h => Math.min(maxHeadcount, h + 1))}
               disabled={headcount >= maxHeadcount}
             >
-              <Ionicons name="add" size={18} color="#1C1107" />
+              <Ionicons name="add" size={18} color={headcount >= maxHeadcount ? colors.border : colors.text} />
             </TouchableOpacity>
           </View>
         </View>
 
-        <View style={styles.divider} />
+        <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
         {/* ── 요청 메시지 ── */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>요청 메시지</Text>
-          <Text style={{ fontSize: 12, color: GRAY, marginTop: -10, marginBottom: 14 }}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>요청 메시지</Text>
+          <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: -10, marginBottom: 14 }}>
             장인에게 전달할 내용이 있다면 입력해주세요. (선택)
           </Text>
           <TextInput
-            style={styles.messageInput}
+            style={[styles.messageInput, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }]}
             placeholder="예: 알레르기가 있어요, 초보자입니다 등"
-            placeholderTextColor="#C8BDB4"
+            placeholderTextColor={colors.textSecondary}
             value={requestMessage}
             onChangeText={setRequestMessage}
             multiline
@@ -466,26 +466,26 @@ export function BookingCreateScreen() {
           />
         </View>
 
-        <View style={styles.divider} />
+        <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
         {/* ── 요약 ── */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>요약</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>요약</Text>
           <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>체험 금액</Text>
-            <Text style={styles.summaryMid}>
+            <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>체험 금액</Text>
+            <Text style={[styles.summaryMid, { color: colors.textSecondary }]}>
               {pricePerPerson.toLocaleString()}원 × {headcount}명
             </Text>
-            <Text style={styles.summaryVal}>
+            <Text style={[styles.summaryVal, { color: colors.text }]}>
               {(pricePerPerson * headcount).toLocaleString()}원
             </Text>
           </View>
-          <View style={[styles.summaryRow, { marginTop: 14, paddingTop: 14, borderTopWidth: 1, borderTopColor: BORDER }]}>
-            <Text style={{ fontSize: 15, fontWeight: "600", color: "#1C1107" }}>
+          <View style={[styles.summaryRow, { marginTop: 14, paddingTop: 14, borderTopWidth: 1, borderTopColor: colors.border }]}>
+            <Text style={{ fontSize: 15, fontWeight: "600", color: colors.text }}>
               총 결제 금액
             </Text>
             <View style={{ flex: 1 }} />
-            <Text style={styles.totalText}>
+            <Text style={[styles.totalText, { color: colors.text }]}>
               {total.toLocaleString()}원
             </Text>
           </View>
@@ -493,20 +493,21 @@ export function BookingCreateScreen() {
       </ScrollView>
 
       {/* 하단 고정 예약 버튼 */}
-      <View style={styles.footer}>
+      <View style={[styles.footer, { backgroundColor: colors.bg, borderTopColor: colors.border }]}>
         <TouchableOpacity
           style={[
             styles.bookBtn,
-            (!selectedSchedule || isSubmitting) && styles.bookBtnDisabled,
+            { backgroundColor: colors.accent },
+            (!selectedSchedule || isSubmitting) && { backgroundColor: colors.border },
           ]}
           activeOpacity={0.85}
           onPress={handleBook}
           disabled={!selectedSchedule || isSubmitting}
         >
           {isSubmitting ? (
-            <ActivityIndicator color="#FFFFFF" />
+            <ActivityIndicator color={colors.bg} />
           ) : (
-            <Text style={styles.bookBtnText}>예약하기</Text>
+            <Text style={[styles.bookBtnText, { color: colors.bg }]}>예약하기</Text>
           )}
         </TouchableOpacity>
       </View>
@@ -515,7 +516,7 @@ export function BookingCreateScreen() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: BG },
+  safeArea: { flex: 1 },
 
   header: {
     flexDirection: "row",
@@ -524,9 +525,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: BORDER,
   },
-  headerTitle: { fontSize: 17, fontWeight: "700", color: "#1C1107" },
+  headerTitle: { fontSize: 17, fontWeight: "700" },
 
   expCard: {
     flexDirection: "row",
@@ -534,7 +534,6 @@ const styles = StyleSheet.create({
     gap: 14,
     marginHorizontal: 20,
     marginVertical: 18,
-    backgroundColor: "#FFFFFF",
     borderRadius: 14,
     padding: 14,
     shadowColor: "#000",
@@ -547,17 +546,16 @@ const styles = StyleSheet.create({
     width: 70,
     height: 70,
     borderRadius: 10,
-    backgroundColor: "#E8E2D9",
   },
-  expTitle: { fontSize: 15, fontWeight: "700", color: "#1C1107" },
-  expSub: { fontSize: 12, color: GRAY, marginTop: 3 },
-  expPrice: { fontSize: 16, fontWeight: "800", color: "#1C1107" },
+  expTitle: { fontSize: 15, fontWeight: "700" },
+  expSub: { fontSize: 12, marginTop: 3 },
+  expPrice: { fontSize: 16, fontWeight: "800" },
 
-  divider: { height: 1, backgroundColor: BORDER, marginHorizontal: 0 },
+  divider: { height: 1, marginHorizontal: 0 },
 
   section: { paddingHorizontal: 20, paddingVertical: 20 },
 
-  sectionTitle: { fontSize: 17, fontWeight: "700", color: "#1C1107", marginBottom: 16 },
+  sectionTitle: { fontSize: 17, fontWeight: "700", marginBottom: 16 },
 
   // Calendar
   calHeader: {
@@ -566,14 +564,13 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginBottom: 16,
   },
-  monthLabel: { fontSize: 15, fontWeight: "600", color: "#1C1107", minWidth: 80, textAlign: "center" },
+  monthLabel: { fontSize: 15, fontWeight: "600", minWidth: 80, textAlign: "center" },
   weekdayRow: { flexDirection: "row", marginBottom: 6 },
   weekdayLabel: {
     flex: 1,
     textAlign: "center",
     fontSize: 13,
     fontWeight: "600",
-    color: GRAY,
     paddingVertical: 4,
   },
   weekRow: { flexDirection: "row", marginBottom: 2 },
@@ -584,9 +581,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderRadius: 20,
   },
-  dayCellAvailable: { backgroundColor: "#F5F0EB" },
-  dayCellSelected: { backgroundColor: BRAND },
-  dayText: { fontSize: 14, color: "#1C1107" },
+  dayCellAvailable: {},
+  dayCellSelected: {},
+  dayText: { fontSize: 14 },
 
   // Time
   timeGrid: {
@@ -596,32 +593,22 @@ const styles = StyleSheet.create({
   },
   timeChip: {
     borderWidth: 1.5,
-    borderColor: BORDER,
     borderRadius: 50,
     paddingVertical: 10,
     paddingHorizontal: 20,
-    backgroundColor: "#FFFFFF",
   },
-  timeChipActive: {
-    backgroundColor: BRAND,
-    borderColor: BRAND,
-  },
-  timeChipUnavail: {
-    backgroundColor: "#F3F0EC",
-    borderColor: BORDER,
-  },
-  timeText: { fontSize: 14, color: "#1C1107", fontWeight: "500" },
-  remainingText: { fontSize: 11, color: GRAY, marginTop: 2, textAlign: "center" },
-  emptyText: { fontSize: 13, color: GRAY },
+  timeChipActive: {},
+  timeChipUnavail: {},
+  timeText: { fontSize: 14, fontWeight: "500" },
+  remainingText: { fontSize: 11, marginTop: 2, textAlign: "center" },
+  emptyText: { fontSize: 13 },
 
   // Stepper
   stepper: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FFFFFF",
     borderRadius: 50,
     borderWidth: 1,
-    borderColor: BORDER,
     paddingHorizontal: 4,
     gap: 2,
   },
@@ -629,7 +616,6 @@ const styles = StyleSheet.create({
   stepValue: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#1C1107",
     minWidth: 28,
     textAlign: "center",
   },
@@ -637,23 +623,20 @@ const styles = StyleSheet.create({
   // 요청 메시지
   messageInput: {
     borderWidth: 1,
-    borderColor: BORDER,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
     minHeight: 80,
     fontSize: 14,
-    color: "#1C1107",
-    backgroundColor: "#FFFFFF",
     textAlignVertical: "top",
   },
 
   // Summary
   summaryRow: { flexDirection: "row", alignItems: "center" },
-  summaryLabel: { fontSize: 14, color: GRAY, flex: 1 },
-  summaryMid: { fontSize: 13, color: GRAY, marginRight: 12 },
-  summaryVal: { fontSize: 14, color: "#1C1107", fontWeight: "600" },
-  totalText: { fontSize: 20, fontWeight: "800", color: "#1C1107", letterSpacing: -0.5 },
+  summaryLabel: { fontSize: 14, flex: 1 },
+  summaryMid: { fontSize: 13, marginRight: 12 },
+  summaryVal: { fontSize: 14, fontWeight: "600" },
+  totalText: { fontSize: 20, fontWeight: "800", letterSpacing: -0.5 },
 
   // Footer
   footer: {
@@ -664,16 +647,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 12,
     paddingBottom: Platform.OS === "ios" ? 34 : 20,
-    backgroundColor: BG,
     borderTopWidth: 1,
-    borderTopColor: BORDER,
   },
   bookBtn: {
-    backgroundColor: BRAND,
     borderRadius: 50,
     paddingVertical: 17,
     alignItems: "center",
   },
-  bookBtnDisabled: { backgroundColor: "#C8BDB4" },
-  bookBtnText: { color: "#FFFFFF", fontSize: 16, fontWeight: "700" },
+  bookBtnDisabled: {},
+  bookBtnText: { fontSize: 16, fontWeight: "700" },
 });
