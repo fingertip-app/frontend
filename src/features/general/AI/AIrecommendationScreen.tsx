@@ -145,6 +145,7 @@ interface AiRecommendationResponse {
     durationMinutes?: number;
     tags?: string[];
     matchReason?: string;
+    imageUrl?: string;
   }[];
   fallback: boolean;
   message?: string | null;
@@ -263,7 +264,7 @@ const mapRecommendationResponse = (response: AiRecommendationResponse): Recommen
     rating: 4.8,
     reviewCount: 0,
     price: parsePrice(item.price),
-    imageUri: `https://picsum.photos/seed/experience-${item.id || index}/300/200`,
+    imageUri: item.imageUrl ?? `https://picsum.photos/seed/experience-${item.id || index}/300/200`,
     reason: item.matchReason ?? response.matchingKeywords?.join(", ") ?? "선택하신 취향과 잘 맞는 체험이에요.",
   }));
 };
