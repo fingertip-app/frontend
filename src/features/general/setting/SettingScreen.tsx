@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -9,13 +9,17 @@ import {
   Alert,
   ActivityIndicator,
   Modal,
+  Switch,
+  TextInput,
 } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
 import { deleteAccount, logout } from "@/features/auth/api/authApi";
 import { RootStackParamList } from "@/navigation/RootNavigator";
 import { useTheme, ThemeMode } from "@/theme/ThemeContext";
+import { supabase } from "@/lib/supabase";
 
 type RowProps = {
   icon: React.ReactNode;
@@ -60,6 +64,20 @@ const THEME_LABEL: Record<ThemeMode, string> = {
 };
 
 const THEME_ORDER: ThemeMode[] = ["light", "dark", "auto"];
+const NOTIFICATION_SETTINGS_KEY = "@fingertip/notification-settings";
+const LANGUAGE_SETTING_KEY = "@fingertip/language";
+
+type NotificationSettings = {
+  reservation: boolean;
+  review: boolean;
+  marketing: boolean;
+};
+
+const DEFAULT_NOTIFICATION_SETTINGS: NotificationSettings = {
+  reservation: true,
+  review: true,
+  marketing: false,
+};
 
 export function SettingScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -67,6 +85,40 @@ export function SettingScreen() {
   const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [activeModal, setActiveModal] = useState<"password" | "notifications" | "language" | null>(null);
+  const [newPassword, setNewPassword] = useState("");
+  const [passwordConfirm, setPasswordConfirm] = useState("");
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
+  const [notificationSettings, setNotificationSettings] = useState(DEFAULT_NOTIFICATION_SETTINGS);
+  const [language, setLanguage] = useState<"ko" | "en">("ko");
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    Promise.all([
+      AsyncStorage.getItem(NOTIFICATION_SETTINGS_KEY),
+      AsyncStorage.getItem(LANGUAGE_SETTING_KEY),
+    ]).then(([savedNotifications, savedLanguage]) => {
+      if (savedNotifications) {
+        try {
+          setNotificationSettings({
+            ...DEFAULT_NOTIFICATION_SETTINGS,
+            ...JSON.parse(savedNotifications),
+          });
+        } catch {
+          setNotificationSettings(DEFAULT_NOTIFICATION_SETTINGS);
+        }
+      }
+      if (savedLanguage === "ko" || savedLanguage === "en") {
+        setLanguage(savedLanguage);
+      }
+    });
+  }, []);
+
+  const showToast = (message: string) => {
+    setToastMessage(message);
+    setTimeout(() => setToastMessage(null), 2500);
+  };
 
   const handleCycleTheme = () => {
     const next = THEME_ORDER[(THEME_ORDER.indexOf(mode) + 1) % THEME_ORDER.length];
@@ -105,6 +157,47 @@ export function SettingScreen() {
     }
   };
 
+  const handlePasswordUpdate = async () => {
+    setPasswordError(null);
+    if (!/^(?=.*[a-zA-Z])(?=.*\d)(?=.*[\W_])[^\s]{8,}$/.test(newPassword)) {
+      setPasswordError("영문, 숫자, 특수문자를 포함해 8자 이상 입력해주세요.");
+      return;
+    }
+    if (newPassword !== passwordConfirm) {
+      setPasswordError("비밀번호가 일치하지 않습니다.");
+      return;
+    }
+
+    setIsUpdatingPassword(true);
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    setIsUpdatingPassword(false);
+    if (error) {
+      setPasswordError(error.message);
+      return;
+    }
+
+    setActiveModal(null);
+    setNewPassword("");
+    setPasswordConfirm("");
+    showToast("비밀번호가 변경되었습니다.");
+  };
+
+  const updateNotificationSetting = async (
+    key: keyof NotificationSettings,
+    value: boolean,
+  ) => {
+    const next = { ...notificationSettings, [key]: value };
+    setNotificationSettings(next);
+    await AsyncStorage.setItem(NOTIFICATION_SETTINGS_KEY, JSON.stringify(next));
+  };
+
+  const selectLanguage = async (next: "ko" | "en") => {
+    setLanguage(next);
+    await AsyncStorage.setItem(LANGUAGE_SETTING_KEY, next);
+    setActiveModal(null);
+    showToast(next === "ko" ? "한국어로 설정되었습니다." : "English로 설정되었습니다.");
+  };
+
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.bg }]}>
       {/* 헤더 */}
@@ -132,11 +225,17 @@ export function SettingScreen() {
           <Row
             icon={<Ionicons name="lock-closed-outline" size={18} color={colors.textSecondary} />}
             label="비밀번호 변경"
+            onPress={() => {
+              setPasswordError(null);
+              setActiveModal("password");
+            }}
           />
           <View style={[styles.separator, { backgroundColor: colors.border }]} />
           <Row
             icon={<Ionicons name="notifications-outline" size={18} color={colors.textSecondary} />}
             label="알림 설정"
+            value={Object.values(notificationSettings).some(Boolean) ? "사용 중" : "꺼짐"}
+            onPress={() => setActiveModal("notifications")}
           />
         </View>
 
@@ -146,7 +245,8 @@ export function SettingScreen() {
           <Row
             icon={<Ionicons name="globe-outline" size={18} color={colors.textSecondary} />}
             label="언어 (Language)"
-            value="한국어"
+            value={language === "ko" ? "한국어" : "English"}
+            onPress={() => setActiveModal("language")}
           />
           <View style={[styles.separator, { backgroundColor: colors.border }]} />
           <Row
@@ -226,6 +326,130 @@ export function SettingScreen() {
           </View>
         </View>
       </Modal>
+
+      <Modal
+        transparent
+        visible={activeModal === "password"}
+        animationType="fade"
+        onRequestClose={() => setActiveModal(null)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={[styles.settingModal, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>비밀번호 변경</Text>
+            <TextInput
+              style={[styles.modalInput, { color: colors.text, borderColor: colors.border }]}
+              value={newPassword}
+              onChangeText={setNewPassword}
+              placeholder="새 비밀번호"
+              placeholderTextColor={colors.textSecondary}
+              secureTextEntry
+            />
+            <TextInput
+              style={[styles.modalInput, { color: colors.text, borderColor: colors.border }]}
+              value={passwordConfirm}
+              onChangeText={setPasswordConfirm}
+              placeholder="새 비밀번호 확인"
+              placeholderTextColor={colors.textSecondary}
+              secureTextEntry
+            />
+            {passwordError ? <Text style={styles.deleteError}>{passwordError}</Text> : null}
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={[styles.modalButton, { borderColor: colors.border }]}
+                disabled={isUpdatingPassword}
+                onPress={() => setActiveModal(null)}
+              >
+                <Text style={[styles.cancelText, { color: colors.text }]}>취소</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, { backgroundColor: colors.text, borderColor: colors.text }]}
+                disabled={isUpdatingPassword}
+                onPress={() => void handlePasswordUpdate()}
+              >
+                {isUpdatingPassword ? (
+                  <ActivityIndicator size="small" color={colors.bg} />
+                ) : (
+                  <Text style={[styles.cancelText, { color: colors.bg }]}>변경</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        transparent
+        visible={activeModal === "notifications"}
+        animationType="fade"
+        onRequestClose={() => setActiveModal(null)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={[styles.settingModal, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <View style={styles.modalHeaderRow}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>알림 설정</Text>
+              <TouchableOpacity onPress={() => setActiveModal(null)} hitSlop={10}>
+                <Ionicons name="close" size={22} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+            <NotificationToggle
+              label="예약 상태 알림"
+              description="예약 승인, 거절, 일정 변경 알림"
+              value={notificationSettings.reservation}
+              onValueChange={(value) => void updateNotificationSetting("reservation", value)}
+              colors={colors}
+            />
+            <NotificationToggle
+              label="후기 알림"
+              description="후기 등록과 답변 관련 알림"
+              value={notificationSettings.review}
+              onValueChange={(value) => void updateNotificationSetting("review", value)}
+              colors={colors}
+            />
+            <NotificationToggle
+              label="이벤트·혜택 알림"
+              description="새로운 체험과 프로모션 소식"
+              value={notificationSettings.marketing}
+              onValueChange={(value) => void updateNotificationSetting("marketing", value)}
+              colors={colors}
+            />
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        transparent
+        visible={activeModal === "language"}
+        animationType="fade"
+        onRequestClose={() => setActiveModal(null)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={[styles.settingModal, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>언어 선택</Text>
+            <LanguageOption
+              label="한국어"
+              selected={language === "ko"}
+              onPress={() => void selectLanguage("ko")}
+              colors={colors}
+            />
+            <LanguageOption
+              label="English"
+              selected={language === "en"}
+              onPress={() => void selectLanguage("en")}
+              colors={colors}
+            />
+            <Text style={[styles.languageNotice, { color: colors.textSecondary }]}>
+              일부 콘텐츠는 원문 언어로 표시될 수 있습니다.
+            </Text>
+          </View>
+        </View>
+      </Modal>
+
+      {toastMessage ? (
+        <View style={[styles.toast, { backgroundColor: colors.text }]}>
+          <Ionicons name="checkmark-circle" size={18} color={colors.bg} />
+          <Text style={[styles.toastText, { color: colors.bg }]}>{toastMessage}</Text>
+        </View>
+      ) : null}
     </SafeAreaView>
   );
 }
@@ -326,4 +550,118 @@ const styles = StyleSheet.create({
   deleteButton: { backgroundColor: "#D04040", borderColor: "#D04040" },
   cancelText: { fontSize: 15, fontWeight: "700" },
   deleteButtonText: { color: "#FFFFFF", fontSize: 15, fontWeight: "700" },
+  settingModal: {
+    width: "100%",
+    maxWidth: 380,
+    borderWidth: 1,
+    borderRadius: 18,
+    padding: 22,
+  },
+  modalTitle: { fontSize: 19, fontWeight: "800", marginBottom: 18 },
+  modalHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  modalInput: {
+    minHeight: 50,
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    fontSize: 15,
+    marginBottom: 12,
+  },
+  notificationRow: {
+    minHeight: 68,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 16,
+  },
+  notificationText: { flex: 1 },
+  notificationLabel: { fontSize: 15, fontWeight: "700", marginBottom: 4 },
+  notificationDescription: { fontSize: 12, lineHeight: 17 },
+  languageOption: {
+    minHeight: 52,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 14,
+    borderWidth: 1,
+    borderRadius: 12,
+    marginBottom: 10,
+  },
+  languageLabel: { fontSize: 15, fontWeight: "600" },
+  languageNotice: { fontSize: 12, lineHeight: 18, marginTop: 6 },
+  toast: {
+    position: "absolute",
+    bottom: 24,
+    alignSelf: "center",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
+    paddingHorizontal: 16,
+    paddingVertical: 11,
+    borderRadius: 24,
+  },
+  toastText: { fontSize: 14, fontWeight: "700" },
 });
+
+function NotificationToggle({
+  label,
+  description,
+  value,
+  onValueChange,
+  colors,
+}: {
+  label: string;
+  description: string;
+  value: boolean;
+  onValueChange: (value: boolean) => void;
+  colors: { text: string; textSecondary: string; accent: string; border: string };
+}) {
+  return (
+    <View style={[styles.notificationRow, { borderBottomColor: colors.border }]}>
+      <View style={styles.notificationText}>
+        <Text style={[styles.notificationLabel, { color: colors.text }]}>{label}</Text>
+        <Text style={[styles.notificationDescription, { color: colors.textSecondary }]}>
+          {description}
+        </Text>
+      </View>
+      <Switch
+        value={value}
+        onValueChange={onValueChange}
+        trackColor={{ false: colors.border, true: colors.accent }}
+      />
+    </View>
+  );
+}
+
+function LanguageOption({
+  label,
+  selected,
+  onPress,
+  colors,
+}: {
+  label: string;
+  selected: boolean;
+  onPress: () => void;
+  colors: { text: string; accent: string; border: string };
+}) {
+  return (
+    <TouchableOpacity
+      style={[
+        styles.languageOption,
+        { borderColor: selected ? colors.accent : colors.border },
+      ]}
+      onPress={onPress}
+    >
+      <Text style={[styles.languageLabel, { color: colors.text }]}>{label}</Text>
+      <Ionicons
+        name={selected ? "radio-button-on" : "radio-button-off"}
+        size={20}
+        color={selected ? colors.accent : colors.border}
+      />
+    </TouchableOpacity>
+  );
+}
