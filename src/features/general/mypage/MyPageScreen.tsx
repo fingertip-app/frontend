@@ -18,21 +18,14 @@ import { MainLayout } from "@/features/general/home/MainLayout";
 import { logout, getCurrentProfile, deleteAccount } from "@/features/auth/api/authApi";
 import { UserProfile } from "@/features/auth/types";
 import { getUserStats, UserStats } from "@/features/general/mypage/api/mypageApi";
-
-// ─── 팔레트 ────────────────────────────────────────────────────────────────────
-const BG       = "#F7F4EF";   // 크림 배경
-const BRAND    = "#3B2314";   // 다크 브라운
-const TEXT     = "#1C1410";
-const TEXT_S   = "#7A6F65";
-const BORDER   = "#E8E2D9";
-const CARD_BG  = "#FFFFFF";
-const ICON_BG  = "#F0EBE4";   // 아이콘 원형 배경
+import { useTheme } from "@/theme/ThemeContext";
 
 // ─── 관심 태그 pill ───────────────────────────────────────────────────────────
 function InterestTag({ label }: { label: string }) {
+  const { colors } = useTheme();
   return (
-    <View style={ts.tag}>
-      <Text style={ts.tagText}>{label}</Text>
+    <View style={[ts.tag, { borderColor: colors.border, backgroundColor: colors.bg }]}>
+      <Text style={[ts.tagText, { color: colors.textSecondary }]}>{label}</Text>
     </View>
   );
 }
@@ -42,12 +35,10 @@ const ts = StyleSheet.create({
     paddingVertical: 5,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: BORDER,
-    backgroundColor: BG,
     marginRight: 6,
     marginBottom: 6,
   },
-  tagText: { fontSize: 12, fontWeight: "500", color: TEXT_S },
+  tagText: { fontSize: 12, fontWeight: "500" },
 });
 
 // ─── 통계 아이템 ──────────────────────────────────────────────────────────────
@@ -62,11 +53,12 @@ function StatItem({
   isLast?: boolean;
   onPress?: () => void;
 }) {
+  const { colors } = useTheme();
   return (
     <View style={{ flex: 1 }}>
       <TouchableOpacity style={ss.item} activeOpacity={0.7} onPress={onPress} disabled={!onPress}>
-        <Text style={ss.label} numberOfLines={1}>{label}</Text>
-        <Text style={ss.value} numberOfLines={1}>{value}</Text>
+        <Text style={[ss.label, { color: colors.textSecondary }]} numberOfLines={1}>{label}</Text>
+        <Text style={[ss.value, { color: colors.text }]} numberOfLines={1}>{value}</Text>
       </TouchableOpacity>
     </View>
   );
@@ -77,8 +69,8 @@ const ss = StyleSheet.create({
     paddingVertical: 4,
     width: "100%",
   },
-  label: { fontSize: 12, color: TEXT_S, marginBottom: 5, fontWeight: "400" },
-  value: { fontSize: 20, fontWeight: "800", color: TEXT },
+  label: { fontSize: 12, marginBottom: 5, fontWeight: "400" },
+  value: { fontSize: 20, fontWeight: "800" },
 });
 
 // ─── 활동 카드 ────────────────────────────────────────────────────────────────
@@ -91,22 +83,25 @@ function ActivityCard({
   label: string;
   onPress?: () => void;
 }) {
+  const { colors } = useTheme();
   return (
-    <TouchableOpacity style={ac.card} activeOpacity={0.8} onPress={onPress}>
-      <View style={ac.iconWrap}>
-        <Ionicons name={icon} size={26} color={BRAND} />
+    <TouchableOpacity
+      style={[ac.card, { backgroundColor: colors.card, borderColor: colors.border }]}
+      activeOpacity={0.8}
+      onPress={onPress}
+    >
+      <View style={[ac.iconWrap, { backgroundColor: colors.bg }]}>
+        <Ionicons name={icon} size={26} color={colors.accent} />
       </View>
-      <Text style={ac.label}>{label}</Text>
+      <Text style={[ac.label, { color: colors.text }]}>{label}</Text>
     </TouchableOpacity>
   );
 }
 const ac = StyleSheet.create({
   card: {
     width: "48%",
-    backgroundColor: CARD_BG,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: BORDER,
     paddingVertical: 28,
     alignItems: "center",
     justifyContent: "center",
@@ -120,17 +115,17 @@ const ac = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: ICON_BG,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 12,
   },
-  label: { fontSize: 14, fontWeight: "600", color: TEXT },
+  label: { fontSize: 14, fontWeight: "600" },
 });
 
 // ─── 메인 스크린 ──────────────────────────────────────────────────────────────
 export function MyPageScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { colors } = useTheme();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [stats, setStats] = useState<UserStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -202,7 +197,7 @@ export function MyPageScreen() {
     return (
       <MainLayout activeItem="마이페이지">
         <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-          <ActivityIndicator color={BRAND} />
+          <ActivityIndicator color={colors.accent} />
         </View>
       </MainLayout>
     );
@@ -216,7 +211,7 @@ export function MyPageScreen() {
       >
 
         {/* ── 프로필 카드 ── */}
-        <View style={ms.profileCard}>
+        <View style={[ms.profileCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={ms.profileRow}>
             {/* 아바타 */}
             {profile?.profileImageUrl ? (
@@ -225,21 +220,21 @@ export function MyPageScreen() {
                 style={ms.avatar}
               />
             ) : (
-              <View style={[ms.avatar, { backgroundColor: ICON_BG, alignItems: "center", justifyContent: "center" }]}>
-                <Ionicons name="person" size={32} color={TEXT_S} />
+              <View style={[ms.avatar, { backgroundColor: colors.bg, alignItems: "center", justifyContent: "center" }]}>
+                <Ionicons name="person" size={32} color={colors.textSecondary} />
               </View>
             )}
             {/* 이름 + 소개 */}
             <View style={{ flex: 1, marginLeft: 14 }}>
               <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 4 }}>
-                <Text style={ms.profileName}>{profile?.name || profile?.nickname || "사용자"} 님</Text>
+                <Text style={[ms.profileName, { color: colors.text }]}>{profile?.name || profile?.nickname || "사용자"} 님</Text>
                 <TouchableOpacity hitSlop={8} style={{ marginLeft: 6 }} onPress={() => navigation.navigate("ProfileEdit")}>
-                  <Feather name="edit-2" size={14} color={TEXT_S} />
+                  <Feather name="edit-2" size={14} color={colors.textSecondary} />
                 </TouchableOpacity>
               </View>
-              <Text style={ms.profileBio}>{profile?.email || ""}</Text>
+              <Text style={[ms.profileBio, { color: colors.textSecondary }]}>{profile?.email || ""}</Text>
               {profile?.phone && (
-                <Text style={ms.profileBio}>{profile.phone}</Text>
+                <Text style={[ms.profileBio, { color: colors.textSecondary }]}>{profile.phone}</Text>
               )}
             </View>
           </View>
@@ -261,7 +256,7 @@ export function MyPageScreen() {
             value={stats?.wishlistCount?.toString() || "0"}
             onPress={() => navigation.navigate("Wishlist")}
           />
-          <View style={ms.statDivider} />
+          <View style={[ms.statDivider, { backgroundColor: colors.border }]} />
           <StatItem
             label="작성한 후기"
             value={stats?.reviewCount?.toString() || "0"}
@@ -271,7 +266,7 @@ export function MyPageScreen() {
         </View>
 
         {/* ── 섹션 타이틀 ── */}
-        <Text style={ms.sectionTitle}>나의 활동</Text>
+        <Text style={[ms.sectionTitle, { color: colors.text }]}>나의 활동</Text>
 
         {/* ── 활동 카드 ── */}
         <View style={ms.grid}>
@@ -290,7 +285,7 @@ export function MyPageScreen() {
           {["공지사항", "자주 묻는 질문", "이용약관", "로그아웃", "회원탈퇴"].map((item) => (
             <TouchableOpacity
               key={item}
-              style={ms.menuItem}
+              style={[ms.menuItem, { borderBottomColor: colors.border }]}
               activeOpacity={0.7}
               onPress={
                 item === "로그아웃" ? handleLogout :
@@ -303,12 +298,12 @@ export function MyPageScreen() {
             >
               <Text style={[
                 ms.menuItemText,
-                (item === "로그아웃" || item === "회원탈퇴") && { color: "#EF4444" }
+                { color: (item === "로그아웃" || item === "회원탈퇴") ? "#EF4444" : colors.text }
               ]}>
                 {item}
               </Text>
               {item !== "로그아웃" && item !== "회원탈퇴" && (
-                <Ionicons name="chevron-forward" size={18} color="#D4CDC4" />
+                <Ionicons name="chevron-forward" size={18} color={colors.border} />
               )}
             </TouchableOpacity>
           ))}
@@ -328,12 +323,10 @@ const ms = StyleSheet.create({
 
   // 프로필 카드
   profileCard: {
-    backgroundColor: CARD_BG,
     marginHorizontal: 16,
     borderRadius: 18,
     padding: 18,
     borderWidth: 1,
-    borderColor: BORDER,
     marginBottom: 20,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
@@ -350,16 +343,13 @@ const ms = StyleSheet.create({
     width: 62,
     height: 62,
     borderRadius: 31,
-    backgroundColor: ICON_BG,
   },
   profileName: {
     fontSize: 18,
     fontWeight: "800",
-    color: TEXT,
   },
   profileBio: {
     fontSize: 13,
-    color: TEXT_S,
     lineHeight: 18,
   },
   tagRow: {
@@ -378,14 +368,12 @@ const ms = StyleSheet.create({
   statDivider: {
     width: 1,
     height: 28,
-    backgroundColor: BORDER,
   },
 
   // 섹션 타이틀
   sectionTitle: {
     fontSize: 18,
     fontWeight: "800",
-    color: TEXT,
     marginHorizontal: 20,
     marginBottom: 14,
   },
@@ -411,11 +399,9 @@ const ms = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: BORDER,
   },
   menuItemText: {
     fontSize: 15,
     fontWeight: "500",
-    color: TEXT,
   },
 });

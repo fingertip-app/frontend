@@ -3,6 +3,8 @@ import { View, StyleSheet, TouchableOpacity, Text } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { CustomDrawer } from "@/features/general/home/CustomDrawer";
+import { LogoMark } from "@/components/Logo";
+import { useTheme } from "@/theme/ThemeContext";
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -11,15 +13,19 @@ interface MainLayoutProps {
 
 export function MainLayout({ children, activeItem }: MainLayoutProps) {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const { colors } = useTheme();
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.bg }]}>
       {/* 공통 상단바 (Top Bar) */}
       <View style={styles.topBar}>
         <TouchableOpacity onPress={() => setIsDrawerOpen(true)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} activeOpacity={0.7}>
-          <Ionicons name="menu" size={28} color="#3B2B26" />
+          <Ionicons name="menu" size={28} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.logoText}>장인과 하루</Text>
+        <View style={styles.logoRow}>
+          <LogoMark size={26} />
+          <Text style={[styles.logoText, { color: colors.text }]}>손끝</Text>
+        </View>
         <View style={{ width: 28 }} />
       </View>
 
@@ -35,7 +41,7 @@ export function MainLayout({ children, activeItem }: MainLayoutProps) {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: "#F5F4F0" },
+  safeArea: { flex: 1 },
   topBar: {
     height: 56,
     flexDirection: "row",
@@ -43,10 +49,10 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: 20,
   },
+  logoRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   logoText: {
     fontSize: 17,
     fontWeight: "bold",
-    color: "#3B2B26",
   },
   content: { flex: 1 },
 });

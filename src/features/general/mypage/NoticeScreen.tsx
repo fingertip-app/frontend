@@ -16,9 +16,9 @@ const NEW_TEXT = "#92400E";
 const NOTICES: { id: string; title: string; date: string; content: string; isNew?: boolean }[] = [
   {
     id: "1",
-    title: "장인과 하루 정식 오픈 안내",
+    title: "손끝 정식 오픈 안내",
     date: "2026-06-20",
-    content: "전통 공예 체험 예약 플랫폼 '장인과 하루'가 정식으로 오픈했습니다. 다양한 장인들의 체험을 둘러보고 예약해보세요.",
+    content: "전통 공예 체험 예약 플랫폼 '손끝'이 정식으로 오픈했습니다. 다양한 장인들의 체험을 둘러보고 예약해보세요.",
     isNew: true,
   },
   {

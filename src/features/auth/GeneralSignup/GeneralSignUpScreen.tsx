@@ -5,9 +5,11 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "@/navigation/RootNavigator";
 import Svg, { Path, Circle } from "react-native-svg";
 import { signUp, checkEmailAvailable, checkNicknameAvailable } from "@/features/auth/api/authApi";
+import { useTheme } from "@/theme/ThemeContext";
 
 export function GeneralSignUpScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { colors } = useTheme();
   const [isLoading, setIsLoading] = useState(false);
   const [isNicknameChecked, setIsNicknameChecked] = useState(false);
   const [isEmailChecked, setIsEmailChecked] = useState(false);
@@ -107,41 +109,41 @@ export function GeneralSignUpScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.bg }]}>
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-        
+
         {/* 헤더 영역 */}
         <View style={styles.header}>
-          <Text style={styles.title}>일반 회원가입</Text>
-          <Text style={styles.subtitle}>장인과 하루의 다양한 체험을 즐겨보세요.</Text>
+          <Text style={[styles.title, { color: colors.text }]}>일반 회원가입</Text>
+          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>손끝의 다양한 체험을 즐겨보세요.</Text>
         </View>
 
         {/* 입력 폼 영역 */}
         <View style={styles.formSection}>
           {/* 이름 입력 */}
-          <Text style={styles.inputLabel}>이름</Text>
-          <View style={styles.inputContainer}>
+          <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>이름</Text>
+          <View style={[styles.inputContainer, { borderColor: colors.border, backgroundColor: colors.card }]}>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { color: colors.text }]}
               placeholder="이름을 입력해주세요"
-              placeholderTextColor="#A39B92"
+              placeholderTextColor={colors.textSecondary}
               value={name}
               onChangeText={setName}
             />
           </View>
 
           {/* 닉네임 입력 */}
-          <Text style={styles.inputLabel}>닉네임</Text>
-          <View style={styles.inputContainer}>
+          <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>닉네임</Text>
+          <View style={[styles.inputContainer, { borderColor: colors.border, backgroundColor: colors.card }]}>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { color: colors.text }]}
               placeholder="사용하실 닉네임을 입력해주세요"
-              placeholderTextColor="#A39B92"
+              placeholderTextColor={colors.textSecondary}
               value={nickname}
               onChangeText={(v) => { setNickname(v); setIsNicknameChecked(false); setNicknameCheckMessage(""); }}
             />
-            <TouchableOpacity style={styles.duplicateCheckBtn} onPress={handleCheckNicknameDuplicate} activeOpacity={0.7}>
-              <Text style={styles.duplicateCheckBtnText}>중복확인</Text>
+            <TouchableOpacity style={[styles.duplicateCheckBtn, { backgroundColor: colors.border }]} onPress={handleCheckNicknameDuplicate} activeOpacity={0.7}>
+              <Text style={[styles.duplicateCheckBtnText, { color: colors.text }]}>중복확인</Text>
             </TouchableOpacity>
           </View>
           {nicknameCheckMessage ? (
@@ -151,12 +153,12 @@ export function GeneralSignUpScreen() {
           ) : null}
 
           {/* 휴대폰 번호 입력 */}
-          <Text style={styles.inputLabel}>휴대폰 번호</Text>
-          <View style={styles.inputContainer}>
+          <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>휴대폰 번호</Text>
+          <View style={[styles.inputContainer, { borderColor: colors.border, backgroundColor: colors.card }]}>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { color: colors.text }]}
               placeholder="010-0000-0000"
-              placeholderTextColor="#A39B92"
+              placeholderTextColor={colors.textSecondary}
               value={phone}
               onChangeText={handlePhoneChange}
               keyboardType="numeric"
@@ -165,19 +167,19 @@ export function GeneralSignUpScreen() {
           </View>
 
           {/* 이메일 입력 */}
-          <Text style={styles.inputLabel}>아이디 (이메일)</Text>
-          <View style={styles.inputContainer}>
+          <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>아이디 (이메일)</Text>
+          <View style={[styles.inputContainer, { borderColor: colors.border, backgroundColor: colors.card }]}>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { color: colors.text }]}
               placeholder="example@email.com"
-              placeholderTextColor="#A39B92"
+              placeholderTextColor={colors.textSecondary}
               value={email}
               onChangeText={(v) => { setEmail(v); setIsEmailChecked(false); setEmailCheckMessage(""); }}
               keyboardType="email-address"
               autoCapitalize="none"
             />
-            <TouchableOpacity style={styles.duplicateCheckBtn} onPress={handleCheckEmailDuplicate} activeOpacity={0.7}>
-              <Text style={styles.duplicateCheckBtnText}>중복확인</Text>
+            <TouchableOpacity style={[styles.duplicateCheckBtn, { backgroundColor: colors.border }]} onPress={handleCheckEmailDuplicate} activeOpacity={0.7}>
+              <Text style={[styles.duplicateCheckBtnText, { color: colors.text }]}>중복확인</Text>
             </TouchableOpacity>
           </View>
 
@@ -188,12 +190,12 @@ export function GeneralSignUpScreen() {
           ) : null}
 
           {/* 비밀번호 입력 */}
-          <Text style={styles.inputLabel}>비밀번호</Text>
-          <View style={styles.inputContainer}>
+          <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>비밀번호</Text>
+          <View style={[styles.inputContainer, { borderColor: colors.border, backgroundColor: colors.card }]}>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { color: colors.text }]}
               placeholder="비밀번호 (8자 이상)"
-              placeholderTextColor="#A39B92"
+              placeholderTextColor={colors.textSecondary}
               value={password}
               onChangeText={setPassword}
               secureTextEntry={!isPasswordVisible}
@@ -202,15 +204,15 @@ export function GeneralSignUpScreen() {
                   {isPasswordVisible ? (
                     // 눈 뜬 상태
                     <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
-                      <Path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="#8A8077" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"/>
-                      <Circle cx={12} cy={12} r={3} stroke="#8A8077" strokeWidth={1.8}/>
+                      <Path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke={colors.textSecondary} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"/>
+                      <Circle cx={12} cy={12} r={3} stroke={colors.textSecondary} strokeWidth={1.8}/>
                     </Svg>
                   ) : (
                     // 눈 감은 상태 (사선)
                     <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
-                      <Path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94" stroke="#8A8077" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"/>
-                      <Path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19" stroke="#8A8077" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"/>
-                      <Path d="M1 1l22 22" stroke="#8A8077" strokeWidth={1.8} strokeLinecap="round"/>
+                      <Path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94" stroke={colors.textSecondary} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"/>
+                      <Path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19" stroke={colors.textSecondary} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"/>
+                      <Path d="M1 1l22 22" stroke={colors.textSecondary} strokeWidth={1.8} strokeLinecap="round"/>
                     </Svg>
                   )}
           </TouchableOpacity>
@@ -221,12 +223,12 @@ export function GeneralSignUpScreen() {
           ) : null}
 
           {/* 비밀번호 확인 입력 */}
-          <Text style={styles.inputLabel}>비밀번호 확인</Text>
-          <View style={styles.inputContainer}>
+          <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>비밀번호 확인</Text>
+          <View style={[styles.inputContainer, { borderColor: colors.border, backgroundColor: colors.card }]}>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { color: colors.text }]}
               placeholder="비밀번호를 다시 입력해주세요"
-              placeholderTextColor="#A39B92"
+              placeholderTextColor={colors.textSecondary}
               value={passwordConfirm}
               onChangeText={setPasswordConfirm}
               secureTextEntry={!isPasswordConfirmVisible}
@@ -235,15 +237,15 @@ export function GeneralSignUpScreen() {
               {isPasswordConfirmVisible ? (
                 // 눈 뜬 상태
                 <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
-                  <Path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="#8A8077" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"/>
-                  <Circle cx={12} cy={12} r={3} stroke="#8A8077" strokeWidth={1.8}/>
+                  <Path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke={colors.textSecondary} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"/>
+                  <Circle cx={12} cy={12} r={3} stroke={colors.textSecondary} strokeWidth={1.8}/>
                 </Svg>
               ) : (
                 // 눈 감은 상태 (사선)
                 <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
-                  <Path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94" stroke="#8A8077" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"/>
-                  <Path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19" stroke="#8A8077" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"/>
-                  <Path d="M1 1l22 22" stroke="#8A8077" strokeWidth={1.8} strokeLinecap="round"/>
+                  <Path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94" stroke={colors.textSecondary} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"/>
+                  <Path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19" stroke={colors.textSecondary} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"/>
+                  <Path d="M1 1l22 22" stroke={colors.textSecondary} strokeWidth={1.8} strokeLinecap="round"/>
                 </Svg>
               )}
             </TouchableOpacity>
@@ -257,38 +259,38 @@ export function GeneralSignUpScreen() {
         {/* 약관 동의 영역 */}
         <View style={styles.termsSection}>
           <TouchableOpacity style={[styles.termsCheckbox, { marginBottom: 16 }]} activeOpacity={0.8} onPress={handleAllAgree}>
-            <View style={[styles.checkboxCircle, isAllAgreed && styles.checkboxCircleActive]}>
-              {isAllAgreed && <Text style={styles.checkMark}>✓</Text>}
+            <View style={[styles.checkboxCircle, { borderColor: colors.textSecondary }, isAllAgreed && { backgroundColor: colors.text, borderColor: colors.text }]}>
+              {isAllAgreed && <Text style={[styles.checkMark, { color: colors.bg }]}>✓</Text>}
             </View>
-            <Text style={[styles.termsText, { fontWeight: 'bold', fontSize: 15 }]}>전체 약관 동의하기</Text>
+            <Text style={[styles.termsText, { color: colors.textSecondary, fontWeight: 'bold', fontSize: 15 }]}>전체 약관 동의하기</Text>
           </TouchableOpacity>
-          <View style={styles.divider} />
+          <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
           <TouchableOpacity style={styles.termsCheckbox} activeOpacity={0.8} onPress={() => setIsTermsAgreed(!isTermsAgreed)}>
-            <View style={[styles.checkboxCircle, isTermsAgreed && styles.checkboxCircleActive]}>
-              {isTermsAgreed && <Text style={styles.checkMark}>✓</Text>}
+            <View style={[styles.checkboxCircle, { borderColor: colors.textSecondary }, isTermsAgreed && { backgroundColor: colors.text, borderColor: colors.text }]}>
+              {isTermsAgreed && <Text style={[styles.checkMark, { color: colors.bg }]}>✓</Text>}
             </View>
-            <Text style={styles.termsText}><Text style={{fontWeight: 'bold'}}>[필수]</Text> 이용약관 동의</Text>
+            <Text style={[styles.termsText, { color: colors.textSecondary }]}><Text style={{fontWeight: 'bold'}}>[필수]</Text> 이용약관 동의</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.termsCheckbox} activeOpacity={0.8} onPress={() => setIsPrivacyAgreed(!isPrivacyAgreed)}>
-            <View style={[styles.checkboxCircle, isPrivacyAgreed && styles.checkboxCircleActive]}>
-              {isPrivacyAgreed && <Text style={styles.checkMark}>✓</Text>}
+            <View style={[styles.checkboxCircle, { borderColor: colors.textSecondary }, isPrivacyAgreed && { backgroundColor: colors.text, borderColor: colors.text }]}>
+              {isPrivacyAgreed && <Text style={[styles.checkMark, { color: colors.bg }]}>✓</Text>}
             </View>
-            <Text style={styles.termsText}><Text style={{fontWeight: 'bold'}}>[필수]</Text> 개인정보 처리방침 동의</Text>
+            <Text style={[styles.termsText, { color: colors.textSecondary }]}><Text style={{fontWeight: 'bold'}}>[필수]</Text> 개인정보 처리방침 동의</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.termsCheckbox} activeOpacity={0.8} onPress={() => setIsMarketingAgreed(!isMarketingAgreed)}>
-            <View style={[styles.checkboxCircle, isMarketingAgreed && styles.checkboxCircleActive]}>
-              {isMarketingAgreed && <Text style={styles.checkMark}>✓</Text>}
+            <View style={[styles.checkboxCircle, { borderColor: colors.textSecondary }, isMarketingAgreed && { backgroundColor: colors.text, borderColor: colors.text }]}>
+              {isMarketingAgreed && <Text style={[styles.checkMark, { color: colors.bg }]}>✓</Text>}
             </View>
-            <Text style={styles.termsText}>[선택] 마케팅 수신 동의</Text>
+            <Text style={[styles.termsText, { color: colors.textSecondary }]}>[선택] 마케팅 수신 동의</Text>
           </TouchableOpacity>
         </View>
 
         {/* 회원가입 버튼 */}
         <TouchableOpacity
-          style={[styles.signupButton, isLoading && { opacity: 0.6 }]}
+          style={[styles.signupButton, { backgroundColor: colors.text }, isLoading && { opacity: 0.6 }]}
           activeOpacity={0.8}
           disabled={isLoading}
           onPress={async () => {
@@ -338,8 +340,8 @@ export function GeneralSignUpScreen() {
           }}
         >
           {isLoading
-            ? <ActivityIndicator color="#FFF" />
-            : <Text style={styles.signupButtonText}>가입완료</Text>
+            ? <ActivityIndicator color={colors.bg} />
+            : <Text style={[styles.signupButtonText, { color: colors.bg }]}>가입완료</Text>
           }
         </TouchableOpacity>
 
@@ -351,14 +353,13 @@ export function GeneralSignUpScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#F5F4F0', // 로그인 화면과 동일한 베이지 톤 배경
   },
   container: {
     paddingHorizontal: 24,
     paddingTop: Platform.OS === 'ios' ? 20 : 40,
     paddingBottom: 60,
   },
-  
+
   // Header
   header: {
     marginBottom: 40,
@@ -367,12 +368,10 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 26,
     fontWeight: '700',
-    color: '#3B2B26',
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 14,
-    color: '#6E665F',
   },
 
   // Input Forms
@@ -382,7 +381,6 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#6E665F',
     marginBottom: 8,
     marginLeft: 4,
   },
@@ -390,30 +388,25 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#D4CDC4',
     borderRadius: 12,
     marginBottom: 20,
     paddingHorizontal: 16,
     height: 52,
-    backgroundColor: '#FAF9F6',
   },
   input: {
     flex: 1,
     fontSize: 14,
-    color: '#3B2B26',
   },
   eyeIcon: {
     padding: 4,
   },
   duplicateCheckBtn: {
-    backgroundColor: '#EAE6E1',
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 8,
   },
   duplicateCheckBtnText: {
     fontSize: 12,
-    color: '#3B2B26',
     fontWeight: '600',
   },
   errorText: {
@@ -450,27 +443,22 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: 1,
-    backgroundColor: '#EAE6E1',
     marginBottom: 16,
   },
-  checkboxCircle: { width: 22, height: 22, borderRadius: 11, borderWidth: 1.5, borderColor: '#A39B92', marginRight: 10, justifyContent: 'center', alignItems: 'center' },
-  checkboxCircleActive: { backgroundColor: '#3B2B26', borderColor: '#3B2B26' },
-  checkMark: { color: '#FFF', fontSize: 12, fontWeight: 'bold' },
+  checkboxCircle: { width: 22, height: 22, borderRadius: 11, borderWidth: 1.5, marginRight: 10, justifyContent: 'center', alignItems: 'center' },
+  checkMark: { fontSize: 12, fontWeight: 'bold' },
   termsText: {
     fontSize: 13,
-    color: '#6E665F',
   },
 
   // Button
   signupButton: {
-    backgroundColor: '#3B2B26',
     borderRadius: 26,
     height: 52,
     justifyContent: 'center',
     alignItems: 'center',
   },
   signupButtonText: {
-    color: '#FFF',
     fontSize: 16,
     fontWeight: 'bold',
   },

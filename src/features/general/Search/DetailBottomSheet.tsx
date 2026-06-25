@@ -19,11 +19,7 @@ import { getExperienceReviews } from "@/features/reviews/api/reviewsApi";
 import { addToWishlist, checkWishlist, removeFromWishlist } from "@/features/wishlists/api/wishlistsApi";
 import { formatScheduleDate } from "@/lib/scheduling";
 import type { Experience as BackendExperience, Review } from "@/types/api";
-
-const BRAND = "#3D1F0D";
-const BRAND_BUTTON = "#3D1F0D";
-const BRAND_BG = "#F5F0EB";
-const ICON_BG = "#EDE8E2";
+import { useTheme } from "@/theme/ThemeContext";
 
 type Props = {
   exp: Experience;
@@ -31,6 +27,7 @@ type Props = {
 };
 
 function InfoChip({ icon, label }: { icon: React.ReactNode; label: string }) {
+  const { colors } = useTheme();
   return (
     <View
       style={{
@@ -44,14 +41,14 @@ function InfoChip({ icon, label }: { icon: React.ReactNode; label: string }) {
           width: 44,
           height: 44,
           borderRadius: 22,
-          backgroundColor: ICON_BG,
+          backgroundColor: colors.bg,
           justifyContent: "center",
           alignItems: "center",
         }}
       >
         {icon}
       </View>
-      <Text style={{ fontSize: 12, color: "#6B5E52", textAlign: "center" }}>
+      <Text style={{ fontSize: 12, color: colors.textSecondary, textAlign: "center" }}>
         {label}
       </Text>
     </View>
@@ -59,6 +56,7 @@ function InfoChip({ icon, label }: { icon: React.ReactNode; label: string }) {
 }
 
 function IncludeItem({ icon, label }: { icon: React.ReactNode; label: string }) {
+  const { colors } = useTheme();
   return (
     <View style={{ alignItems: "center", flex: 1, gap: 8 }}>
       <View
@@ -66,14 +64,14 @@ function IncludeItem({ icon, label }: { icon: React.ReactNode; label: string }) 
           width: 52,
           height: 52,
           borderRadius: 26,
-          backgroundColor: ICON_BG,
+          backgroundColor: colors.bg,
           justifyContent: "center",
           alignItems: "center",
         }}
       >
         {icon}
       </View>
-      <Text style={{ fontSize: 12, color: "#6B5E52", textAlign: "center" }}>
+      <Text style={{ fontSize: 12, color: colors.textSecondary, textAlign: "center" }}>
         {label}
       </Text>
     </View>
@@ -91,6 +89,7 @@ export function DetailBottomSheet({ exp, onClose }: Props) {
   const [isWishLoading, setIsWishLoading] = useState(false);
   const requestIdRef = useRef(0);
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { colors } = useTheme();
 
   const loadExperience = useCallback(async () => {
     const requestId = requestIdRef.current + 1;
@@ -244,7 +243,7 @@ export function DetailBottomSheet({ exp, onClose }: Props) {
       {/* 시트 콘텐츠 */}
       <View
         style={{
-          backgroundColor: "#FAFAF8",
+          backgroundColor: colors.card,
           borderTopLeftRadius: 24,
           borderTopRightRadius: 24,
           height: "90%",
@@ -257,7 +256,7 @@ export function DetailBottomSheet({ exp, onClose }: Props) {
             width: 36,
             height: 4,
             borderRadius: 2,
-            backgroundColor: "#D6CFC8",
+            backgroundColor: colors.border,
             alignSelf: "center",
             marginTop: 12,
             marginBottom: 0,
@@ -291,7 +290,11 @@ export function DetailBottomSheet({ exp, onClose }: Props) {
                 alignItems: "center",
               }}
             >
-              <Text style={{ fontSize: 18 }}>{isWished ? "❤️" : "🤍"}</Text>
+              <Ionicons
+                name={isWished ? "heart" : "heart-outline"}
+                size={18}
+                color={isWished ? colors.accent : colors.text}
+              />
             </TouchableOpacity>
           </View>
 
@@ -302,7 +305,7 @@ export function DetailBottomSheet({ exp, onClose }: Props) {
               style={{
                 fontSize: 22,
                 fontWeight: "700",
-                color: "#1C1107",
+                color: colors.text,
                 marginBottom: 6,
                 letterSpacing: -0.3,
               }}
@@ -319,15 +322,15 @@ export function DetailBottomSheet({ exp, onClose }: Props) {
                 marginBottom: 20,
               }}
             >
-              <Text style={{ fontSize: 14, color: "#8C7B6E" }}>
+              <Text style={{ fontSize: 14, color: colors.textSecondary }}>
                 {exp.location} · {exp.artisan}
               </Text>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-                <Ionicons name="star" size={14} color="#F59E0B" />
-                <Text style={{ fontSize: 14, fontWeight: "600", color: "#1C1107" }}>
+                <Ionicons name="star" size={14} color={colors.gold} />
+                <Text style={{ fontSize: 14, fontWeight: "600", color: colors.text }}>
                   {reviewCount > 0 ? averageRating.toFixed(1) : "0.0"}
                 </Text>
-                <Text style={{ fontSize: 13, color: "#8C7B6E" }}>({reviewCount})</Text>
+                <Text style={{ fontSize: 13, color: colors.textSecondary }}>({reviewCount})</Text>
               </View>
             </View>
 
@@ -335,7 +338,7 @@ export function DetailBottomSheet({ exp, onClose }: Props) {
             <View
               style={{
                 flexDirection: "row",
-                backgroundColor: "#FFFFFF",
+                backgroundColor: colors.card,
                 borderRadius: 16,
                 paddingVertical: 16,
                 paddingHorizontal: 8,
@@ -348,32 +351,32 @@ export function DetailBottomSheet({ exp, onClose }: Props) {
               }}
             >
               <InfoChip
-                icon={<Ionicons name="time-outline" size={20} color={BRAND} />}
+                icon={<Ionicons name="time-outline" size={20} color={colors.accent} />}
                 label="2시간"
               />
               <InfoChip
-                icon={<Ionicons name="construct-outline" size={20} color={BRAND} />}
+                icon={<Ionicons name="construct-outline" size={20} color={colors.accent} />}
                 label="초급"
               />
               <InfoChip
-                icon={<Ionicons name="people-outline" size={20} color={BRAND} />}
+                icon={<Ionicons name="people-outline" size={20} color={colors.accent} />}
                 label="1~6명"
               />
               <InfoChip
-                icon={<Ionicons name="language-outline" size={20} color={BRAND} />}
+                icon={<Ionicons name="language-outline" size={20} color={colors.accent} />}
                 label="한국어, 영어"
               />
             </View>
 
             {/* 구분선 */}
-            <View style={{ height: 1, backgroundColor: "#EDE8E2", marginBottom: 24 }} />
+            <View style={{ height: 1, backgroundColor: colors.border, marginBottom: 24 }} />
 
             {/* 체험 소개 */}
             <Text
               style={{
                 fontSize: 17,
                 fontWeight: "700",
-                color: "#1C1107",
+                color: colors.text,
                 marginBottom: 12,
               }}
             >
@@ -382,7 +385,7 @@ export function DetailBottomSheet({ exp, onClose }: Props) {
             <Text
               style={{
                 fontSize: 14,
-                color: "#4B3D33",
+                color: colors.textSecondary,
                 lineHeight: 22,
                 marginBottom: 8,
               }}
@@ -394,19 +397,19 @@ export function DetailBottomSheet({ exp, onClose }: Props) {
               onPress={() => setExpanded(!expanded)}
               style={{ flexDirection: "row", alignItems: "center", gap: 2 }}
             >
-              <Text style={{ fontSize: 14, color: BRAND, fontWeight: "600" }}>
+              <Text style={{ fontSize: 14, color: colors.accent, fontWeight: "600" }}>
                 {expanded ? "접기" : "더보기"}
               </Text>
               <Ionicons
                 name={expanded ? "chevron-up" : "chevron-down"}
                 size={14}
-                color={BRAND}
+                color={colors.accent}
               />
             </TouchableOpacity>
 
             {/* 구분선 */}
             <View
-              style={{ height: 1, backgroundColor: "#EDE8E2", marginTop: 24, marginBottom: 24 }}
+              style={{ height: 1, backgroundColor: colors.border, marginTop: 24, marginBottom: 24 }}
             />
 
             {/* 장인 소개 */}
@@ -414,7 +417,7 @@ export function DetailBottomSheet({ exp, onClose }: Props) {
               style={{
                 fontSize: 17,
                 fontWeight: "700",
-                color: "#1C1107",
+                color: colors.text,
                 marginBottom: 14,
               }}
             >
@@ -422,7 +425,7 @@ export function DetailBottomSheet({ exp, onClose }: Props) {
             </Text>
             <View
               style={{
-                backgroundColor: "#FFFFFF",
+                backgroundColor: colors.card,
                 borderRadius: 16,
                 padding: 16,
                 shadowColor: "#000",
@@ -441,20 +444,20 @@ export function DetailBottomSheet({ exp, onClose }: Props) {
                     width: 52,
                     height: 52,
                     borderRadius: 26,
-                    backgroundColor: ICON_BG,
+                    backgroundColor: colors.bg,
                     justifyContent: "center",
                     alignItems: "center",
                   }}
                 >
-                  <Text style={{ fontSize: 28 }}>🧑‍🎨</Text>
+                  <Ionicons name="person-outline" size={26} color={colors.textSecondary} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text
-                    style={{ fontSize: 15, fontWeight: "700", color: "#1C1107" }}
+                    style={{ fontSize: 15, fontWeight: "700", color: colors.text }}
                   >
                     {exp.artisan}
                   </Text>
-                  <Text style={{ fontSize: 13, color: "#8C7B6E", marginTop: 2 }}>
+                  <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 2 }}>
                     국가무형유산 제105호 사기장 이수자
                   </Text>
                 </View>
@@ -462,7 +465,7 @@ export function DetailBottomSheet({ exp, onClose }: Props) {
               <Text
                 style={{
                   fontSize: 13,
-                  color: "#4B3D33",
+                  color: colors.textSecondary,
                   lineHeight: 20,
                   marginTop: 12,
                 }}
@@ -474,15 +477,15 @@ export function DetailBottomSheet({ exp, onClose }: Props) {
             <TouchableOpacity
               style={{ flexDirection: "row", alignItems: "center", gap: 2 }}
             >
-              <Text style={{ fontSize: 14, color: BRAND, fontWeight: "600" }}>
+              <Text style={{ fontSize: 14, color: colors.accent, fontWeight: "600" }}>
                 장인 이야기 보기
               </Text>
-              <Ionicons name="chevron-forward" size={14} color={BRAND} />
+              <Ionicons name="chevron-forward" size={14} color={colors.accent} />
             </TouchableOpacity>
 
             {/* 구분선 */}
             <View
-              style={{ height: 1, backgroundColor: "#EDE8E2", marginTop: 24, marginBottom: 24 }}
+              style={{ height: 1, backgroundColor: colors.border, marginTop: 24, marginBottom: 24 }}
             />
 
             {/* 포함 사항 */}
@@ -490,7 +493,7 @@ export function DetailBottomSheet({ exp, onClose }: Props) {
               style={{
                 fontSize: 17,
                 fontWeight: "700",
-                color: "#1C1107",
+                color: colors.text,
                 marginBottom: 16,
               }}
             >
@@ -504,26 +507,26 @@ export function DetailBottomSheet({ exp, onClose }: Props) {
               }}
             >
               <IncludeItem
-                icon={<Ionicons name="construct-outline" size={22} color={BRAND} />}
+                icon={<Ionicons name="construct-outline" size={22} color={colors.accent} />}
                 label="재료 및 도구"
               />
               <IncludeItem
-                icon={<Ionicons name="shirt-outline" size={22} color={BRAND} />}
+                icon={<Ionicons name="shirt-outline" size={22} color={colors.accent} />}
                 label="앞치마"
               />
               <IncludeItem
-                icon={<Ionicons name="cube-outline" size={22} color={BRAND} />}
+                icon={<Ionicons name="cube-outline" size={22} color={colors.accent} />}
                 label="완성품 소성"
               />
               <IncludeItem
-                icon={<Ionicons name="cafe-outline" size={22} color={BRAND} />}
+                icon={<Ionicons name="cafe-outline" size={22} color={colors.accent} />}
                 label="음료 제공"
               />
             </View>
 
             {/* 구분선 */}
             <View
-              style={{ height: 1, backgroundColor: "#EDE8E2", marginTop: 24, marginBottom: 24 }}
+              style={{ height: 1, backgroundColor: colors.border, marginTop: 24, marginBottom: 24 }}
             />
 
             {/* 후기 */}
@@ -535,24 +538,24 @@ export function DetailBottomSheet({ exp, onClose }: Props) {
                 marginBottom: 14,
               }}
             >
-              <Text style={{ fontSize: 17, fontWeight: "700", color: "#1C1107" }}>
+              <Text style={{ fontSize: 17, fontWeight: "700", color: colors.text }}>
                 후기
               </Text>
               {reviewCount > 0 && (
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-                  <Ionicons name="star" size={14} color="#F59E0B" />
-                  <Text style={{ fontSize: 14, fontWeight: "600", color: "#1C1107" }}>
+                  <Ionicons name="star" size={14} color={colors.gold} />
+                  <Text style={{ fontSize: 14, fontWeight: "600", color: colors.text }}>
                     {averageRating.toFixed(1)}
                   </Text>
-                  <Text style={{ fontSize: 13, color: "#8C7B6E" }}>({reviewCount})</Text>
+                  <Text style={{ fontSize: 13, color: colors.textSecondary }}>({reviewCount})</Text>
                 </View>
               )}
             </View>
 
             {isLoadingReviews ? (
-              <ActivityIndicator color={BRAND} />
+              <ActivityIndicator color={colors.accent} />
             ) : reviewCount === 0 ? (
-              <Text style={{ fontSize: 14, color: "#8C7B6E" }}>
+              <Text style={{ fontSize: 14, color: colors.textSecondary }}>
                 아직 등록된 후기가 없습니다.
               </Text>
             ) : (
@@ -560,7 +563,7 @@ export function DetailBottomSheet({ exp, onClose }: Props) {
                 <View
                   key={review.id}
                   style={{
-                    backgroundColor: "#FFFFFF",
+                    backgroundColor: colors.card,
                     borderRadius: 16,
                     padding: 16,
                     marginBottom: 12,
@@ -585,15 +588,15 @@ export function DetailBottomSheet({ exp, onClose }: Props) {
                           key={s}
                           name={s <= review.rating ? "star" : "star-outline"}
                           size={13}
-                          color="#F59E0B"
+                          color={colors.gold}
                         />
                       ))}
                     </View>
-                    <Text style={{ fontSize: 12, color: "#8C7B6E" }}>
+                    <Text style={{ fontSize: 12, color: colors.textSecondary }}>
                       {formatScheduleDate(review.createdAt)}
                     </Text>
                   </View>
-                  <Text style={{ fontSize: 14, color: "#4B3D33", lineHeight: 21 }}>
+                  <Text style={{ fontSize: 14, color: colors.textSecondary, lineHeight: 21 }}>
                     {review.content}
                   </Text>
                 </View>
@@ -616,16 +619,16 @@ export function DetailBottomSheet({ exp, onClose }: Props) {
                   paddingVertical: 12,
                 }}
               >
-                <Text style={{ fontSize: 14, color: BRAND, fontWeight: "600" }}>
+                <Text style={{ fontSize: 14, color: colors.accent, fontWeight: "600" }}>
                   리뷰 전체보기 ({reviewCount})
                 </Text>
-                <Ionicons name="chevron-forward" size={14} color={BRAND} />
+                <Ionicons name="chevron-forward" size={14} color={colors.accent} />
               </TouchableOpacity>
             )}
 
             {/* 구분선 */}
             <View
-              style={{ height: 1, backgroundColor: "#EDE8E2", marginTop: 24, marginBottom: 24 }}
+              style={{ height: 1, backgroundColor: colors.border, marginTop: 24, marginBottom: 24 }}
             />
 
             {/* 위치 안내 */}
@@ -633,7 +636,7 @@ export function DetailBottomSheet({ exp, onClose }: Props) {
               style={{
                 fontSize: 17,
                 fontWeight: "700",
-                color: "#1C1107",
+                color: colors.text,
                 marginBottom: 14,
               }}
             >
@@ -642,7 +645,7 @@ export function DetailBottomSheet({ exp, onClose }: Props) {
             <View
               style={{
                 height: 160,
-                backgroundColor: "#E8E2D9",
+                backgroundColor: colors.bg,
                 borderRadius: 16,
                 justifyContent: "center",
                 alignItems: "center",
@@ -651,7 +654,7 @@ export function DetailBottomSheet({ exp, onClose }: Props) {
               }}
             >
               {/* 지도 플레이스홀더 — 실제 MapView로 교체 가능 */}
-              <Ionicons name="map-outline" size={40} color="#A09080" />
+              <Ionicons name="map-outline" size={40} color={colors.textSecondary} />
               <View
                 style={{
                   position: "absolute",
@@ -664,11 +667,14 @@ export function DetailBottomSheet({ exp, onClose }: Props) {
                   paddingVertical: 10,
                 }}
               >
-                <Text
-                  style={{ fontSize: 13, fontWeight: "600", color: "#1C1107" }}
-                >
-                  📍 {exp.location}
-                </Text>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                  <Ionicons name="location-outline" size={13} color="#1C1107" />
+                  <Text
+                    style={{ fontSize: 13, fontWeight: "600", color: "#1C1107" }}
+                  >
+                    {exp.location}
+                  </Text>
+                </View>
               </View>
             </View>
           </View>
@@ -684,20 +690,20 @@ export function DetailBottomSheet({ exp, onClose }: Props) {
             paddingHorizontal: 20,
             paddingTop: 12,
             paddingBottom: Platform.OS === "ios" ? 34 : 20,
-            backgroundColor: "#FAFAF8",
+            backgroundColor: colors.card,
             borderTopWidth: 1,
-            borderTopColor: "#EDE8E2",
+            borderTopColor: colors.border,
           }}
         >
           {/* 가격 + 버튼 */}
           <View style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
             <View>
-              <Text style={{ fontSize: 11, color: "#8C7B6E" }}>1인 기준</Text>
+              <Text style={{ fontSize: 11, color: colors.textSecondary }}>1인 기준</Text>
               <Text
                 style={{
                   fontSize: 18,
                   fontWeight: "800",
-                  color: "#1C1107",
+                  color: colors.text,
                   letterSpacing: -0.5,
                 }}
               >
@@ -722,7 +728,7 @@ export function DetailBottomSheet({ exp, onClose }: Props) {
               activeOpacity={0.85}
               style={{
                 flex: 1,
-                backgroundColor: hasSchedules || experienceError ? BRAND_BUTTON : "#C8BDB4",
+                backgroundColor: hasSchedules || experienceError ? colors.accent : colors.border,
                 borderRadius: 50,
                 paddingVertical: 16,
                 alignItems: "center",
@@ -730,10 +736,10 @@ export function DetailBottomSheet({ exp, onClose }: Props) {
               }}
             >
               {isLoadingExperience ? (
-                <ActivityIndicator color="#FFFFFF" />
+                <ActivityIndicator color={colors.bg} />
               ) : (
                 <Text
-                  style={{ color: "#FFFFFF", fontSize: 16, fontWeight: "700" }}
+                  style={{ color: colors.bg, fontSize: 16, fontWeight: "700" }}
                 >
                   {bookingButtonLabel}
                 </Text>

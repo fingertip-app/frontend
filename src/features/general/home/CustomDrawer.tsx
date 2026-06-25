@@ -13,6 +13,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, NavigationProp } from "@react-navigation/native";
 import { RootStackParamList, MainTabParamList } from "@/navigation/RootNavigator";
+import { useTheme } from "@/theme/ThemeContext";
 
 interface CustomDrawerProps {
   isOpen: boolean;
@@ -64,6 +65,7 @@ export function CustomDrawer({
   const { width: SCREEN_WIDTH } = useWindowDimensions();
   // 피드백 반영: 화면의 80%, 최대 320px 제한
   const DRAWER_WIDTH = Math.min(SCREEN_WIDTH * 0.8, 320);
+  const { colors } = useTheme();
 
   const slideAnim = useRef(new Animated.Value(-DRAWER_WIDTH)).current;
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -122,14 +124,17 @@ export function CustomDrawer({
         />
 
         <Animated.View
-          style={[styles.drawer, { width: DRAWER_WIDTH, transform: [{ translateX: slideAnim }] }]}
+          style={[
+            styles.drawer,
+            { width: DRAWER_WIDTH, backgroundColor: colors.bg, transform: [{ translateX: slideAnim }] },
+          ]}
         >
           <SafeAreaView style={styles.safeArea}>
             {/* ── 헤더 ── */}
             <View style={styles.header}>
               <View>
-                <Text style={styles.appTitle}>장인과 하루</Text>
-                <Text style={styles.appSubtitle}>Heritage Experience</Text>
+                <Text style={[styles.appTitle, { color: colors.text }]}>손끝</Text>
+                <Text style={[styles.appSubtitle, { color: colors.textSecondary }]}>Heritage Experience</Text>
               </View>
             </View>
 
@@ -143,19 +148,22 @@ export function CustomDrawer({
                 return (
                   <TouchableOpacity
                     key={item.key}
-                    style={[styles.menuItem, isActive && styles.menuItemActive]}
+                    style={[
+                      styles.menuItem,
+                      isActive && { backgroundColor: colors.accent },
+                    ]}
                     onPress={() => handlePress(item.key, item.route)}
                     activeOpacity={0.7}
                   >
                     <MenuIcon
                       name={isActive ? (item.icon as any) : `${item.icon}-outline`}
                       size={18}
-                      color={isActive ? "#FAF9F6" : "#5C4033"}
+                      color={isActive ? colors.bg : colors.textSecondary}
                     />
                     <Text
                       style={[
                         styles.menuLabel,
-                        isActive && styles.menuLabelActive,
+                        { color: isActive ? colors.bg : colors.text, fontWeight: isActive ? "600" : "500" },
                       ]}
                     >
                       {item.label}
@@ -167,7 +175,7 @@ export function CustomDrawer({
               {/* ── 체험 분야 섹션 ── */}
               {!isMaster && (
                 <>
-                  <Text style={styles.sectionTitle}>체험 분야</Text>
+                  <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>체험 분야</Text>
                   {CATEGORY_MENU.map((cat) => (
                     <TouchableOpacity
                       key={cat}
@@ -175,7 +183,7 @@ export function CustomDrawer({
                       onPress={() => handleCategoryPress(cat)}
                       activeOpacity={0.7}
                     >
-                      <Text style={styles.categoryLabel}>{cat}</Text>
+                      <Text style={[styles.categoryLabel, { color: colors.text }]}>{cat}</Text>
                     </TouchableOpacity>
                   ))}
                 </>
@@ -184,7 +192,7 @@ export function CustomDrawer({
 
             {/* ── 하단 고정 영역 ── */}
             <View style={styles.bottomSection}>
-              <View style={styles.divider} />
+              <View style={[styles.divider, { backgroundColor: colors.border }]} />
               {BOTTOM_MENU.map((item) => (
                 <TouchableOpacity
                   key={item.key}
@@ -192,8 +200,8 @@ export function CustomDrawer({
                   onPress={() => handlePress(item.key, item.route)}
                   activeOpacity={0.7}
                 >
-                  <MenuIcon name={item.icon as any} size={18} color="#5C4033" />
-                  <Text style={styles.bottomLabel}>{item.label}</Text>
+                  <MenuIcon name={item.icon as any} size={18} color={colors.textSecondary} />
+                  <Text style={[styles.bottomLabel, { color: colors.text }]}>{item.label}</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -219,7 +227,6 @@ const styles = StyleSheet.create({
   },
   drawer: {
     height: "100%",
-    backgroundColor: "#F5F3EF",
     shadowColor: "#000",
     shadowOffset: { width: 3, height: 0 },
     shadowOpacity: 0.15,
@@ -239,12 +246,10 @@ const styles = StyleSheet.create({
   appTitle: {
     fontSize: 20,
     fontWeight: "700",
-    color: "#2C1A14",
     letterSpacing: -0.3,
   },
   appSubtitle: {
     fontSize: 11,
-    color: "#9C7E6A",
     marginTop: 2,
     letterSpacing: 0.3,
   },
@@ -265,23 +270,13 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginBottom: 2,
   },
-  menuItemActive: {
-    backgroundColor: "#2C1A14",
-  },
   menuLabel: {
     fontSize: 14,
-    color: "#3B2B26",
-    fontWeight: "500",
-  },
-  menuLabelActive: {
-    color: "#FAF9F6",
-    fontWeight: "600",
   },
 
   /* 체험 분야 섹션 */
   sectionTitle: {
     fontSize: 11,
-    color: "#9C7E6A",
     fontWeight: "600",
     letterSpacing: 0.5,
     marginTop: 20,
@@ -296,7 +291,6 @@ const styles = StyleSheet.create({
   },
   categoryLabel: {
     fontSize: 14,
-    color: "#3B2B26",
     fontWeight: "400",
   },
 
@@ -307,7 +301,6 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: 1,
-    backgroundColor: "#DDD7CE",
     marginBottom: 8,
     marginHorizontal: 4,
   },
@@ -321,7 +314,6 @@ const styles = StyleSheet.create({
   },
   bottomLabel: {
     fontSize: 13,
-    color: "#3B2B26",
     fontWeight: "400",
   },
 });

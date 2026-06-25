@@ -117,7 +117,7 @@ export function AIChatScreen() {
               <Text style={item.sender === 'ai' ? styles.aiText : styles.userText}>{item.text}</Text>
               {item.sender === 'ai' && item.sources && item.sources.length > 0 && (
                 <View style={styles.sourcesContainer}>
-                  <Text style={styles.sourcesLabel}>📚 출처</Text>
+                  <Text style={styles.sourcesLabel}>출처</Text>
                   {item.sources.map((source: { name: string; source: string }, idx: number) => (
                     <Text key={idx} style={styles.sourceText}>
                       • {source.name}

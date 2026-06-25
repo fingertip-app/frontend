@@ -16,7 +16,7 @@ interface MasterHeaderProps {
   rightComponent?: React.ReactNode;
 }
 
-export function MasterHeader({ title = "장인과 하루", activeItem = "홈", hasNotification = true, rightComponent }: MasterHeaderProps) {
+export function MasterHeader({ title = "손끝", activeItem = "홈", hasNotification = true, rightComponent }: MasterHeaderProps) {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
