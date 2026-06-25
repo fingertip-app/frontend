@@ -22,6 +22,12 @@ const CATEGORY_OPTIONS = [
   "모시짜기", "갓일", "자수", "매듭공예", "한복", "탈제작", "국악", "전통주",
 ];
 
+const DIFFICULTY_OPTIONS: { value: "BEGINNER" | "INTERMEDIATE" | "ADVANCED"; label: string }[] = [
+  { value: "BEGINNER", label: "초급" },
+  { value: "INTERMEDIATE", label: "중급" },
+  { value: "ADVANCED", label: "고급" },
+];
+
 export function Step1BasicInfo() {
   const navigation = useNavigation<any>();
   const { colors } = useTheme();
@@ -31,6 +37,7 @@ export function Step1BasicInfo() {
   const [shortDesc, setShortDesc] = useState("");
   const [detail, setDetail] = useState("");
   const [category, setCategory] = useState("");
+  const [difficulty, setDifficulty] = useState<"BEGINNER" | "INTERMEDIATE" | "ADVANCED">("BEGINNER");
   const [tagInput, setTagInput] = useState("");
   const [tags, setTags] = useState<string[]>([]);
 
@@ -168,32 +175,6 @@ export function Step1BasicInfo() {
             </Text>
           </View>
           <View style={[styles.detailBox, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            {/* 간단한 텍스트 서식 툴바 (장식용 — 실제 포맷팅은 추후 연결 가능) */}
-            <View style={[styles.toolbar, { borderBottomColor: colors.border, backgroundColor: colors.bg }]}>
-              <View style={styles.toolbarLeft}>
-                {["B", "I", "≡"].map((icon) => (
-                  <TouchableOpacity key={icon} style={styles.toolBtn}>
-                    <Text style={[styles.toolBtnText, { color: colors.text }]}>{icon}</Text>
-                  </TouchableOpacity>
-                ))}
-                <View style={[styles.toolDivider, { backgroundColor: colors.border }]} />
-                {["≡L", "≡C", "≡R"].map((icon) => (
-                  <TouchableOpacity key={icon} style={styles.toolBtn}>
-                    <Text style={[styles.toolBtnText, { color: colors.text }]}>{icon}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-              <View style={styles.toolbarRight}>
-                <TouchableOpacity style={styles.toolBtn}>
-                  <Text style={[styles.toolBtnText, { color: colors.text }]}>⊟</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.toolBtn}>
-                  <Text style={[styles.toolBtnText, { color: colors.text }]}>⊠</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            {/* 실제 텍스트 입력 */}
             <TextInput
               style={[styles.detailInput, { color: colors.text }]}
               placeholder="체험에 대해 자세히 설명해 주세요."
@@ -233,6 +214,37 @@ export function Step1BasicInfo() {
                     style={[styles.categoryChipText, { color: isSelected ? colors.bg : colors.text }]}
                   >
                     {option}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+
+        {/* ── 난이도 ── */}
+        <View style={styles.inputGroup}>
+          <View style={styles.labelRow}>
+            <Text style={[styles.label, { color: colors.text }]}>난이도</Text>
+            <Text style={styles.required}>*</Text>
+          </View>
+          <View style={styles.tagList}>
+            {DIFFICULTY_OPTIONS.map((option) => {
+              const isSelected = difficulty === option.value;
+              return (
+                <TouchableOpacity
+                  key={option.value}
+                  style={[
+                    styles.categoryChip,
+                    { backgroundColor: colors.card, borderColor: colors.border },
+                    isSelected && { backgroundColor: colors.text, borderColor: colors.text },
+                  ]}
+                  activeOpacity={0.8}
+                  onPress={() => setDifficulty(option.value)}
+                >
+                  <Text
+                    style={[styles.categoryChipText, { color: isSelected ? colors.bg : colors.text }]}
+                  >
+                    {option.label}
                   </Text>
                 </TouchableOpacity>
               );
@@ -291,7 +303,7 @@ export function Step1BasicInfo() {
           activeOpacity={0.8}
           disabled={!(title && shortDesc && detail && category)}
           onPress={() =>
-            navigation.navigate("Step2Photos", { title, shortDesc, detail, category, tags })
+            navigation.navigate("Step2Photos", { title, shortDesc, detail, category, difficulty, tags })
           }
         >
           <Text style={[styles.nextBtnText, { color: colors.bg }]}>다음 단계</Text>
@@ -462,38 +474,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 10,
     overflow: "hidden",
-  },
-  toolbar: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-  },
-  toolbarLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 2,
-  },
-  toolbarRight: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 2,
-  },
-  toolBtn: {
-    paddingHorizontal: 7,
-    paddingVertical: 4,
-    borderRadius: 5,
-  },
-  toolBtnText: {
-    fontSize: 13,
-    fontWeight: "600",
-  },
-  toolDivider: {
-    width: 1,
-    height: 14,
-    marginHorizontal: 6,
   },
   detailInput: {
     minHeight: 160,

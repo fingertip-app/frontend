@@ -40,6 +40,7 @@ export function MasterExperienceCreateScreen() {
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("");
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
+  const [difficulty, setDifficulty] = useState<"BEGINNER" | "INTERMEDIATE" | "ADVANCED">("BEGINNER");
   const [mainImage, setMainImage] = useState<string | null>(null);
   const defaultStartDate = new Date();
   defaultStartDate.setDate(defaultStartDate.getDate() + 1);
@@ -62,6 +63,11 @@ export function MasterExperienceCreateScreen() {
   const [hasReservedSchedules, setHasReservedSchedules] = useState(false);
 
   const CATEGORIES = ["도예", "목공", "한지", "염색", "전통음식", "기타"];
+  const DIFFICULTY_OPTIONS: { value: "BEGINNER" | "INTERMEDIATE" | "ADVANCED"; label: string }[] = [
+    { value: "BEGINNER", label: "초급" },
+    { value: "INTERMEDIATE", label: "중급" },
+    { value: "ADVANCED", label: "고급" },
+  ];
   const DAYS = ["월", "화", "수", "목", "금", "토", "일"];
   const WEEKDAY_LABELS = ["일", "월", "화", "수", "목", "금", "토"];
 
@@ -75,6 +81,7 @@ export function MasterExperienceCreateScreen() {
         setTitle(experience.title ?? "");
         setDescription(experience.description ?? "");
         setCategory(experience.category ?? "");
+        setDifficulty((experience.difficulty as "BEGINNER" | "INTERMEDIATE" | "ADVANCED") ?? "BEGINNER");
         setPrice(String(experience.price ?? ""));
         setAvailableSlots(String(experience.maxParticipants ?? ""));
         setDurationMinutes(String(experience.durationMinutes ?? ""));
@@ -208,7 +215,7 @@ export function MasterExperienceCreateScreen() {
         category,
         price: parsedPrice,
         maxParticipants: parsedSlots,
-        difficulty: "BEGINNER",
+        difficulty,
         imageUrl: mainImage,
         durationMinutes: parsedDuration,
         supportedLanguages,
@@ -324,6 +331,32 @@ export function MasterExperienceCreateScreen() {
               ))}
             </View>
           )}
+        </View>
+
+        {/* 난이도 선택 */}
+        <View style={styles.inputGroup}>
+          <Text style={[styles.label, { color: colors.text }]}>난이도</Text>
+          <View style={styles.dayGrid}>
+            {DIFFICULTY_OPTIONS.map((option) => {
+              const selected = difficulty === option.value;
+              return (
+                <TouchableOpacity
+                  key={option.value}
+                  style={[
+                    styles.difficultyChip,
+                    { backgroundColor: colors.card, borderColor: colors.border },
+                    selected && { backgroundColor: colors.text, borderColor: colors.text },
+                  ]}
+                  onPress={() => setDifficulty(option.value)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[styles.dayBtnText, { color: selected ? colors.bg : colors.textSecondary }]}>
+                    {option.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
         </View>
 
         {/* 체험명 입력 */}
@@ -495,6 +528,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   dayBtnText: { fontWeight: "600" },
+  difficultyChip: {
+    paddingHorizontal: 16, height: 40, borderRadius: 20,
+    alignItems: "center", justifyContent: "center",
+    borderWidth: 1,
+  },
 
   dropdownHeader: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12, flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   dropdownHeaderText: { fontSize: 15 },
