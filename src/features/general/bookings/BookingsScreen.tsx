@@ -19,7 +19,7 @@ import { MainLayout } from "@/features/general/home/MainLayout";
 import { getMyReservations } from "@/features/reservations/api/reservationsApi";
 import { RootStackParamList } from "@/navigation/RootNavigator";
 import { useTheme } from "@/theme/ThemeContext";
-import type { Reservation, ReservationStatus } from "@/types/api";
+import type { Experience, Reservation, ReservationStatus } from "@/types/api";
 
 type TabType = "upcoming" | "pending" | "past" | "cancelled";
 
@@ -35,6 +35,8 @@ export interface Booking {
   time: string;
   guests: number;
   location: string;
+  locationLat?: number;
+  locationLng?: number;
   imageUri?: string;
   orderNo?: string;
   paidAt?: string;
@@ -91,6 +93,11 @@ function formatPaidAt(iso: string | null) {
   return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일 ${period} ${displayHour}:${String(date.getMinutes()).padStart(2, "0")}`;
 }
 
+function getMainImageUri(experience: Experience | null): string | undefined {
+  if (!experience?.images?.length) return undefined;
+  return [...experience.images].sort((a, b) => a.displayOrder - b.displayOrder)[0].imageUrl;
+}
+
 async function toBooking(reservation: Reservation): Promise<Booking> {
   const experience = await getExperience(reservation.experienceId).catch(() => null);
   const artisan = experience ? await getArtisan(experience.artisanId).catch(() => null) : null;
@@ -107,6 +114,9 @@ async function toBooking(reservation: Reservation): Promise<Booking> {
     time: formatTime(reservation.reservedDateTime),
     guests: reservation.numberOfParticipants,
     location: experience?.locationAddress ?? "-",
+    locationLat: experience?.locationLat,
+    locationLng: experience?.locationLng,
+    imageUri: getMainImageUri(experience),
     totalPrice: reservation.totalPrice,
     paymentRequired: reservation.status === "APPROVED",
     rejectionReason: reservation.rejectionReason,

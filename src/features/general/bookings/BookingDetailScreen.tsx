@@ -10,6 +10,7 @@ import {
   Platform,
   Alert,
   ActivityIndicator,
+  Linking,
 } from "react-native";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -187,7 +188,19 @@ export function BookingDetailScreen() {
             <View style={{ flex: 1 }}>
               <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>장소</Text>
               <Text style={[styles.infoValue, { color: colors.text }]}>{booking.location}</Text>
-              <TouchableOpacity style={[styles.mapBtn, { backgroundColor: colors.bg }]} activeOpacity={0.75}>
+              <TouchableOpacity
+                style={[styles.mapBtn, { backgroundColor: colors.bg }]}
+                activeOpacity={0.75}
+                onPress={() => {
+                  const url =
+                    booking.locationLat && booking.locationLng
+                      ? `https://map.kakao.com/link/map/${encodeURIComponent(booking.title)},${booking.locationLat},${booking.locationLng}`
+                      : `https://map.kakao.com/?q=${encodeURIComponent(booking.location)}`;
+                  Linking.openURL(url).catch(() => {
+                    Alert.alert("알림", "지도를 열 수 없습니다.");
+                  });
+                }}
+              >
                 <Text style={[styles.mapBtnText, { color: colors.accent }]}>지도보기</Text>
                 <Ionicons name="chevron-forward" size={12} color={colors.accent} />
               </TouchableOpacity>
