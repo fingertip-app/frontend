@@ -19,6 +19,7 @@ import { MasterHeader } from "../components/MasterHeader";
 import { logout } from "@/features/auth/api/authApi";
 import { useMasterAccount } from "@/features/master/hooks/useMasterAccount";
 import { useTheme } from "@/theme/ThemeContext";
+import { useUnreadNotificationCount } from "@/features/notifications/useUnreadNotificationCount";
 
 // ─── 통계 아이템 ──────────────────────────────────────────────────────────────
 function StatItem({ label, value, onPress }: { label: string; value: string; onPress?: () => void }) {
@@ -43,6 +44,7 @@ export function MasterMyPageScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { colors } = useTheme();
   const { data, error, reload } = useMasterAccount();
+  const unreadCount = useUnreadNotificationCount();
 
   useFocusEffect(
     React.useCallback(() => {
@@ -79,7 +81,10 @@ export function MasterMyPageScreen() {
               style={{ marginRight: 16 }}
               onPress={() => navigation.navigate("Notifications")}
             >
-              <Ionicons name="notifications-outline" size={23} color={colors.text} />
+              <View>
+                <Ionicons name="notifications-outline" size={23} color={colors.text} />
+                {unreadCount > 0 && <View style={[ms.notiBadge, { borderColor: colors.bg }]} />}
+              </View>
             </TouchableOpacity>
             <TouchableOpacity hitSlop={10} onPress={() => navigation.navigate("Settings")}>
               <Ionicons name="settings-outline" size={23} color={colors.text} />
@@ -221,6 +226,7 @@ export function MasterMyPageScreen() {
 const ms = StyleSheet.create({
   safeArea: { flex: 1 },
   scroll: { paddingBottom: 48 },
+  notiBadge: { position: "absolute", top: -1, right: -1, width: 8, height: 8, borderRadius: 4, backgroundColor: "#E04848", borderWidth: 1 },
 
   profileCard: { marginHorizontal: 16, borderRadius: 18, padding: 18, borderWidth: 1, marginBottom: 20, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 },
   profileRow: { flexDirection: "row", alignItems: "center" },

@@ -16,7 +16,7 @@ import { getCurrentProfile } from "@/features/auth/api/authApi";
 import { useTheme } from "@/theme/ThemeContext";
 import type { Notification } from "@/types/api";
 import {
-  getUserNotifications,
+  getUnreadNotifications,
   markAllNotificationsAsRead,
   markNotificationAsRead,
 } from "./api/notificationsApi";
@@ -40,7 +40,7 @@ export function NotificationsScreen() {
         return;
       }
       setUserId(profile.id);
-      const data = await getUserNotifications(profile.id);
+      const data = await getUnreadNotifications(profile.id);
       setNotifications(data);
     } catch (error) {
       console.error("Failed to load notifications:", error);
@@ -60,9 +60,7 @@ export function NotificationsScreen() {
 
     try {
       await markNotificationAsRead(notification.id);
-      setNotifications((prev) =>
-        prev.map((item) => (item.id === notification.id ? { ...item, isRead: true } : item)),
-      );
+      setNotifications((prev) => prev.filter((item) => item.id !== notification.id));
     } catch (error) {
       console.error("Failed to mark as read:", error);
       Alert.alert("오류", "알림 읽음 처리에 실패했습니다.");
@@ -80,7 +78,7 @@ export function NotificationsScreen() {
 
     try {
       await markAllNotificationsAsRead(userId);
-      setNotifications((prev) => prev.map((item) => ({ ...item, isRead: true })));
+      setNotifications([]);
     } catch (error) {
       console.error("Failed to mark all as read:", error);
       Alert.alert("오류", "알림 읽음 처리에 실패했습니다.");

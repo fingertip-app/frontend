@@ -19,6 +19,7 @@ import { logout, getCurrentProfile, deleteAccount } from "@/features/auth/api/au
 import { UserProfile } from "@/features/auth/types";
 import { getUserStats, UserStats } from "@/features/general/mypage/api/mypageApi";
 import { useTheme } from "@/theme/ThemeContext";
+import { useUnreadNotificationCount } from "@/features/notifications/useUnreadNotificationCount";
 
 // ─── 관심 태그 pill ───────────────────────────────────────────────────────────
 function InterestTag({ label }: { label: string }) {
@@ -78,10 +79,12 @@ function ActivityCard({
   icon,
   label,
   onPress,
+  showBadge,
 }: {
   icon: keyof typeof Ionicons.glyphMap;
   label: string;
   onPress?: () => void;
+  showBadge?: boolean;
 }) {
   const { colors } = useTheme();
   return (
@@ -92,6 +95,7 @@ function ActivityCard({
     >
       <View style={[ac.iconWrap, { backgroundColor: colors.bg }]}>
         <Ionicons name={icon} size={26} color={colors.accent} />
+        {showBadge && <View style={[ac.badge, { borderColor: colors.card }]} />}
       </View>
       <Text style={[ac.label, { color: colors.text }]}>{label}</Text>
     </TouchableOpacity>
@@ -120,6 +124,7 @@ const ac = StyleSheet.create({
     marginBottom: 12,
   },
   label: { fontSize: 14, fontWeight: "600" },
+  badge: { position: "absolute", top: 0, right: 2, width: 10, height: 10, borderRadius: 5, backgroundColor: "#E04848", borderWidth: 1.5 },
 });
 
 // ─── 메인 스크린 ──────────────────────────────────────────────────────────────
@@ -129,6 +134,7 @@ export function MyPageScreen() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [stats, setStats] = useState<UserStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const unreadCount = useUnreadNotificationCount();
 
   useFocusEffect(
     useCallback(() => {
@@ -270,7 +276,12 @@ export function MyPageScreen() {
 
         {/* ── 활동 카드 ── */}
         <View style={ms.grid}>
-          <ActivityCard icon="notifications-outline" label="알림" onPress={() => navigation.navigate("Notifications")} />
+          <ActivityCard
+            icon="notifications-outline"
+            label="알림"
+            onPress={() => navigation.navigate("Notifications")}
+            showBadge={unreadCount > 0}
+          />
           <ActivityCard
             icon="calendar-outline"
             label="예약 내역"

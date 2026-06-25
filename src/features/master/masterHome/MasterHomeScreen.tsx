@@ -79,7 +79,7 @@ export function MasterHomeScreen({
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.bg }]}>
       {/* ── 공통 상단바 및 서랍 ── */}
-      <MasterHeader activeItem="홈" hasNotification={false} />
+      <MasterHeader activeItem="홈" />
 
       {/* ── 본문 스크롤 ── */}
       <ScrollView

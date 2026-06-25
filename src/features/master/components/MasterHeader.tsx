@@ -7,18 +7,19 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "@/navigation/RootNavigator";
 import { useTheme } from "@/theme/ThemeContext";
 import { LogoMark } from "@/components/Logo";
+import { useUnreadNotificationCount } from "@/features/notifications/useUnreadNotificationCount";
 
 interface MasterHeaderProps {
   title?: string;
   activeItem?: string;
-  hasNotification?: boolean;
   rightComponent?: React.ReactNode;
 }
 
-export function MasterHeader({ title = "손끝", activeItem = "홈", hasNotification = true, rightComponent }: MasterHeaderProps) {
+export function MasterHeader({ title = "손끝", activeItem = "홈", rightComponent }: MasterHeaderProps) {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { colors } = useTheme();
+  const unreadCount = useUnreadNotificationCount();
 
   return (
     <>
@@ -36,7 +37,7 @@ export function MasterHeader({ title = "손끝", activeItem = "홈", hasNotifica
           <TouchableOpacity onPress={() => navigation.navigate("Notifications")} hitSlop={12}>
             <View>
               <Ionicons name="notifications-outline" size={24} color={colors.text} />
-              {hasNotification && <View style={[styles.notiBadge, { borderColor: colors.bg }]} />}
+              {unreadCount > 0 && <View style={[styles.notiBadge, { borderColor: colors.bg }]} />}
             </View>
           </TouchableOpacity>
         )}
