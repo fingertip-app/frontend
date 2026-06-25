@@ -8,6 +8,9 @@ import {
   Image,
   ScrollView,
   Platform,
+  Dimensions,
+  NativeSyntheticEvent,
+  NativeScrollEvent,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -26,6 +29,8 @@ type Props = {
   exp: Experience;
   onClose: () => void;
 };
+
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
 function InfoChip({ icon, label }: { icon: React.ReactNode; label: string }) {
   const { colors } = useTheme();
@@ -88,9 +93,19 @@ export function DetailBottomSheet({ exp, onClose }: Props) {
   const [isLoadingReviews, setIsLoadingReviews] = useState(true);
   const [isWished, setIsWished] = useState(false);
   const [isWishLoading, setIsWishLoading] = useState(false);
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
   const requestIdRef = useRef(0);
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { colors } = useTheme();
+
+  const galleryImages = fullExperience?.images?.length
+    ? [...fullExperience.images].sort((a, b) => a.displayOrder - b.displayOrder).map((img) => img.imageUrl)
+    : [exp.imageUri];
+
+  const handleImageScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const index = Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH);
+    setActiveImageIndex(index);
+  };
 
   const loadExperience = useCallback(async () => {
     const requestId = requestIdRef.current + 1;
@@ -126,6 +141,7 @@ export function DetailBottomSheet({ exp, onClose }: Props) {
 
   useEffect(() => {
     loadExperience();
+    setActiveImageIndex(0);
 
     return () => {
       requestIdRef.current += 1;
@@ -268,13 +284,52 @@ export function DetailBottomSheet({ exp, onClose }: Props) {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 110 }}
         >
-          {/* 썸네일 이미지 */}
+          {/* 썸네일 이미지 갤러리 */}
           <View>
-            <Image
-              source={{ uri: exp.imageUri }}
-              style={{ width: "100%", height: 240 }}
-              resizeMode="cover"
-            />
+            <ScrollView
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              onScroll={handleImageScroll}
+              scrollEventThrottle={16}
+            >
+              {galleryImages.map((uri, index) => (
+                <Image
+                  key={`${uri}-${index}`}
+                  source={{ uri }}
+                  style={{ width: SCREEN_WIDTH, height: 240 }}
+                  resizeMode="cover"
+                />
+              ))}
+            </ScrollView>
+
+            {galleryImages.length > 1 && (
+              <View
+                style={{
+                  position: "absolute",
+                  bottom: 14,
+                  left: 0,
+                  right: 0,
+                  flexDirection: "row",
+                  justifyContent: "center",
+                  gap: 6,
+                }}
+              >
+                {galleryImages.map((_, index) => (
+                  <View
+                    key={index}
+                    style={{
+                      width: index === activeImageIndex ? 16 : 6,
+                      height: 6,
+                      borderRadius: 3,
+                      backgroundColor:
+                        index === activeImageIndex ? "#FFFFFF" : "rgba(255,255,255,0.5)",
+                    }}
+                  />
+                ))}
+              </View>
+            )}
+
             <TouchableOpacity
               onPress={handleToggleWishlist}
               disabled={isWishLoading}
