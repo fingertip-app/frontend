@@ -143,6 +143,8 @@ export interface Review {
   sentimentScore: number | null
   keywords: string[] | null
   createdAt: string
+  replyContent?: string | null
+  repliedAt?: string | null
 }
 
 // ========== AI Explain ==========
