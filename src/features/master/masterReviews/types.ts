@@ -6,6 +6,8 @@ export interface MasterReviewItem {
   rating: number
   className: string
   content: string
+  replyContent?: string
+  repliedAt?: string
 }
 
 export interface MasterReviewsData {
