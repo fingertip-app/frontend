@@ -2,6 +2,7 @@ import { getMyArtisan } from '@/features/artisans/api/artisanApi'
 import { getArtisanExperiences } from '@/features/experiences/api/experiencesApi'
 import { getExperienceReviews } from '@/features/reviews/api/reviewsApi'
 import { getUser } from '@/features/users/api/usersApi'
+import { apiPost, apiPut, apiDelete } from '@/services/api'
 import type { Review } from '@/types/api'
 import type { MasterReviewItem, MasterReviewsData } from './types'
 
@@ -41,6 +42,8 @@ export async function getMasterReviews(): Promise<MasterReviewsData> {
     rating: review.rating,
     className: experienceById.get(review.experienceId)?.title ?? '체험',
     content: review.content,
+    replyContent: review.replyContent,
+    repliedAt: review.repliedAt,
   }))
 
   return {
@@ -48,4 +51,32 @@ export async function getMasterReviews(): Promise<MasterReviewsData> {
     reviewCount: reviews.length,
     reviews: items,
   }
+}
+
+export interface CreateReplyRequest {
+  replyContent: string
+}
+
+/**
+ * 답글 작성
+ * POST /reviews/{reviewId}/reply
+ */
+export async function createReviewReply(reviewId: number, replyContent: string): Promise<Review> {
+  return apiPost<CreateReplyRequest, Review>(`/reviews/${reviewId}/reply`, { replyContent })
+}
+
+/**
+ * 답글 수정
+ * PUT /reviews/{reviewId}/reply
+ */
+export async function updateReviewReply(reviewId: number, replyContent: string): Promise<Review> {
+  return apiPut<CreateReplyRequest, Review>(`/reviews/${reviewId}/reply`, { replyContent })
+}
+
+/**
+ * 답글 삭제
+ * DELETE /reviews/{reviewId}/reply
+ */
+export async function deleteReviewReply(reviewId: number): Promise<void> {
+  return apiDelete<void>(`/reviews/${reviewId}/reply`)
 }

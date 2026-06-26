@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
@@ -16,6 +17,7 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
 import { RootStackParamList } from "@/navigation/RootNavigator";
 import { useTheme } from "@/theme/ThemeContext";
+import { createReviewReply, updateReviewReply } from "./masterReviewsApi";
 
 export function MasterReviewReplyScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -24,15 +26,33 @@ export function MasterReviewReplyScreen() {
   const { review } = route.params;
 
   const [replyContent, setReplyContent] = useState(review.replyContent || "");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const isEditing = !!review.replyContent;
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!replyContent.trim()) {
       Alert.alert("알림", "답글 내용을 입력해주세요.");
       return;
     }
-    
-    Alert.alert("알림", "후기 답글 기능은 백엔드 API 구현이 필요합니다.");
+
+    setIsSubmitting(true);
+    try {
+      if (isEditing) {
+        await updateReviewReply(review.id, replyContent.trim());
+      } else {
+        await createReviewReply(review.id, replyContent.trim());
+      }
+
+      // 성공 시 즉시 뒤로가기 (Alert 없이)
+      navigation.goBack();
+    } catch (error) {
+      Alert.alert(
+        "오류",
+        error instanceof Error ? error.message : "답글 처리에 실패했습니다."
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -101,12 +121,16 @@ export function MasterReviewReplyScreen() {
         {/* ── 하단 등록 버튼 ── */}
         <View style={[styles.footer, { backgroundColor: colors.bg, borderTopColor: colors.border }]}>
           <TouchableOpacity
-            style={[styles.submitBtn, { backgroundColor: colors.text }, !replyContent.trim() && styles.submitBtnDisabled]}
+            style={[styles.submitBtn, { backgroundColor: colors.text }, (!replyContent.trim() || isSubmitting) && styles.submitBtnDisabled]}
             activeOpacity={0.8}
             onPress={handleSubmit}
-            disabled={!replyContent.trim()}
+            disabled={!replyContent.trim() || isSubmitting}
           >
-            <Text style={[styles.submitBtnText, { color: colors.bg }]}>{isEditing ? "수정하기" : "등록하기"}</Text>
+            {isSubmitting ? (
+              <ActivityIndicator size="small" color={colors.bg} />
+            ) : (
+              <Text style={[styles.submitBtnText, { color: colors.bg }]}>{isEditing ? "수정하기" : "등록하기"}</Text>
+            )}
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
