@@ -11,13 +11,15 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useFocusEffect } from "@react-navigation/native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
 import { MasterBottomTabs } from "../components/MasterBottomTabs";
 import { MasterHeader } from "../components/MasterHeader";
 import { useMasterReviews } from "./useMasterReviews";
 import { useTheme } from "@/theme/ThemeContext";
 import { summarizeReview } from "@/features/reviews/api/reviewsApi";
+import { RootStackParamList } from "@/navigation/RootNavigator";
 
 // 별점 렌더링 헬퍼
 const renderStars = (rating: number, goldColor: string, emptyColor: string) => {
@@ -36,6 +38,7 @@ const renderStars = (rating: number, goldColor: string, emptyColor: string) => {
 };
 
 export function MasterReviewsScreen() {
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { colors } = useTheme();
   const [sortOption, setSortOption] = useState<"latest" | "rating">("latest");
   const { data, isLoading, error, reload } = useMasterReviews();
@@ -63,8 +66,8 @@ export function MasterReviewsScreen() {
     return dateB - dateA;
   });
 
-  const handleUnsupportedReply = () => {
-    Alert.alert("알림", "후기 답글 기능은 백엔드 API 구현이 필요합니다.");
+  const handleReply = (review: (typeof sortedReviews)[number]) => {
+    navigation.navigate("MasterReviewReply", { review });
   };
 
   // AI 요약 버튼 핸들러
@@ -146,7 +149,7 @@ export function MasterReviewsScreen() {
 
       {/* ── 미답변 토글 스위치 ── */}
       <View style={styles.toggleRow}>
-        <Text style={[styles.toggleLabel, { color: colors.textSecondary }]}>미답변 리뷰만 보기 (준비 중)</Text>
+        <Text style={[styles.toggleLabel, { color: colors.textSecondary }]}>미답변 리뷰만 보기</Text>
         <Switch
           value={false}
           disabled
@@ -219,10 +222,10 @@ export function MasterReviewsScreen() {
               <TouchableOpacity
                 style={[styles.replyBtn, { backgroundColor: colors.bg, borderColor: colors.border }]}
                 activeOpacity={0.7}
-                onPress={handleUnsupportedReply}
+                onPress={() => handleReply(item)}
               >
                 <Ionicons name="chatbubble-ellipses-outline" size={16} color={colors.text} />
-                <Text style={[styles.replyBtnText, { color: colors.text }]}>답글 (준비 중)</Text>
+                <Text style={[styles.replyBtnText, { color: colors.text }]}>답글</Text>
               </TouchableOpacity>
             </View>
           </View>
