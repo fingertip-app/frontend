@@ -1,0 +1,350 @@
+import React, { useState } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  TextInput,
+  Platform,
+  ScrollView,
+  KeyboardAvoidingView,
+  Image,
+  Alert,
+  ActivityIndicator,
+} from "react-native";
+import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
+import { Ionicons } from "@expo/vector-icons";
+import { RootStackParamList } from "@/navigation/RootNavigator";
+import { MainLayout } from "@/features/general/home/MainLayout";
+import { createReview, updateReview } from "@/features/reviews/api/reviewsApi";
+import { useTheme } from "@/theme/ThemeContext";
+
+const MAX_PHOTOS = 5;
+const MAX_CHARS = 1000;
+
+const RATING_LABELS: Record<number, string> = {
+  0: "별점을 선택해주세요",
+  1: "아쉬워요",
+  2: "그저 그래요",
+  3: "보통이에요",
+  4: "좋았어요",
+  5: "최고예요!",
+};
+
+export function ReviewScreen() {
+  const navigation = useNavigation();
+  const route = useRoute<RouteProp<RootStackParamList, "Review">>();
+  const { booking, existingReview } = route.params;
+  const isEditing = !!existingReview;
+  const { colors } = useTheme();
+
+  const [rating, setRating] = useState(existingReview?.rating ?? 0);
+  const [hovered, setHovered] = useState(0);
+  const [content, setContent] = useState(existingReview?.content ?? "");
+  // 실제 앱에서는 ImagePicker를 사용. 여기서는 더미 URI 배열로 대체.
+  const [photos, setPhotos] = useState<string[]>(existingReview?.imageUrls ?? []);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const displayRating = hovered || rating;
+
+  const handleSubmit = async () => {
+    if (!booking.experienceId) {
+      Alert.alert("오류", "체험 정보를 찾을 수 없습니다.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const payload = {
+        reservationId: booking.reservationId,
+        experienceId: booking.experienceId,
+        rating,
+        content,
+        imageUrl: photos[0],
+      };
+      if (existingReview) {
+        await updateReview(existingReview.id, payload);
+      } else {
+        await createReview(payload);
+      }
+      Alert.alert("완료", isEditing ? "후기가 수정되었습니다." : "리뷰가 등록되었습니다!");
+      navigation.goBack();
+    } catch (e) {
+      Alert.alert("오류", e instanceof Error ? e.message : "후기 등록에 실패했습니다.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const canSubmit = rating > 0 && content.length >= 10 && !isSubmitting;
+
+  return (
+    <MainLayout>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      >
+        {/* 헤더 */}
+        <View style={[styles.header, { backgroundColor: colors.bg, borderBottomColor: colors.border }]}>
+          <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={10}>
+            <Ionicons name="arrow-back" size={24} color={colors.text} />
+          </TouchableOpacity>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>{isEditing ? "후기 수정하기" : "후기 작성하기"}</Text>
+          <View style={{ width: 24 }} />
+        </View>
+
+        <ScrollView
+          contentContainerStyle={styles.container}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          {/* ── 체험 정보 카드 ── */}
+          <View style={[styles.expCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Image
+              source={{ uri: booking.imageUri }}
+              style={[styles.expThumb, { backgroundColor: colors.border }]}
+              resizeMode="cover"
+            />
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.expLabel, { color: colors.textSecondary }]}>EXPERIENCE</Text>
+              <Text style={[styles.expTitle, { color: colors.text }]} numberOfLines={2}>
+                {booking.title}
+              </Text>
+              <Text style={[styles.expArtisan, { color: colors.textSecondary }]} numberOfLines={1}>
+                {booking.artisan ?? "장인"}
+              </Text>
+            </View>
+          </View>
+
+          {/* ── 별점 선택 ── */}
+          <View style={styles.ratingSection}>
+            <Text style={[styles.ratingQuestion, { color: colors.text }]}>경험은 어떠셨나요?</Text>
+            <View style={styles.starsRow}>
+              {[1, 2, 3, 4, 5].map((star) => (
+                <TouchableOpacity
+                  key={star}
+                  onPress={() => setRating(star)}
+                  onPressIn={() => setHovered(star)}
+                  onPressOut={() => setHovered(0)}
+                  activeOpacity={0.8}
+                  hitSlop={6}
+                >
+                  <Ionicons
+                    name={star <= displayRating ? "star" : "star-outline"}
+                    size={42}
+                    color={star <= displayRating ? colors.gold : colors.border}
+                  />
+                </TouchableOpacity>
+              ))}
+            </View>
+            <Text style={[styles.ratingLabel, { color: colors.textSecondary }]}>{RATING_LABELS[displayRating]}</Text>
+          </View>
+
+          {/* ── 사진 추가 ── */}
+          <View style={styles.sectionBlock}>
+            <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>ADD PHOTOS</Text>
+            <View style={styles.photoGrid}>
+              {/* 첫 번째 셀: 추가 버튼 */}
+              <TouchableOpacity
+                style={[styles.photoCell, styles.photoCellAdd, { borderColor: colors.border, backgroundColor: colors.card }]}
+                activeOpacity={0.7}
+                onPress={() => {
+                  // TODO: ImagePicker 연동
+                }}
+              >
+                <Ionicons name="camera-outline" size={24} color={colors.textSecondary} />
+                <Text style={[styles.photoCount, { color: colors.textSecondary }]}>
+                  {photos.length}/{MAX_PHOTOS}
+                </Text>
+              </TouchableOpacity>
+
+              {/* 추가된 사진 셀들 */}
+              {Array.from({ length: MAX_PHOTOS - 1 }).map((_, i) => {
+                const uri = photos[i];
+                return (
+                  <View key={i} style={[styles.photoCell, { backgroundColor: colors.border }]}>
+                    {uri ? (
+                      <>
+                        <Image
+                          source={{ uri }}
+                          style={StyleSheet.absoluteFill}
+                          resizeMode="cover"
+                        />
+                        <TouchableOpacity
+                          style={styles.photoRemove}
+                          onPress={() =>
+                            setPhotos((prev) => prev.filter((_, idx) => idx !== i))
+                          }
+                        >
+                          <Ionicons name="close" size={12} color="#FFF" />
+                        </TouchableOpacity>
+                      </>
+                    ) : null}
+                  </View>
+                );
+              })}
+            </View>
+          </View>
+
+          {/* ── 후기 텍스트 ── */}
+          <View style={styles.sectionBlock}>
+            <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>YOUR STORY</Text>
+            <TextInput
+              style={[styles.textInput, { color: colors.text }]}
+              placeholder="명인님과의 소중한 경험을 기록해주세요."
+              placeholderTextColor={colors.textSecondary}
+              multiline
+              textAlignVertical="top"
+              value={content}
+              onChangeText={(t) => t.length <= MAX_CHARS && setContent(t)}
+            />
+            {/* 구분선 + 글자수 */}
+            <View style={styles.inputFooter}>
+              <View style={[styles.inputDivider, { backgroundColor: colors.border }]} />
+              <Text style={[styles.charCount, { color: colors.textSecondary }]}>
+                {content.length} / {MAX_CHARS}
+              </Text>
+            </View>
+          </View>
+        </ScrollView>
+
+        {/* 하단 등록 버튼 */}
+        <View style={[styles.footer, { backgroundColor: colors.bg, borderTopColor: colors.border }]}>
+          <TouchableOpacity
+            style={[styles.submitBtn, { backgroundColor: colors.accent }, !canSubmit && { backgroundColor: colors.border }]}
+            activeOpacity={0.85}
+            onPress={handleSubmit}
+            disabled={!canSubmit}
+          >
+            {isSubmitting ? (
+              <ActivityIndicator color={colors.bg} />
+            ) : (
+              <Text style={[styles.submitBtnText, { color: colors.bg }]}>{isEditing ? "수정하기" : "등록하기"}</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
+    </MainLayout>
+  );
+}
+
+const PHOTO_CELL_SIZE = (340 - 32 - 40) / 4; // 4열 기준 (여백 고려)
+
+const styles = StyleSheet.create({
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+  },
+  headerTitle: { fontSize: 17, fontWeight: "700" },
+
+  container: { padding: 20, paddingBottom: 40 },
+
+  // 체험 카드
+  expCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: 14,
+    padding: 14,
+    gap: 12,
+    borderWidth: 1,
+    marginBottom: 32,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  expThumb: {
+    width: 68,
+    height: 68,
+    borderRadius: 10,
+  },
+  expLabel: {
+    fontSize: 10,
+    fontWeight: "700",
+    letterSpacing: 1,
+    marginBottom: 4,
+  },
+  expTitle: { fontSize: 15, fontWeight: "700", marginBottom: 4, lineHeight: 20 },
+  expArtisan: { fontSize: 12 },
+
+  // 별점
+  ratingSection: { alignItems: "center", marginBottom: 32 },
+  ratingQuestion: { fontSize: 17, fontWeight: "600", marginBottom: 16 },
+  starsRow: { flexDirection: "row", gap: 8, marginBottom: 10 },
+  ratingLabel: { fontSize: 14 },
+
+  // 섹션 공통
+  sectionBlock: { marginBottom: 28 },
+  sectionLabel: {
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 1.2,
+    marginBottom: 12,
+  },
+
+  // 사진 그리드
+  photoGrid: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  photoCell: {
+    width: PHOTO_CELL_SIZE,
+    height: PHOTO_CELL_SIZE,
+    borderRadius: 10,
+    overflow: "hidden",
+  },
+  photoCellAdd: {
+    borderWidth: 1.5,
+    borderStyle: "dashed",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 4,
+  },
+  photoCount: { fontSize: 11, fontWeight: "600" },
+  photoRemove: {
+    position: "absolute",
+    top: 4,
+    right: 4,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  // 텍스트 입력
+  textInput: {
+    fontSize: 15,
+    lineHeight: 24,
+    minHeight: 200,
+  },
+  inputFooter: { marginTop: 12 },
+  inputDivider: {
+    height: 1,
+    marginBottom: 8,
+  },
+  charCount: {
+    fontSize: 12,
+    textAlign: "right",
+  },
+
+  // 하단
+  footer: {
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: Platform.OS === "ios" ? 34 : 20,
+    borderTopWidth: 1,
+  },
+  submitBtn: {
+    borderRadius: 50,
+    paddingVertical: 17,
+    alignItems: "center",
+  },
+  submitBtnText: { fontSize: 16, fontWeight: "700" },
+});
