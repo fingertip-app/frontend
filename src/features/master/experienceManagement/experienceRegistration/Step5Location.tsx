@@ -16,16 +16,10 @@ import * as Location from "expo-location";
 import { createRegisteredExperience } from "../experienceManagementApi";
 import type { ExperienceRegistrationParams } from "../types";
 import { useTheme } from "@/theme/ThemeContext";
-import { searchRegions } from "@/lib/koreanRegions";
+import { searchKakaoAddress, reverseGeocodeKakaoAddress, type KakaoAddressResult } from "@/lib/kakaoAddressSearch";
 import { KakaoMapView } from "@/components/KakaoMapView";
 
 const STEP_LABELS = ["기본 정보", "사진", "일정 등록", "가격/인원", "장소"];
-
-// 행정구역 region(시/도) 표기를 REGIONS의 짧은 키와 맞추기 위한 접미사 제거
-function normalizeCityName(raw?: string | null): string {
-  if (!raw) return "";
-  return raw.replace(/(특별자치시|특별자치도|광역시|특별시|도)$/u, "");
-}
 
 export function Step5Location() {
   const navigation = useNavigation<any>();
@@ -34,49 +28,46 @@ export function Step5Location() {
   const params = (route.params ?? {}) as Partial<ExperienceRegistrationParams>;
   const currentStep = 5;
 
-  const [regionSearchText, setRegionSearchText] = useState("");
-  const [selectedCity, setSelectedCity] = useState<string | null>(null);
-  const [selectedDistrict, setSelectedDistrict] = useState<string | null>(null);
+  const [addressSearchText, setAddressSearchText] = useState("");
+  const [addressSuggestions, setAddressSuggestions] = useState<KakaoAddressResult[]>([]);
+  const [selectedAddress, setSelectedAddress] = useState<KakaoAddressResult | null>(null);
   const [addressDetail, setAddressDetail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
-  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [isSearching, setIsSearching] = useState(false);
 
-  const regionSuggestions = searchRegions(regionSearchText).slice(0, 8);
-  const regionLabel = selectedCity && selectedDistrict ? `${selectedCity} ${selectedDistrict}` : null;
-
-  const selectRegion = (city: string, district: string) => {
-    setSelectedCity(city);
-    setSelectedDistrict(district);
-    setRegionSearchText("");
-  };
-
-  const clearRegion = () => {
-    setSelectedCity(null);
-    setSelectedDistrict(null);
-    setCoords(null);
-  };
-
-  // 지역/상세주소가 정해지면 실제 지도용 좌표를 베스트 에포트로 추정
+  // 입력 중 카카오 주소검색 API를 디바운스해서 호출
   useEffect(() => {
-    if (!regionLabel) {
-      setCoords(null);
+    if (!addressSearchText.trim()) {
+      setAddressSuggestions([]);
       return;
     }
     let cancelled = false;
-    const fullAddress = addressDetail ? `${regionLabel} ${addressDetail}` : regionLabel;
-    Location.geocodeAsync(fullAddress)
-      .then((results) => {
-        if (cancelled || !results.length) return;
-        setCoords({ lat: results[0].latitude, lng: results[0].longitude });
-      })
-      .catch(() => {
-        if (!cancelled) setCoords(null);
-      });
+    setIsSearching(true);
+    const timer = setTimeout(() => {
+      searchKakaoAddress(addressSearchText)
+        .then((results) => {
+          if (!cancelled) setAddressSuggestions(results);
+        })
+        .finally(() => {
+          if (!cancelled) setIsSearching(false);
+        });
+    }, 300);
     return () => {
       cancelled = true;
+      clearTimeout(timer);
     };
-  }, [regionLabel, addressDetail]);
+  }, [addressSearchText]);
+
+  const selectAddress = (address: KakaoAddressResult) => {
+    setSelectedAddress(address);
+    setAddressSearchText("");
+    setAddressSuggestions([]);
+  };
+
+  const clearAddress = () => {
+    setSelectedAddress(null);
+  };
 
   const handleUseCurrentLocation = async () => {
     setIsLocating(true);
@@ -87,25 +78,12 @@ export function Step5Location() {
         return;
       }
       const position = await Location.getCurrentPositionAsync({});
-      const [place] = await Location.reverseGeocodeAsync({
-        latitude: position.coords.latitude,
-        longitude: position.coords.longitude,
-      });
-      if (!place) {
-        Alert.alert("알림", "현재 위치의 주소를 확인할 수 없어요.");
+      const label = await reverseGeocodeKakaoAddress(position.coords.latitude, position.coords.longitude);
+      if (!label) {
+        Alert.alert("알림", "현재 위치의 주소를 확인할 수 없어요. 검색으로 직접 선택해주세요.");
         return;
       }
-      const city = normalizeCityName(place.region);
-      const matches = searchRegions(place.district || place.city || "").filter((r) => r.city === city);
-      if (city && matches.length) {
-        selectRegion(matches[0].city, matches[0].district);
-        setAddressDetail([place.street, place.name].filter(Boolean).join(" "));
-      } else {
-        Alert.alert("알림", "현재 위치의 지역을 자동으로 찾지 못했어요. 목록에서 직접 선택해주세요.");
-        setAddressDetail(
-          [place.region, place.city, place.district, place.street, place.name].filter(Boolean).join(" "),
-        );
-      }
+      selectAddress({ label, lat: position.coords.latitude, lng: position.coords.longitude });
     } catch {
       Alert.alert("알림", "현재 위치를 가져오지 못했어요.");
     } finally {
@@ -132,13 +110,13 @@ export function Step5Location() {
       ) {
         throw new Error("체험 등록 정보가 누락되었습니다. 첫 단계부터 다시 진행해주세요.");
       }
-      if (!regionLabel) {
-        throw new Error("체험 지역을 선택해주세요.");
+      if (!selectedAddress) {
+        throw new Error("체험 장소를 검색해서 선택해주세요.");
       }
       await createRegisteredExperience(
         params as ExperienceRegistrationParams,
-        addressDetail ? `${regionLabel} ${addressDetail}` : regionLabel,
-        coords ?? undefined,
+        addressDetail ? `${selectedAddress.label} ${addressDetail}` : selectedAddress.label,
+        { lat: selectedAddress.lat, lng: selectedAddress.lng },
       );
       Alert.alert("등록 완료", "체험 클래스가 성공적으로 등록되었습니다!", [
         {
@@ -205,17 +183,17 @@ export function Step5Location() {
           </Text>
         </View>
 
-        {/* ── 지역 선택 ── */}
+        {/* ── 주소 검색 ── */}
         <View style={styles.block}>
-          <Text style={[styles.label, { color: colors.text }]}>지역 선택</Text>
+          <Text style={[styles.label, { color: colors.text }]}>주소 검색</Text>
           <View style={[styles.searchInputBox, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <Ionicons name="search-outline" size={16} color={colors.textSecondary} style={styles.searchIcon} />
             <TextInput
               style={[styles.searchInput, { color: colors.text }]}
-              placeholder="시/군/구 검색 (예: 종로구, 전주시)"
+              placeholder="도로명, 건물명, 지번 등으로 검색"
               placeholderTextColor={colors.textSecondary}
-              value={regionSearchText}
-              onChangeText={setRegionSearchText}
+              value={addressSearchText}
+              onChangeText={setAddressSearchText}
             />
             <TouchableOpacity
               style={[styles.currentLocationChip, { borderColor: colors.border }]}
@@ -227,20 +205,20 @@ export function Step5Location() {
             </TouchableOpacity>
           </View>
 
-          {/* 연관 검색어 */}
-          {regionSearchText.length > 0 && (
+          {/* 실시간 검색 결과 */}
+          {addressSearchText.length > 0 && (
             <View style={[styles.searchResults, { borderColor: colors.border, backgroundColor: colors.card }]}>
-              {regionSuggestions.length > 0 ? (
-                regionSuggestions.map((r, i) => (
+              {isSearching ? (
+                <Text style={[styles.noResultText, { color: colors.textSecondary }]}>검색 중...</Text>
+              ) : addressSuggestions.length > 0 ? (
+                addressSuggestions.map((addr, i) => (
                   <TouchableOpacity
-                    key={`${r.city}-${r.district}-${i}`}
+                    key={`${addr.label}-${i}`}
                     style={[styles.searchResultItem, { borderBottomColor: colors.border }]}
-                    onPress={() => selectRegion(r.city, r.district)}
+                    onPress={() => selectAddress(addr)}
                     activeOpacity={0.7}
                   >
-                    <Text style={[styles.searchResultText, { color: colors.text }]}>
-                      {r.city} {r.district}
-                    </Text>
+                    <Text style={[styles.searchResultText, { color: colors.text }]}>{addr.label}</Text>
                   </TouchableOpacity>
                 ))
               ) : (
@@ -249,11 +227,13 @@ export function Step5Location() {
             </View>
           )}
 
-          {/* 선택된 지역 */}
-          {regionLabel && (
+          {/* 선택된 주소 */}
+          {selectedAddress && (
             <View style={[styles.selectedRegionTag, { backgroundColor: colors.text }]}>
-              <Text style={[styles.selectedRegionTagText, { color: colors.bg }]}>{regionLabel}</Text>
-              <TouchableOpacity onPress={clearRegion}>
+              <Text style={[styles.selectedRegionTagText, { color: colors.bg }]} numberOfLines={1}>
+                {selectedAddress.label}
+              </Text>
+              <TouchableOpacity onPress={clearAddress}>
                 <Ionicons name="close" size={14} color={colors.bg} />
               </TouchableOpacity>
             </View>
@@ -273,24 +253,15 @@ export function Step5Location() {
         </View>
 
         {/* ── 지도 영역 ── */}
-        {regionLabel && (
+        {selectedAddress && (
           <View style={[styles.mapBox, { borderColor: colors.border }]}>
-            {coords ? (
-              <KakaoMapView
-                latitude={coords.lat}
-                longitude={coords.lng}
-                address={addressDetail ? `${regionLabel} ${addressDetail}` : regionLabel}
-                height={200}
-                markerTitle={regionLabel}
-              />
-            ) : (
-              <View style={[styles.mapFallback, { backgroundColor: colors.card }]}>
-                <Ionicons name="location-outline" size={28} color={colors.textSecondary} />
-                <Text style={[styles.mapFallbackText, { color: colors.textSecondary }]}>
-                  {regionLabel}{addressDetail ? ` ${addressDetail}` : ""}
-                </Text>
-              </View>
-            )}
+            <KakaoMapView
+              latitude={selectedAddress.lat}
+              longitude={selectedAddress.lng}
+              address={addressDetail ? `${selectedAddress.label} ${addressDetail}` : selectedAddress.label}
+              height={200}
+              markerTitle={selectedAddress.label}
+            />
           </View>
         )}
 
@@ -313,9 +284,9 @@ export function Step5Location() {
           <Text style={[styles.prevBtnText, { color: colors.text }]}>이전</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.nextBtn, { backgroundColor: colors.text }, (!regionLabel || isSubmitting) && styles.nextBtnDisabled]}
+          style={[styles.nextBtn, { backgroundColor: colors.text }, (!selectedAddress || isSubmitting) && styles.nextBtnDisabled]}
           activeOpacity={0.8}
-          disabled={!regionLabel || isSubmitting}
+          disabled={!selectedAddress || isSubmitting}
           onPress={handleComplete}
         >
           <Text style={[styles.nextBtnText, { color: colors.bg }]}>{isSubmitting ? "등록 중..." : "등록 완료"}</Text>
@@ -424,12 +395,6 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     borderWidth: 1,
   },
-  mapFallback: {
-    flex: 1, gap: 8,
-    justifyContent: "center", alignItems: "center",
-  },
-  mapFallbackText: { fontSize: 13, fontWeight: "600" },
-
   // 안내 박스
   noticeBox: {
     flexDirection: "row", gap: 8,
