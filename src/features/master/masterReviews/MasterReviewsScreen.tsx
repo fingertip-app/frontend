@@ -66,8 +66,10 @@ export function MasterReviewsScreen() {
     return dateB - dateA;
   });
 
-  const handleReply = (review: (typeof sortedReviews)[number]) => {
-    navigation.navigate("MasterReviewReply", { review });
+  const unansweredCount = reviews.filter((review) => !review.replyContent).length;
+
+  const handleReplyPress = (item: typeof reviews[number]) => {
+    navigation.navigate("MasterReviewReply", { review: item });
   };
 
   // AI 요약 버튼 핸들러
@@ -141,8 +143,8 @@ export function MasterReviewsScreen() {
         <View style={[styles.summaryDivider, { backgroundColor: colors.border }]} />
         <View style={styles.summaryBox}>
           <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>미답변</Text>
-          <Text style={[styles.summaryValue, { marginTop: 4, color: "#E05252" }]}>
-            -
+          <Text style={[styles.summaryValue, { marginTop: 4, color: unansweredCount > 0 ? "#E05252" : colors.text }]}>
+            {unansweredCount}
           </Text>
         </View>
       </View>
@@ -202,6 +204,19 @@ export function MasterReviewsScreen() {
             {/* 후기 내용 */}
             <Text style={[styles.reviewContent, { color: colors.text }]}>{item.content}</Text>
 
+            {/* 답글 표시 (있으면) */}
+            {item.replyContent && (
+              <View style={[styles.replyBox, { backgroundColor: colors.bg, borderColor: colors.border }]}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 8 }}>
+                  <Ionicons name="chatbubble" size={14} color={colors.gold} />
+                  <Text style={[styles.replyLabel, { color: colors.gold }]}>장인님의 답글</Text>
+                </View>
+                <Text style={[styles.replyContent, { color: colors.text }]} numberOfLines={2}>
+                  {item.replyContent}
+                </Text>
+              </View>
+            )}
+
             {/* 하단 액션 (AI 요약, 답글 달기) */}
             <View style={[styles.cardFooter, { borderTopColor: colors.bg }]}>
               <TouchableOpacity
@@ -222,10 +237,12 @@ export function MasterReviewsScreen() {
               <TouchableOpacity
                 style={[styles.replyBtn, { backgroundColor: colors.bg, borderColor: colors.border }]}
                 activeOpacity={0.7}
-                onPress={() => handleReply(item)}
+                onPress={() => handleReplyPress(item)}
               >
                 <Ionicons name="chatbubble-ellipses-outline" size={16} color={colors.text} />
-                <Text style={[styles.replyBtnText, { color: colors.text }]}>답글</Text>
+                <Text style={[styles.replyBtnText, { color: colors.text }]}>
+                  {item.replyContent ? "답글 수정" : "답글 달기"}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -265,6 +282,10 @@ const styles = StyleSheet.create({
   classText: { fontSize: 13, fontWeight: "500" },
 
   reviewContent: { fontSize: 15, lineHeight: 22, marginBottom: 12 },
+
+  replyBox: { borderWidth: 1, borderRadius: 12, padding: 14, marginBottom: 12 },
+  replyLabel: { fontSize: 12, fontWeight: "700" },
+  replyContent: { fontSize: 14, lineHeight: 20 },
 
   cardFooter: { flexDirection: "row", justifyContent: "flex-end", borderTopWidth: 1, paddingTop: 12, gap: 8 },
   summaryBtn: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8, minWidth: 90, justifyContent: "center" },
