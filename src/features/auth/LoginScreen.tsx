@@ -284,7 +284,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     alignItems: "center",
   },
-  testAccountLabel: { fontSize: 11, marginBottom: 4 },
+  testAccountLabel: { fontSize: 11, marginBottom: 4, textAlign: "center" },
   testAccountValue: { fontSize: 13, fontWeight: "600" },
   tabText: {
     fontSize: 13,
