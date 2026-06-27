@@ -151,7 +151,7 @@ export function MasterReviewsScreen() {
 
       {/* ── 미답변 토글 스위치 ── */}
       <View style={styles.toggleRow}>
-        <Text style={[styles.toggleLabel, { color: colors.textSecondary }]}>미답변 리뷰만 보기 (준비 중)</Text>
+        <Text style={[styles.toggleLabel, { color: colors.textSecondary }]}>미답변 리뷰만 보기</Text>
         <Switch
           value={false}
           disabled
