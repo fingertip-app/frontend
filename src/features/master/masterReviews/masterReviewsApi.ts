@@ -78,5 +78,5 @@ export async function updateReviewReply(reviewId: number, replyContent: string):
  * DELETE /reviews/{reviewId}/reply
  */
 export async function deleteReviewReply(reviewId: number): Promise<void> {
-  return apiDelete<void>(`/reviews/${reviewId}/reply`)
+  return apiDelete(`/reviews/${reviewId}/reply`)
 }

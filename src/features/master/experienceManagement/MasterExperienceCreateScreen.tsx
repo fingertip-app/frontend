@@ -14,7 +14,9 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
 import { getMyArtisan } from "@/features/artisans/api/artisanApi";
+import { uploadImage } from "@/features/files/api/filesApi";
 import {
   createExperience,
   CreateExperienceRequest,
@@ -42,6 +44,7 @@ export function MasterExperienceCreateScreen() {
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [difficulty, setDifficulty] = useState<"BEGINNER" | "INTERMEDIATE" | "ADVANCED">("BEGINNER");
   const [mainImage, setMainImage] = useState<string | null>(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
   const defaultStartDate = new Date();
   defaultStartDate.setDate(defaultStartDate.getDate() + 1);
   const defaultEndDate = new Date();
@@ -140,9 +143,33 @@ export function MasterExperienceCreateScreen() {
     loadExperience();
   }, [experienceId, navigation]);
 
-  const handleAddImage = () => {
-    // TODO: 추후 expo-image-picker 등을 활용해 실제 기기 갤러리와 연동하세요.
-    setMainImage("https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=600&q=80");
+  const handleAddImage = async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert("권한 필요", "사진을 선택하려면 사진 접근 권한이 필요합니다.");
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.9,
+    });
+    if (result.canceled || !result.assets[0]) return;
+
+    const asset = result.assets[0];
+    setIsUploadingImage(true);
+    try {
+      const url = await uploadImage(
+        { uri: asset.uri, fileName: asset.fileName, mimeType: asset.mimeType },
+        "experience",
+      );
+      setMainImage(url);
+    } catch (e) {
+      Alert.alert("오류", e instanceof Error ? e.message : "이미지 업로드에 실패했습니다.");
+    } finally {
+      setIsUploadingImage(false);
+    }
   };
 
   const toggleLanguage = (lang: string) => {
@@ -283,8 +310,11 @@ export function MasterExperienceCreateScreen() {
             ]}
             onPress={handleAddImage}
             activeOpacity={0.8}
+            disabled={isUploadingImage}
           >
-            {mainImage ? (
+            {isUploadingImage ? (
+              <ActivityIndicator size="large" color={colors.accent} />
+            ) : mainImage ? (
               <>
                 <Image source={{ uri: mainImage }} style={styles.uploadedImage} />
                 <View style={styles.changeImageOverlay}>
@@ -530,10 +560,10 @@ export function MasterExperienceCreateScreen() {
       {/* ── 하단 등록 버튼 ── */}
       <View style={[styles.footer, { backgroundColor: colors.bg, borderTopColor: colors.border }]}>
         <TouchableOpacity
-          style={[styles.submitBtn, { backgroundColor: colors.text }, isSubmitting && { opacity: 0.6 }]}
+          style={[styles.submitBtn, { backgroundColor: colors.text }, (isSubmitting || isUploadingImage) && { opacity: 0.6 }]}
           activeOpacity={0.8}
           onPress={handleSubmit}
-          disabled={isSubmitting}
+          disabled={isSubmitting || isUploadingImage}
         >
           <Text style={[styles.submitBtnText, { color: colors.bg }]}>
             {isSubmitting ? (isEditing ? "수정 중..." : "등록 중...") : (isEditing ? "수정하기" : "등록하기")}
