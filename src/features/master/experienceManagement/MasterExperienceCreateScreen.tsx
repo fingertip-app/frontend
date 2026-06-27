@@ -98,10 +98,7 @@ export function MasterExperienceCreateScreen() {
         setHasReservedSchedules(
           (experience.schedules ?? []).some((schedule) => (schedule.bookedSlots ?? 0) > 0),
         );
-        setMainImage(
-          experience.images?.[0]?.imageUrl ??
-            "https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=600&q=80",
-        );
+        setMainImage(experience.images?.[0]?.imageUrl ?? null);
 
         const schedules = [...(experience.schedules ?? [])].sort((a, b) =>
           a.scheduledAt.localeCompare(b.scheduledAt),
