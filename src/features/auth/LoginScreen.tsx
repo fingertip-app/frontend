@@ -11,6 +11,9 @@ import { useTheme } from "@/theme/ThemeContext";
 
 type LoginMode = "USER" | "ARTISAN";
 
+const TEST_ARTISAN_EMAIL = "artisan.test@local.dev";
+const TEST_ARTISAN_PASSWORD = "test1234";
+
 export function LoginScreen() {
   const { colors } = useTheme();
   const [email, setEmail] = useState("");
@@ -97,6 +100,22 @@ export function LoginScreen() {
             </TouchableOpacity>
           </View>
         </View>
+
+        {/* 심사용 테스트 계정 안내 (장인 모드에서만 표시) */}
+        {loginMode === "ARTISAN" && (
+          <TouchableOpacity
+            style={[styles.testAccountBox, { backgroundColor: colors.card, borderColor: colors.border }]}
+            activeOpacity={0.7}
+            onPress={() => {
+              setEmail(TEST_ARTISAN_EMAIL);
+              setPassword(TEST_ARTISAN_PASSWORD);
+            }}
+          >
+            <Text style={[styles.testAccountLabel, { color: colors.textSecondary }]}>테스트 계정 (탭하면 자동 입력)</Text>
+            <Text style={[styles.testAccountValue, { color: colors.text }]}>{TEST_ARTISAN_EMAIL}</Text>
+            <Text style={[styles.testAccountValue, { color: colors.text }]}>{TEST_ARTISAN_PASSWORD}</Text>
+          </TouchableOpacity>
+        )}
 
         {/* 입력 폼 영역 */}
         <View style={styles.formSection}>
@@ -256,6 +275,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 20,
   },
+  testAccountBox: {
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 20,
+    alignItems: "center",
+  },
+  testAccountLabel: { fontSize: 11, marginBottom: 4 },
+  testAccountValue: { fontSize: 13, fontWeight: "600" },
   tabText: {
     fontSize: 13,
     fontWeight: '600',
