@@ -111,7 +111,9 @@ export function LoginScreen() {
               setPassword(TEST_ARTISAN_PASSWORD);
             }}
           >
-            <Text style={[styles.testAccountLabel, { color: colors.textSecondary }]}>테스트 계정 (탭하면 자동 입력)</Text>
+            <Text style={[styles.testAccountLabel, { color: colors.textSecondary }]}>
+              장인 계정은 관리자 승인이 필요해서 테스트 계정을 따로 알려드립니다. (탭하면 자동 입력)
+            </Text>
             <Text style={[styles.testAccountValue, { color: colors.text }]}>{TEST_ARTISAN_EMAIL}</Text>
             <Text style={[styles.testAccountValue, { color: colors.text }]}>{TEST_ARTISAN_PASSWORD}</Text>
           </TouchableOpacity>
