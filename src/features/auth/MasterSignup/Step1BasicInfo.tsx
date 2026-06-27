@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, StyleSheet } from "react-native";
 import Svg, { Path, Circle } from "react-native-svg";
+import { checkEmailAvailable, checkNicknameAvailable } from "@/features/auth/api/authApi";
 import { useTheme } from "@/theme/ThemeContext";
 
 interface Step1BasicInfoProps {
@@ -16,6 +17,10 @@ interface Step1BasicInfoProps {
   setPassword: (val: string) => void;
   passwordConfirm: string;
   setPasswordConfirm: (val: string) => void;
+  isNicknameChecked: boolean;
+  setIsNicknameChecked: (val: boolean) => void;
+  isEmailChecked: boolean;
+  setIsEmailChecked: (val: boolean) => void;
   onSkipTest?: () => void;
 }
 
@@ -26,10 +31,14 @@ export function Step1BasicInfo({
   email, setEmail,
   password, setPassword,
   passwordConfirm, setPasswordConfirm,
+  isNicknameChecked, setIsNicknameChecked,
+  isEmailChecked, setIsEmailChecked,
   onSkipTest
 }: Step1BasicInfoProps) {
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [isPasswordConfirmVisible, setIsPasswordConfirmVisible] = useState(false);
+  const [nicknameCheckMessage, setNicknameCheckMessage] = useState("");
+  const [emailCheckMessage, setEmailCheckMessage] = useState("");
   const { colors } = useTheme();
 
   const handlePhoneChange = (text: string) => {
@@ -43,23 +52,53 @@ export function Step1BasicInfo({
     setPhoneNumber(formatted);
   };
 
-  const handleCheckNicknameDuplicate = () => {
-    if (!nickname) return Alert.alert("알림", "닉네임을 먼저 입력해주세요.");
-    if (nickname.length < 2) return Alert.alert("알림", "닉네임은 2자 이상 입력해주세요.");
-    
-    // TODO: 백엔드 API 연동 위치
-    if (nickname === "test") Alert.alert("중복확인", "이미 사용 중인 닉네임입니다.\n다른 닉네임을 사용해주세요.");
-    else Alert.alert("중복확인", "사용 가능한 닉네임입니다.");
+  const handleCheckNicknameDuplicate = async () => {
+    if (!nickname) {
+      setNicknameCheckMessage("닉네임을 먼저 입력해주세요.");
+      return;
+    }
+    if (nickname.length < 2) {
+      setNicknameCheckMessage("닉네임은 2자 이상 입력해주세요.");
+      return;
+    }
+    try {
+      const available = await checkNicknameAvailable(nickname);
+      if (available) {
+        setIsNicknameChecked(true);
+        setNicknameCheckMessage("✓ 사용 가능한 닉네임입니다.");
+      } else {
+        setIsNicknameChecked(false);
+        setNicknameCheckMessage("이미 사용 중인 닉네임입니다. 다른 닉네임을 사용해주세요.");
+      }
+    } catch {
+      setIsNicknameChecked(false);
+      setNicknameCheckMessage("닉네임 확인에 실패했습니다. 다시 시도해주세요.");
+    }
   };
 
-  const handleCheckEmailDuplicate = () => {
-    if (!email) return Alert.alert("알림", "이메일을 먼저 입력해주세요.");
+  const handleCheckEmailDuplicate = async () => {
+    if (!email) {
+      setEmailCheckMessage("이메일을 먼저 입력해주세요.");
+      return;
+    }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) return Alert.alert("알림", "올바른 이메일 형식을 입력해주세요.");
-    
-    // TODO: 백엔드 API 연동 위치
-    if (email === "test@email.com") Alert.alert("중복확인", "이미 가입된 이메일입니다.\n다른 이메일을 사용해주세요.");
-    else Alert.alert("중복확인", "사용 가능한 이메일입니다.");
+    if (!emailRegex.test(email)) {
+      setEmailCheckMessage("올바른 이메일 형식을 입력해주세요.");
+      return;
+    }
+    try {
+      const available = await checkEmailAvailable(email);
+      if (available) {
+        setIsEmailChecked(true);
+        setEmailCheckMessage("✓ 사용 가능한 이메일입니다.");
+      } else {
+        setIsEmailChecked(false);
+        setEmailCheckMessage("이미 가입된 이메일입니다. 다른 이메일을 사용해주세요.");
+      }
+    } catch {
+      setIsEmailChecked(false);
+      setEmailCheckMessage("이메일 확인에 실패했습니다. 다시 시도해주세요.");
+    }
   };
 
   return (
@@ -96,11 +135,20 @@ export function Step1BasicInfo({
 
       <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>닉네임 (또는 공방/상호명)</Text>
       <View style={[styles.inputContainer, { borderColor: colors.border, backgroundColor: colors.card }]}>
-        <TextInput style={[styles.input, { color: colors.text }]} placeholder="사용하실 닉네임을 입력해주세요" placeholderTextColor={colors.textSecondary} value={nickname} onChangeText={setNickname} />
+        <TextInput
+          style={[styles.input, { color: colors.text }]}
+          placeholder="사용하실 닉네임을 입력해주세요"
+          placeholderTextColor={colors.textSecondary}
+          value={nickname}
+          onChangeText={(v) => { setNickname(v); setIsNicknameChecked(false); setNicknameCheckMessage(""); }}
+        />
         <TouchableOpacity style={[styles.duplicateCheckBtn, { backgroundColor: colors.border }]} onPress={handleCheckNicknameDuplicate} activeOpacity={0.7}>
           <Text style={[styles.duplicateCheckBtnText, { color: colors.text }]}>중복확인</Text>
         </TouchableOpacity>
       </View>
+      {nicknameCheckMessage ? (
+        <Text style={isNicknameChecked ? styles.successText : styles.errorText}>{nicknameCheckMessage}</Text>
+      ) : null}
 
       <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>연락처</Text>
       <View style={[styles.inputContainer, { borderColor: colors.border, backgroundColor: colors.card }]}>
@@ -109,11 +157,22 @@ export function Step1BasicInfo({
 
       <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>아이디 (이메일)</Text>
       <View style={[styles.inputContainer, { borderColor: colors.border, backgroundColor: colors.card }]}>
-        <TextInput style={[styles.input, { color: colors.text }]} placeholder="example@email.com" placeholderTextColor={colors.textSecondary} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
+        <TextInput
+          style={[styles.input, { color: colors.text }]}
+          placeholder="example@email.com"
+          placeholderTextColor={colors.textSecondary}
+          value={email}
+          onChangeText={(v) => { setEmail(v); setIsEmailChecked(false); setEmailCheckMessage(""); }}
+          keyboardType="email-address"
+          autoCapitalize="none"
+        />
         <TouchableOpacity style={[styles.duplicateCheckBtn, { backgroundColor: colors.border }]} onPress={handleCheckEmailDuplicate} activeOpacity={0.7}>
           <Text style={[styles.duplicateCheckBtnText, { color: colors.text }]}>중복확인</Text>
         </TouchableOpacity>
       </View>
+      {emailCheckMessage ? (
+        <Text style={isEmailChecked ? styles.successText : styles.errorText}>{emailCheckMessage}</Text>
+      ) : null}
       {email.length > 0 && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) && <Text style={styles.errorText}>올바른 이메일 형식이 아닙니다.</Text>}
 
       <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>비밀번호</Text>
@@ -168,6 +227,7 @@ const styles = StyleSheet.create({
   duplicateCheckBtn: { paddingVertical: 8, paddingHorizontal: 12, borderRadius: 8 },
   duplicateCheckBtnText: { fontSize: 12, fontWeight: '600' },
   errorText: { color: '#D04040', fontSize: 12, marginLeft: 4, marginTop: -12, marginBottom: 16 },
+  successText: { color: '#2E7D32', fontSize: 12, marginLeft: 4, marginTop: -12, marginBottom: 16 },
   testBtnContainer: { flexDirection: 'row', justifyContent: 'flex-end', gap: 8, marginBottom: 16 },
   testBtn: { backgroundColor: '#EAE6E1', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6 },
   testBtnText: { fontSize: 11, color: '#3B2B26', fontWeight: 'bold' },

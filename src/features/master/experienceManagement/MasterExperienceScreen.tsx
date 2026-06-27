@@ -6,8 +6,6 @@ import {
   ScrollView,
   TouchableOpacity,
   Image,
-  Switch,
-  Platform,
   Alert,
   ActivityIndicator,
   Modal,
@@ -78,10 +76,6 @@ export function MasterExperienceScreen({
     } finally {
       setIsDeleting(false);
     }
-  };
-
-  const toggleActive = (_id: string | number) => {
-    Alert.alert("알림", "백엔드 체험 활성 상태 변경 API 구현이 필요합니다.");
   };
 
   return (
@@ -158,7 +152,7 @@ export function MasterExperienceScreen({
                   : `최근 진행 없음 | 평점 ${item.rating}`}
               </Text>
 
-              {/* 수정 · 상세 · 토글 */}
+              {/* 수정 · 상세 */}
               <View style={styles.cardActions}>
                 <View style={styles.cardActionsLeft}>
                   <TouchableOpacity
@@ -182,14 +176,6 @@ export function MasterExperienceScreen({
                     <Text style={[styles.actionBtnText, { color: colors.textSecondary }]}>상세</Text>
                   </TouchableOpacity>
                 </View>
-                <Switch
-                  value={item.active}
-                  onValueChange={() => toggleActive(item.id)}
-                  trackColor={{ false: "#D1CBC4", true: colors.text }}
-                  thumbColor={colors.card}
-                  ios_backgroundColor="#D1CBC4"
-                  style={Platform.OS === "android" ? { transform: [{ scaleX: 0.9 }, { scaleY: 0.9 }] } : undefined}
-                />
               </View>
             </View>
           </View>
