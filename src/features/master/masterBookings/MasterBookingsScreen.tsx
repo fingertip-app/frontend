@@ -144,14 +144,7 @@ export function MasterBookingsScreen() {
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.bg }]}>
       {/* ── 공통 상단바 및 서랍 ── */}
-      <MasterHeader
-        activeItem="예약관리"
-        rightComponent={
-          <TouchableOpacity hitSlop={8}>
-            <Ionicons name="search" size={24} color={colors.text} />
-          </TouchableOpacity>
-        }
-      />
+      <MasterHeader activeItem="예약관리" />
 
       {/* ── 필터 탭 ── */}
       <View style={[styles.tabContainer, { backgroundColor: colors.bg, borderBottomColor: colors.border }]}>

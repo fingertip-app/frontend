@@ -111,16 +111,6 @@ export function CardNewsCarousel() {
               <Text style={styles.cardTitle} numberOfLines={2}>{news.title}</Text>
               <Text style={styles.cardDesc} numberOfLines={1}>{news.desc}</Text>
             </View>
-
-            {/* 액션 버튼 (공유 / 저장) */}
-            {/* <View style={styles.cardFooter}>
-              <TouchableOpacity hitSlop={10} style={styles.actionBtn}>
-                <Ionicons name="share-social-outline" size={18} color="#8A8077" />
-              </TouchableOpacity>
-              <TouchableOpacity hitSlop={10} style={styles.actionBtn}>
-                <Ionicons name="bookmark-outline" size={18} color="#8A8077" />
-              </TouchableOpacity>
-            </View> */}
           </TouchableOpacity>
         ))}
         </ScrollView>
@@ -190,15 +180,4 @@ const styles = StyleSheet.create({
   tagText: { fontSize: 11, color: "#3B2B26", fontWeight: "600" },
   cardTitle: { fontSize: 15, fontWeight: "700", color: "#3B2B26", lineHeight: 22, marginBottom: 6 },
   cardDesc: { fontSize: 12, color: "#8A8077" },
-  cardFooter: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    alignItems: "center",
-    paddingHorizontal: 14,
-    paddingBottom: 14,
-    gap: 12,
-  },
-  actionBtn: {
-    padding: 4,
-  },
 });

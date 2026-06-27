@@ -22,6 +22,8 @@ export function MasterSignUpScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
+  const [isNicknameChecked, setIsNicknameChecked] = useState(false);
+  const [isEmailChecked, setIsEmailChecked] = useState(false);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedRegions, setSelectedRegions] = useState<string[]>([]);
   const [shortIntro, setShortIntro] = useState("");
@@ -54,14 +56,10 @@ export function MasterSignUpScreen() {
       snsLink.trim() || "미입력",
       "",
       "[대표 작품 사진]",
-      portfolioImages.length > 0
-        ? `${portfolioImages.length}장 선택됨 - 파일 업로드 API 연동 후 별도 저장 필요`
-        : "미첨부",
+      portfolioImages.length > 0 ? `${portfolioImages.length}장 첨부됨` : "미첨부",
       "",
       "[자격 증명 서류]",
-      uploadedFile?.name
-        ? `${uploadedFile.name} - 파일 업로드 API 연동 후 별도 저장 필요`
-        : "미첨부",
+      uploadedFile?.name ? `${uploadedFile.name} 첨부됨` : "미첨부",
     ];
 
     return lines.join("\n").trim();
@@ -137,6 +135,8 @@ export function MasterSignUpScreen() {
             email={email} setEmail={setEmail}
             password={password} setPassword={setPassword}
             passwordConfirm={passwordConfirm} setPasswordConfirm={setPasswordConfirm}
+            isNicknameChecked={isNicknameChecked} setIsNicknameChecked={setIsNicknameChecked}
+            isEmailChecked={isEmailChecked} setIsEmailChecked={setIsEmailChecked}
             onSkipTest={() => setCurrentStep(2)}
           />
         )}
@@ -191,11 +191,13 @@ export function MasterSignUpScreen() {
             if (currentStep === 1) {
               if (!masterName) return Alert.alert("알림", "대표자(장인) 이름을 입력해주세요.");
               if (!nickname) return Alert.alert("알림", "닉네임을 입력해주세요.");
+              if (!isNicknameChecked) return Alert.alert("알림", "닉네임 중복확인을 해주세요.");
               if (!phoneNumber) return Alert.alert("알림", "연락처를 입력해주세요.");
               if (phoneNumber.length < 12) return Alert.alert("알림", "올바른 연락처를 입력해주세요.");
               if (!email) return Alert.alert("알림", "아이디(이메일)를 입력해주세요.");
               const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
               if (!emailRegex.test(email)) return Alert.alert("알림", "올바른 이메일 형식을 입력해주세요.");
+              if (!isEmailChecked) return Alert.alert("알림", "이메일 중복확인을 해주세요.");
               if (!password) return Alert.alert("알림", "비밀번호를 입력해주세요.");
               const passwordRegex = /^(?=.*[a-zA-Z])(?=.*\d)(?=.*[\W_])[^\s]{8,}$/;
               if (!passwordRegex.test(password)) return Alert.alert("알림", "비밀번호는 영문, 숫자, 특수문자를 포함하여 8자 이상이어야 합니다.");
