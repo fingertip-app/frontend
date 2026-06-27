@@ -44,14 +44,6 @@ export function CardNewsDetailScreen() {
           </Text>
         </Animated.View>
 
-        <View style={[styles.headerRight, { zIndex: 10 }]}>
-          <TouchableOpacity hitSlop={10} style={{ marginRight: 16 }}>
-            <Ionicons name="share-social-outline" size={22} color="#3B2B26" />
-          </TouchableOpacity>
-          <TouchableOpacity hitSlop={10}>
-            <Ionicons name="bookmark-outline" size={22} color="#3B2B26" />
-          </TouchableOpacity>
-        </View>
       </View>
 
       <Animated.ScrollView 
@@ -127,7 +119,6 @@ const styles = StyleSheet.create({
     justifyContent: "center", alignItems: "center"
   },
   headerTitleText: { fontSize: 16, fontWeight: "700", color: "#3B2B26" },
-  headerRight: { flexDirection: "row", alignItems: "center" },
   scrollContent: { paddingBottom: 60 },
   titleSection: { padding: 24, paddingTop: 32 },
   tagBadge: { alignSelf: "flex-start", backgroundColor: "#EAE6E1", paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6, marginBottom: 14 },
