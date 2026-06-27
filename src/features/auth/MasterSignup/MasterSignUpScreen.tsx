@@ -56,14 +56,10 @@ export function MasterSignUpScreen() {
       snsLink.trim() || "미입력",
       "",
       "[대표 작품 사진]",
-      portfolioImages.length > 0
-        ? `${portfolioImages.length}장 선택됨 - 파일 업로드 API 연동 후 별도 저장 필요`
-        : "미첨부",
+      portfolioImages.length > 0 ? `${portfolioImages.length}장 첨부됨` : "미첨부",
       "",
       "[자격 증명 서류]",
-      uploadedFile?.name
-        ? `${uploadedFile.name} - 파일 업로드 API 연동 후 별도 저장 필요`
-        : "미첨부",
+      uploadedFile?.name ? `${uploadedFile.name} 첨부됨` : "미첨부",
     ];
 
     return lines.join("\n").trim();
