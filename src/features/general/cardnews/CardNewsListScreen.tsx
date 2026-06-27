@@ -5,11 +5,11 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "@/navigation/RootNavigator";
 import { Ionicons } from "@expo/vector-icons";
 import { getActiveCardNews } from "@/features/cardnews/api/cardNewsApi";
-import { getChungbukCardNews } from "@/features/chungbuk/api/chungbukApi";
+import { getChungbukCardNews, getChungbukTouristSpots } from "@/features/chungbuk/api/chungbukApi";
 import type { CardNews } from "@/types/api";
 
-type FilterOption = "전체" | "충북";
-const FILTERS: FilterOption[] = ["전체", "충북"];
+type FilterOption = "전체" | "전통시장" | "관광명소" | "충북문화";
+const FILTERS: FilterOption[] = ["전체", "전통시장", "관광명소", "충북문화"];
 
 interface DisplayItem {
   id: string;
@@ -18,7 +18,7 @@ interface DisplayItem {
   imageUrl: string;
   desc: string;
   relatedExperienceIds: number[];
-  isChungbuk: boolean;
+  category: FilterOption;
 }
 
 export function CardNewsListScreen() {
@@ -30,9 +30,10 @@ export function CardNewsListScreen() {
 
   useEffect(() => {
     const fetchAll = async () => {
-      const [springResult, chungbukResult] = await Promise.allSettled([
+      const [springResult, chungbukResult, spotsResult] = await Promise.allSettled([
         getActiveCardNews(),
         getChungbukCardNews(),
+        getChungbukTouristSpots(),
       ]);
 
       const springItems: DisplayItem[] =
@@ -44,7 +45,7 @@ export function CardNewsListScreen() {
               imageUrl: item.imageUrl || "",
               desc: item.aiExplanation || "",
               relatedExperienceIds: item.relatedExperienceIds ?? [],
-              isChungbuk: false,
+              category: "충북문화" as FilterOption,
             }))
           : [];
 
@@ -53,11 +54,24 @@ export function CardNewsListScreen() {
           ? chungbukResult.value.map((item) => ({
               id: `chungbuk-${item.id}`,
               title: item.title,
-              tag: "충북",
+              tag: "충북문화",
               imageUrl: item.image_url || "",
               desc: item.ai_explanation || "",
               relatedExperienceIds: [],
-              isChungbuk: true,
+              category: "충북문화" as FilterOption,
+            }))
+          : [];
+
+      const spotItems: DisplayItem[] =
+        spotsResult.status === "fulfilled"
+          ? spotsResult.value.map((spot) => ({
+              id: `spot-${spot.id}`,
+              title: spot.name,
+              tag: spot.category,
+              imageUrl: spot.image_url || "",
+              desc: spot.intro || spot.address || "",
+              relatedExperienceIds: [],
+              category: spot.category as FilterOption,
             }))
           : [];
 
@@ -67,18 +81,18 @@ export function CardNewsListScreen() {
       if (chungbukResult.status === "rejected") {
         console.error("충북 카드뉴스를 불러오는데 실패했습니다:", chungbukResult.reason);
       }
+      if (spotsResult.status === "rejected") {
+        console.error("충북 전통시장/관광명소를 불러오는데 실패했습니다:", spotsResult.reason);
+      }
 
-      setItems([...chungbukItems, ...springItems]);
+      setItems([...spotItems, ...chungbukItems, ...springItems]);
       setIsLoading(false);
     };
 
     fetchAll();
   }, []);
 
-  const filteredItems = items.filter((item) => {
-    if (filter === "전체") return true;
-    return item.isChungbuk;
-  });
+  const filteredItems = items.filter((item) => filter === "전체" || item.category === filter);
 
   const renderHeader = () => (
     <View style={styles.header}>
@@ -167,7 +181,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1, borderBottomColor: '#EAE6E1'
   },
   headerTitle: { fontSize: 17, fontWeight: "700", color: "#3B2B26" },
-  filterRow: { flexDirection: "row", gap: 8, paddingHorizontal: 20, paddingTop: 16, paddingBottom: 4 },
+  filterRow: { flexDirection: "row", gap: 8, paddingHorizontal: 20, paddingTop: 16, paddingBottom: 4, flexWrap: "wrap" },
   filterChip: {
     paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20,
     backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#EAE6E1",

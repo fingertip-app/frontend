@@ -33,6 +33,27 @@ export interface ChungbukExperience {
   location: string | null
 }
 
+export interface ChungbukTouristSpot {
+  id: number
+  category: "전통시장" | "관광명소"
+  region: string
+  sigun: string | null
+  name: string
+  address: string | null
+  established_year: string | null
+  open_cycle: string | null
+  market_day: string | null
+  note: string | null
+  lat: string | null
+  lng: string | null
+  tour_type: string | null
+  intro: string | null
+  image_url: string | null
+  hours: string | null
+  tel: string | null
+  url: string | null
+}
+
 async function chungbukGet<T>(path: string): Promise<T> {
   const response = await fetch(`${CHUNGBUK_API_BASE_URL}${path}`)
   if (!response.ok) {
@@ -51,4 +72,8 @@ export async function getChungbukArtisans(): Promise<ChungbukArtisan[]> {
 
 export async function getChungbukExperiences(): Promise<ChungbukExperience[]> {
   return chungbukGet<ChungbukExperience[]>('/experiences')
+}
+
+export async function getChungbukTouristSpots(): Promise<ChungbukTouristSpot[]> {
+  return chungbukGet<ChungbukTouristSpot[]>('/tourist-spots')
 }

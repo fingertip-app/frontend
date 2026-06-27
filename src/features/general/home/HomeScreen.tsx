@@ -556,7 +556,11 @@ export function HomeScreen() {
               <BannerCard
                 key={banner.id}
                 item={banner}
-                onPress={() => navigation.navigate("CardNewsList", { initialFilter: "충북" })}
+                onPress={() =>
+                  navigation.navigate("CardNewsList", {
+                    initialFilter: banner.bannerType === "관광명소" ? "관광명소" : "전통시장",
+                  })
+                }
               />
             ))}
           </ScrollView>
