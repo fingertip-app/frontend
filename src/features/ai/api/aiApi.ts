@@ -1,4 +1,4 @@
-import { chungbukPost } from '@/services/chungbukApi'
+import { chungbukPost, resolveChungbukImageUrl } from '@/services/chungbukApi'
 import { adaptExplainResponse } from '@/features/chungbuk/adapters'
 import type { ChungbukExplainResponse, ChungbukExperience } from '@/features/chungbuk/adapters'
 import type { ExplainResponse } from '@/types/api'
@@ -70,7 +70,7 @@ export async function recommendChungbukExperiences(
       durationMinutes: e.duration_minutes,
       tags: ['충북'],
       matchReason: '충북 무형유산 추천 체험',
-      imageUrl: e.image_url ?? undefined,
+      imageUrl: resolveChungbukImageUrl(e.image_url) ?? undefined,
     })),
     fallback: false,
     message: null,
