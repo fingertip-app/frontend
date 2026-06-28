@@ -1,7 +1,7 @@
 // 충북 FastAPI의 raw(snake_case) 응답을 기존 화면이 기대하는 타입(Experience/Artisan 등)으로 변환한다.
 // 화면 컴포넌트는 그대로 두고, api 함수 내부에서만 이 어댑터를 거쳐 데이터를 맞춰준다.
 import { resolveChungbukImageUrl } from '@/services/chungbukApi'
-import type { Artisan, Experience, ExplainResponse, Reservation } from '@/types/api'
+import type { Artisan, Experience, ExplainResponse, Reservation, Review, Wishlist } from '@/types/api'
 
 export interface ChungbukExperience {
   id: number
@@ -36,6 +36,22 @@ export interface ChungbukReservation {
   status: string
   created_at: string
   user_id: string | null
+}
+
+export interface ChungbukReview {
+  id: number
+  experience_id: number
+  user_id: string
+  rating: number
+  content: string
+  created_at: string
+}
+
+export interface ChungbukWishlist {
+  id: number
+  experience_id: number
+  user_id: string
+  created_at: string
 }
 
 export interface ChungbukExplainResponse {
@@ -133,6 +149,43 @@ export function adaptExplainResponse(raw: ChungbukExplainResponse): ExplainRespo
     relatedExperiences: [],
     fallback: false,
     message: null,
+  }
+}
+
+export function adaptReview(raw: ChungbukReview): Review {
+  return {
+    id: raw.id,
+    reservationId: 0,
+    userId: 0,
+    experienceId: raw.experience_id,
+    rating: raw.rating,
+    content: raw.content,
+    newLearnings: null,
+    summary: null,
+    contentEn: null,
+    imageUrls: null,
+    sentimentScore: null,
+    keywords: null,
+    createdAt: raw.created_at,
+  }
+}
+
+// 충북 위시리스트 응답에는 체험 정보가 없어, 목록 화면이 기대하는 비정규화된
+// 필드(제목/가격/이미지 등)를 채우려면 매칭되는 체험을 같이 전달해야 한다.
+export function adaptWishlist(raw: ChungbukWishlist, experience: ChungbukExperience | undefined): Wishlist {
+  return {
+    id: raw.id,
+    userId: 0,
+    experienceId: raw.experience_id,
+    experienceTitle: experience?.title ?? '체험',
+    experienceCategory: '충북',
+    experienceLocation: experience?.location ?? '충청북도',
+    experiencePrice: experience?.price ?? 0,
+    experienceDurationMinutes: experience?.duration_minutes ?? 0,
+    experienceImageUrl: experience?.image_url ? resolveChungbukImageUrl(experience.image_url) : null,
+    averageRating: 0,
+    reviewCount: 0,
+    createdAt: raw.created_at,
   }
 }
 

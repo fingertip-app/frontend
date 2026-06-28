@@ -65,3 +65,20 @@ export async function chungbukPatch<TResponse>(path: string): Promise<TResponse>
   })
   return parseResponse<TResponse>(response)
 }
+
+export async function chungbukDelete<TResponse = void>(path: string): Promise<TResponse> {
+  const authHeader = await getAuthHeader()
+  const url = `${CHUNGBUK_BASE_URL}${CHUNGBUK_API_PREFIX}${path}`
+  const response = await fetch(url, {
+    method: 'DELETE',
+    headers: { ...authHeader },
+  })
+  if (!response.ok) {
+    const payload = (await response.json().catch(() => ({}))) as { detail?: string }
+    throw new ChungbukApiError(response.status, payload.detail ?? `Chungbuk API request failed: ${response.status}`)
+  }
+  if (response.status === 204) {
+    return undefined as TResponse
+  }
+  return (await response.json()) as TResponse
+}

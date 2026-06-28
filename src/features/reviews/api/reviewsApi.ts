@@ -1,4 +1,7 @@
 import { apiGet, apiPost, apiPut, apiDelete } from '@/services/api'
+import { chungbukGet, chungbukPost } from '@/services/chungbukApi'
+import { adaptReview } from '@/features/chungbuk/adapters'
+import type { ChungbukReview } from '@/features/chungbuk/adapters'
 import type { Review } from '@/types/api'
 
 /**
@@ -15,11 +18,14 @@ export interface CreateReviewRequest {
 }
 
 /**
- * 리뷰 작성
- * POST /reviews
+ * 리뷰 작성 - 충북 체험 리뷰 (POST /chungbuk/reviews). 로그인 필수.
  */
 export async function createReview(req: CreateReviewRequest): Promise<Review> {
-  return apiPost<CreateReviewRequest, Review>('/reviews', req)
+  const raw = await chungbukPost<{ experience_id: number; rating: number; content: string }, ChungbukReview>(
+    '/reviews',
+    { experience_id: req.experienceId, rating: req.rating, content: req.content ?? '' },
+  )
+  return adaptReview(raw)
 }
 
 /**
@@ -39,19 +45,20 @@ export async function getReview(reviewId: number): Promise<Review> {
 }
 
 /**
- * 체험의 리뷰 목록 조회
- * GET /reviews/experience/{experienceId}
+ * 체험의 리뷰 목록 조회 - 충북 체험 리뷰 (GET /chungbuk/reviews/experience/{experienceId})
  */
 export async function getExperienceReviews(experienceId: number): Promise<Review[]> {
-  return apiGet<Review[]>(`/reviews/experience/${experienceId}`)
+  const reviews = await chungbukGet<ChungbukReview[]>(`/reviews/experience/${experienceId}`)
+  return reviews.map(adaptReview)
 }
 
 /**
- * 사용자의 리뷰 목록 조회
- * GET /reviews/user/{userId}
+ * 내가 쓴 리뷰 목록 조회 - 충북 리뷰 (GET /chungbuk/reviews/mine). 로그인 필수.
+ * 기존 시그니처(userId)는 충북 쪽엔 의미가 없어(Supabase JWT로 본인 식별) 무시한다.
  */
-export async function getUserReviews(userId: number): Promise<Review[]> {
-  return apiGet<Review[]>(`/reviews/user/${userId}`)
+export async function getUserReviews(_userId: number): Promise<Review[]> {
+  const reviews = await chungbukGet<ChungbukReview[]>('/reviews/mine')
+  return reviews.map(adaptReview)
 }
 
 /**
