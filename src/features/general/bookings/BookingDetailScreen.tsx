@@ -17,6 +17,7 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
 import { RootStackParamList } from "@/navigation/RootNavigator";
 import { cancelReservation } from "@/features/reservations/api/reservationsApi";
+import { ackReservationStatus } from "@/features/reservations/reservationStatusTracker";
 import { getCurrentProfile } from "@/features/auth/api/authApi";
 import { getUserReviews } from "@/features/reviews/api/reviewsApi";
 import type { Review } from "@/types/api";
@@ -29,6 +30,13 @@ export function BookingDetailScreen() {
   const { booking } = route.params;
   const [isCancelling, setIsCancelling] = useState(false);
   const [existingReview, setExistingReview] = useState<Review | null>(null);
+
+  // 상세를 봤으니 "변경됨(NEW)" 표시를 확인 처리 - 목록으로 돌아가면 다시 안 뜬다.
+  useEffect(() => {
+    if (booking.reservationId && booking.reservationStatus) {
+      ackReservationStatus(booking.reservationId, booking.reservationStatus);
+    }
+  }, [booking.reservationId, booking.reservationStatus]);
 
   useEffect(() => {
     if (booking.status !== "past") return;
