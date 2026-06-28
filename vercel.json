@@ -10,7 +10,7 @@
     },
     {
       "source": "/chungbuk/:path*",
-      "destination": "http://43.200.172.111:8002/chungbuk/:path*"
+      "destination": "http://43.200.172.111:8002/:path*"
     }
   ]
 }
