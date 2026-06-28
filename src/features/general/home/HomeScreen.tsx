@@ -12,28 +12,11 @@ import { RootStackParamList } from "@/navigation/RootNavigator";
 import { CardNewsCarousel } from "../cardnews/CardNewsCarousel";
 import { MainLayout } from "./MainLayout";
 import { getMyReservations } from "@/features/reservations/api/reservationsApi";
-import { getExperience } from "@/features/experiences/api/experiencesApi";
+import { enrichExperiencesReviewStats, getExperience, getActiveExperiences } from "@/features/experiences/api/experiencesApi";
 import { getExperienceReviews } from "@/features/reviews/api/reviewsApi";
 import { getMyWishlists, addToWishlist, removeFromWishlist, checkWishlist } from "@/features/wishlists/api/wishlistsApi";
 import { getRecommendedArtisan, getNearbyArtisans } from "./api/homeApi";
-import { getChungbukExperiences, type ChungbukExperience } from "@/features/chungbuk/api/chungbukApi";
 import type { Reservation, Wishlist, Banner, Artisan } from "@/types/api";
-
-// 충북 버전: 체험 섹션 데이터를 충북 FastAPI 체험으로 매핑 (기존 Experience 모양에 맞춤)
-function chungbukExperienceToExperienceLike(exp: ChungbukExperience) {
-  return {
-    id: exp.id,
-    title: exp.title,
-    locationAddress: exp.location || "충북",
-    durationMinutes: exp.duration_minutes,
-    category: "충북",
-    price: exp.price,
-    averageRating: 0,
-    reviewCount: 0,
-    images: exp.image_url ? [{ imageUrl: exp.image_url, displayOrder: 0 }] : [],
-    createdAt: new Date().toISOString(),
-  };
-}
 
 // 충북 버전: 기존 동적 히어로 배너 대신 전통시장/관광명소 진입점을 고정 배너로 노출
 const CHUNGBUK_BANNERS: Banner[] = [
@@ -439,9 +422,9 @@ export function HomeScreen() {
       try {
         setIsLoading(true);
         setError(null);
-        // 충북 버전: 기존 Spring 활성 체험 목록 대신 충북 FastAPI 체험 데이터 사용
-        const chungbukExperiences = await getChungbukExperiences();
-        const experiences = chungbukExperiences.map(chungbukExperienceToExperienceLike);
+        // 충북 활성 체험 목록 (chungbuk FastAPI, experiencesApi.ts 내부에서 어댑터 처리)
+        const response = await getActiveExperiences();
+        const experiences = await enrichExperiencesReviewStats(response || []);
         setPopularExperiences(experiences);
       } catch (e: any) {
         console.error("충북 체험 목록을 불러오는데 실패했습니다:", e);

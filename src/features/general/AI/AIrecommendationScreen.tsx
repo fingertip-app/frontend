@@ -15,7 +15,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
 import { MainLayout } from "@/features/general/home/MainLayout";
-import { apiPost } from "@/services/api";
+import { recommendChungbukExperiences } from "@/features/ai/api/aiApi";
 import { MainTabParamList } from "@/navigation/RootNavigator";
 import { Experience } from "@/features/general/Search/SearchScreen";
 import { useTheme } from "@/theme/ThemeContext";
@@ -413,10 +413,9 @@ export function AIrecommendationScreen() {
     const request = buildRecommendationRequest(updatedMessages);
 
     try {
-      const response = await apiPost<AiRecommendationRequest, AiRecommendationResponse>(
-        "/v1/ai/recommendations",
-        request,
-      );
+      // 충북 추천: freeText/관심사를 질의로 묶어 충북 체험만 추천받는다.
+      const query = [request.freeText, ...request.interests].filter(Boolean).join(" ")
+      const response = await recommendChungbukExperiences(query, request.locale)
 
       return {
         id: (Date.now() + 1).toString(),
@@ -428,7 +427,6 @@ export function AIrecommendationScreen() {
           ? response.message ?? FALLBACK_RESULT_GUIDE
           : "선택하신 취향을 바탕으로 가장 적합한 체험을 찾았어요.",
         recommendations: mapRecommendationResponse(response),
-        sources: response.sources,
       };
     } catch {
       return {

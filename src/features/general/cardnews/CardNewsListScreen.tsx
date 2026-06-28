@@ -5,7 +5,7 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "@/navigation/RootNavigator";
 import { Ionicons } from "@expo/vector-icons";
 import { getActiveCardNews } from "@/features/cardnews/api/cardNewsApi";
-import { getChungbukCardNews, getChungbukTouristSpots } from "@/features/chungbuk/api/chungbukApi";
+import { getChungbukCardNews, getChungbukTouristSpots } from "@/features/chungbuk/contentApi";
 import type { CardNews } from "@/types/api";
 
 type FilterOption = "전체" | "전통시장" | "관광명소" | "충북문화";
