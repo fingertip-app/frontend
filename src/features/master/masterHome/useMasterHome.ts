@@ -43,7 +43,7 @@ export function useMasterHome(): UseMasterHomeResult {
   const approve = useCallback(
     async (reservationId: number) => {
       if (!data) throw new Error('장인 정보를 먼저 불러와야 합니다.')
-      await approveMasterReservation(reservationId, data.artisanId)
+      await approveMasterReservation(reservationId)
       await reload()
     },
     [data, reload],
@@ -52,7 +52,7 @@ export function useMasterHome(): UseMasterHomeResult {
   const reject = useCallback(
     async (reservationId: number, rejectionReason: string) => {
       if (!data) throw new Error('장인 정보를 먼저 불러와야 합니다.')
-      await rejectMasterReservation(reservationId, data.artisanId, rejectionReason)
+      await rejectMasterReservation(reservationId)
       await reload()
     },
     [data, reload],

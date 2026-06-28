@@ -1,224 +1,105 @@
-import { getMyArtisan } from '@/features/artisans/api/artisanApi'
-import { getArtisanExperiences } from '@/features/experiences/api/experiencesApi'
-import {
-  approveReservation,
-  getExperienceReservations,
-  rejectReservation,
-} from '@/features/reservations/api/reservationsApi'
-import { getExperienceReviews } from '@/features/reviews/api/reviewsApi'
-import { getUser } from '@/features/users/api/usersApi'
-import type { Experience, Reservation, Review } from '@/types/api'
+import { chungbukGet, chungbukPatch, resolveChungbukImageUrl } from '@/services/chungbukApi'
+import { DEMO_ARTISAN_ID, DEMO_ARTISAN_TOKEN } from '@/features/chungbuk/demoArtisan'
 import type {
-  MasterHomeBookingRequest,
-  MasterHomeData,
-  MasterHomeTodaySchedule,
-} from './types'
+  ChungbukArtisan,
+  ChungbukExperience,
+  ChungbukReservation,
+} from '@/features/chungbuk/adapters'
+import type { MasterHomeBookingRequest, MasterHomeData, MasterHomeTodaySchedule } from './types'
 
 const DEFAULT_PROFILE_IMAGE =
   'https://images.unsplash.com/photo-1566753323558-f4e0952af115?w=200&q=80'
 const DEFAULT_EXPERIENCE_IMAGE =
   'https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=200&q=80'
 
-const TODAY_COUNT_STATUSES = new Set<Reservation['status']>([
-  'PENDING',
-  'APPROVED',
-  'PAID',
-  'CONFIRMED',
-  'COMPLETED',
-])
-
-const TODAY_SCHEDULE_STATUSES = new Set<Reservation['status']>([
-  'APPROVED',
-  'PAID',
-  'CONFIRMED',
-])
-
-const REVENUE_STATUSES = new Set<Reservation['status']>(['PAID', 'CONFIRMED', 'COMPLETED'])
-
-function parseDate(value: string | null): Date | null {
-  if (!value) return null
+function formatDate(value: string): string {
   const date = new Date(value)
-  return Number.isNaN(date.getTime()) ? null : date
-}
-
-function isSameDay(left: Date, right: Date): boolean {
-  return (
-    left.getFullYear() === right.getFullYear() &&
-    left.getMonth() === right.getMonth() &&
-    left.getDate() === right.getDate()
-  )
-}
-
-function isSameMonth(left: Date, right: Date): boolean {
-  return left.getFullYear() === right.getFullYear() && left.getMonth() === right.getMonth()
-}
-
-function formatDate(value: string | null): string {
-  const date = parseDate(value)
-  if (!date) return '-'
-
+  if (Number.isNaN(date.getTime())) return '-'
   const weekday = ['일', '월', '화', '수', '목', '금', '토'][date.getDay()]
-  return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(
-    date.getDate(),
-  ).padStart(2, '0')} (${weekday})`
+  return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')} (${weekday})`
 }
 
-function formatTime(value: string | null): string {
-  const date = parseDate(value)
-  if (!date) return '-'
-
-  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(
-    2,
-    '0',
-  )}`
+function formatTime(value: string): string {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return '-'
+  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
 }
 
-function getExperienceImage(experience: Experience | undefined): string {
-  if (!experience?.images.length) return DEFAULT_EXPERIENCE_IMAGE
-  return [...experience.images].sort((left, right) => left.displayOrder - right.displayOrder)[0]
-    .imageUrl
-}
-
-function getCertificationLabel(isVerified: boolean, status: string): string {
-  if (isVerified) return '인증완료'
-  if (status === 'REJECTED') return '인증반려'
-  return '인증대기'
-}
-
-async function mapPendingReservations(
-  reservations: Reservation[],
-  experienceById: Map<number, Experience>,
-): Promise<MasterHomeBookingRequest[]> {
-  const pending = reservations.filter((reservation) => reservation.status === 'PENDING')
-  const userIds = [...new Set(pending.map((reservation) => reservation.userId))]
-  const users = await Promise.all(
-    userIds.map(async (userId) => [userId, await getUser(userId).catch(() => null)] as const),
-  )
-  const userById = new Map(users)
-
-  return pending.map((reservation) => {
-    const experience = experienceById.get(reservation.experienceId)
-    return {
-      id: reservation.id,
-      title: experience?.title ?? '체험',
-      date: formatDate(reservation.reservedDateTime),
-      time: formatTime(reservation.reservedDateTime),
-      guests: `${reservation.numberOfParticipants}명`,
-      name: userById.get(reservation.userId)?.nickname ?? '알 수 없음',
-      image: getExperienceImage(experience),
-    }
-  })
-}
-
-function mapTodaySchedules(
-  reservations: Reservation[],
-  experienceById: Map<number, Experience>,
-  now: Date,
-): MasterHomeTodaySchedule[] {
-  return reservations
-    .filter((reservation) => {
-      const reservedAt = parseDate(reservation.reservedDateTime)
-      return (
-        reservedAt !== null &&
-        isSameDay(reservedAt, now) &&
-        TODAY_SCHEDULE_STATUSES.has(reservation.status)
-      )
-    })
-    .sort((left, right) => {
-      const leftTime = parseDate(left.reservedDateTime)?.getTime() ?? 0
-      const rightTime = parseDate(right.reservedDateTime)?.getTime() ?? 0
-      return leftTime - rightTime
-    })
-    .map((reservation) => {
-      const experience = experienceById.get(reservation.experienceId)
-      return {
-        id: reservation.id,
-        title: experience?.title ?? '체험',
-        date: formatDate(reservation.reservedDateTime),
-        time: formatTime(reservation.reservedDateTime),
-        guests: `${reservation.numberOfParticipants}명`,
-        location: experience?.locationAddress ?? '-',
-        image: getExperienceImage(experience),
-      }
-    })
-}
-
-function calculateReviewStats(reviews: Review[]): { averageRating: number; reviewCount: number } {
-  if (reviews.length === 0) return { averageRating: 0, reviewCount: 0 }
-
-  const ratingTotal = reviews.reduce((total, review) => total + review.rating, 0)
-  return {
-    averageRating: Math.round((ratingTotal / reviews.length) * 10) / 10,
-    reviewCount: reviews.length,
-  }
+async function loadDemoArtisanContext() {
+  const [artisans, experiences, reservations] = await Promise.all([
+    chungbukGet<ChungbukArtisan[]>('/artisans'),
+    chungbukGet<ChungbukExperience[]>('/experiences'),
+    chungbukGet<ChungbukReservation[]>(
+      `/artisans/${DEMO_ARTISAN_ID}/reservations?token=${encodeURIComponent(DEMO_ARTISAN_TOKEN)}`,
+    ),
+  ])
+  const artisan = artisans.find((a) => a.id === DEMO_ARTISAN_ID) ?? artisans[0]
+  const myExperiences = experiences.filter((e) => e.artisan_id === DEMO_ARTISAN_ID)
+  const experienceById = new Map(myExperiences.map((e) => [e.id, e]))
+  return { artisan, experienceById, reservations }
 }
 
 export async function getMasterHomeData(): Promise<MasterHomeData> {
-  const now = new Date()
-  const artisan = await getMyArtisan()
-  const experiences = await getArtisanExperiences(artisan.id)
-  const experienceById = new Map(experiences.map((experience) => [experience.id, experience]))
+  const { artisan, experienceById, reservations } = await loadDemoArtisanContext()
 
-  const [reservationLists, reviewLists] = await Promise.all([
-    Promise.all(experiences.map((experience) => getExperienceReservations(experience.id).catch(() => []))),
-    Promise.all(experiences.map((experience) => getExperienceReviews(experience.id).catch(() => []))),
-  ])
-  const reservations = reservationLists.flat()
-  const reviews = reviewLists.flat()
-  const bookingRequests = await mapPendingReservations(reservations, experienceById)
-  const reviewStats = calculateReviewStats(reviews)
-
-  const monthlyRevenue = reservations
-    .filter((reservation) => {
-      const updatedAt = parseDate(reservation.updatedAt)
-      return (
-        updatedAt !== null &&
-        isSameMonth(updatedAt, now) &&
-        REVENUE_STATUSES.has(reservation.status)
-      )
+  const bookingRequests: MasterHomeBookingRequest[] = reservations
+    .filter((r) => r.status === '신청')
+    .map((r) => {
+      const exp = experienceById.get(r.experience_id)
+      return {
+        id: r.id,
+        title: exp?.title ?? '체험',
+        date: formatDate(r.created_at),
+        time: formatTime(r.created_at),
+        guests: '1명',
+        name: r.user_name,
+        image: resolveChungbukImageUrl(exp?.image_url) ?? DEFAULT_EXPERIENCE_IMAGE,
+      }
     })
-    .reduce((total, reservation) => total + reservation.totalPrice, 0)
 
-  const todayReservationCount = reservations.filter((reservation) => {
-    const reservedAt = parseDate(reservation.reservedDateTime)
-    return (
-      reservedAt !== null &&
-      isSameDay(reservedAt, now) &&
-      TODAY_COUNT_STATUSES.has(reservation.status)
-    )
-  }).length
+  const todaySchedules: MasterHomeTodaySchedule[] = reservations
+    .filter((r) => r.status === '확정')
+    .map((r) => {
+      const exp = experienceById.get(r.experience_id)
+      return {
+        id: r.id,
+        title: exp?.title ?? '체험',
+        date: formatDate(r.created_at),
+        time: formatTime(r.created_at),
+        guests: '1명',
+        location: exp?.location ?? '충청북도',
+        image: resolveChungbukImageUrl(exp?.image_url) ?? DEFAULT_EXPERIENCE_IMAGE,
+      }
+    })
 
   return {
-    artisanId: artisan.id,
+    artisanId: DEMO_ARTISAN_ID,
     profile: {
-      name: artisan.name,
-      description: [artisan.heritageCategory, artisan.certificationNumber].filter(Boolean).join(' · '),
-      detail: artisan.bio ?? '',
-      imageUrl: artisan.profileImageUrl || DEFAULT_PROFILE_IMAGE,
-      certificationLabel: getCertificationLabel(artisan.isVerified, artisan.certificationStatus),
+      name: artisan?.name ?? '장인',
+      description: artisan?.heritage_category ?? '',
+      detail: artisan?.bio ?? '',
+      imageUrl: resolveChungbukImageUrl(artisan?.profile_image_url) ?? DEFAULT_PROFILE_IMAGE,
+      certificationLabel: artisan?.is_chungbuk_certified ? '인증완료' : '인증대기',
     },
     stats: {
-      todayReservationCount,
-      monthlyRevenue,
-      averageRating: reviewStats.averageRating,
-      reviewCount: reviewStats.reviewCount,
+      todayReservationCount: reservations.filter((r) => r.status !== '취소' && r.status !== '거절').length,
+      monthlyRevenue: 0,
+      averageRating: 0,
+      reviewCount: 0,
     },
     bookingRequests,
-    todaySchedules: mapTodaySchedules(reservations, experienceById, now),
+    todaySchedules,
   }
 }
 
-export async function approveMasterReservation(
-  reservationId: number,
-  artisanId: number,
-): Promise<void> {
-  await approveReservation(reservationId, artisanId)
+export async function approveMasterReservation(reservationId: number): Promise<void> {
+  await chungbukPatch(
+    `/artisans/${DEMO_ARTISAN_ID}/reservations/${reservationId}/approve?token=${encodeURIComponent(DEMO_ARTISAN_TOKEN)}`,
+  )
 }
 
-export async function rejectMasterReservation(
-  reservationId: number,
-  artisanId: number,
-  rejectionReason: string,
-): Promise<void> {
-  await rejectReservation(reservationId, rejectionReason, artisanId)
+export async function rejectMasterReservation(reservationId: number): Promise<void> {
+  await chungbukPatch(
+    `/artisans/${DEMO_ARTISAN_ID}/reservations/${reservationId}/reject?token=${encodeURIComponent(DEMO_ARTISAN_TOKEN)}`,
+  )
 }

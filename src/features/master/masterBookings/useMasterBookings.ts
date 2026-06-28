@@ -50,7 +50,7 @@ export function useMasterBookings() {
       if (!data) throw new Error('장인 예약 정보를 먼저 불러와야 합니다.')
       updateStatus(
         reservationId,
-        await approveMasterBooking(reservationId, data.artisanId),
+        await approveMasterBooking(reservationId),
       )
     },
     [data, updateStatus],
@@ -61,7 +61,7 @@ export function useMasterBookings() {
       if (!data) throw new Error('장인 예약 정보를 먼저 불러와야 합니다.')
       updateStatus(
         reservationId,
-        await rejectMasterBooking(reservationId, data.artisanId, rejectionReason),
+        await rejectMasterBooking(reservationId),
       )
     },
     [data, updateStatus],

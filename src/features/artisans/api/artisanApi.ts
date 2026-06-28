@@ -1,14 +1,15 @@
 import { chungbukGet } from '@/services/chungbukApi'
 import { adaptArtisan } from '@/features/chungbuk/adapters'
+import { DEMO_ARTISAN_ID } from '@/features/chungbuk/demoArtisan'
 import type { ChungbukArtisan } from '@/features/chungbuk/adapters'
 import type { Artisan } from '@/types/api'
 
 /**
- * 현재 로그인한 장인 정보 조회
- * 충북 데모는 장인용 관리자 화면을 이번 스코프에서 다루지 않아 미구현 상태로 둔다.
+ * 현재 로그인한 장인 정보 조회.
+ * 데모에서는 계정↔장인 매핑이 없어 고정 데모 장인(임인호, id=1)을 반환한다.
  */
 export async function getMyArtisan(): Promise<Artisan> {
-  throw new Error('getMyArtisan은 충북 데모 스코프에 포함되지 않습니다.')
+  return getArtisan(DEMO_ARTISAN_ID)
 }
 
 /**
