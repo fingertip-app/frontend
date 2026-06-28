@@ -2,7 +2,6 @@ import { getMyArtisan } from '@/features/artisans/api/artisanApi'
 import { getArtisanExperiences } from '@/features/experiences/api/experiencesApi'
 import { getExperienceReservations } from '@/features/reservations/api/reservationsApi'
 import { getExperienceReviews } from '@/features/reviews/api/reviewsApi'
-import { getUser } from '@/features/users/api/usersApi'
 import type { Reservation, Review } from '@/types/api'
 import type { MasterAccountData } from '../types/masterAccount'
 
@@ -25,10 +24,9 @@ function getAverageRating(reviews: Review[]): number {
 
 export async function getMasterAccountData(): Promise<MasterAccountData> {
   const artisan = await getMyArtisan()
-  const [user, experiences] = await Promise.all([
-    getUser(artisan.userId),
-    getArtisanExperiences(artisan.id),
-  ])
+  // 충북 장인은 Spring 회원과 연결되어 있지 않아(userId가 항상 0) getUser 조회 없이
+  // 장인 정보 자체(artisan.name/profileImageUrl)만으로 채운다.
+  const experiences = await getArtisanExperiences(artisan.id)
   const [reservationLists, reviewLists] = await Promise.all([
     Promise.all(experiences.map((experience) => getExperienceReservations(experience.id).catch(() => []))),
     Promise.all(experiences.map((experience) => getExperienceReviews(experience.id).catch(() => []))),
@@ -41,11 +39,11 @@ export async function getMasterAccountData(): Promise<MasterAccountData> {
       artisanId: artisan.id,
       userId: artisan.userId,
       name: artisan.name,
-      masterName: user.name || user.nickname,
+      masterName: artisan.name,
       heritageCategory: artisan.heritageCategory,
       certificationNumber: artisan.certificationNumber,
       bio: artisan.bio,
-      imageUrl: artisan.profileImageUrl || user.profileImageUrl || DEFAULT_PROFILE_IMAGE,
+      imageUrl: artisan.profileImageUrl || DEFAULT_PROFILE_IMAGE,
       isVerified: artisan.isVerified,
       isActive: artisan.isActive,
     },

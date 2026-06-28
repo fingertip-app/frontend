@@ -166,7 +166,7 @@ export type RootStackParamList = {
     minGuests: number;
     maxGuests: number;
   } | undefined;
-  CardNewsList: undefined;
+  CardNewsList: { initialFilter?: "전체" | "전통시장" | "관광명소" | "충북문화" } | undefined;
   CardNewsDetail: { news: CardNews };
   AIChat: { news: CardNews };
   ArtisanDetail: { artisanId: number };

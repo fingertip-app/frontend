@@ -17,6 +17,7 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
 import { RootStackParamList } from "@/navigation/RootNavigator";
 import { cancelReservation } from "@/features/reservations/api/reservationsApi";
+import { ackReservationStatus } from "@/features/reservations/reservationStatusTracker";
 import { getCurrentProfile } from "@/features/auth/api/authApi";
 import { getUserReviews } from "@/features/reviews/api/reviewsApi";
 import type { Review } from "@/types/api";
@@ -29,6 +30,13 @@ export function BookingDetailScreen() {
   const { booking } = route.params;
   const [isCancelling, setIsCancelling] = useState(false);
   const [existingReview, setExistingReview] = useState<Review | null>(null);
+
+  // 상세를 봤으니 "변경됨(NEW)" 표시를 확인 처리 - 목록으로 돌아가면 다시 안 뜬다.
+  useEffect(() => {
+    if (booking.reservationId && booking.reservationStatus) {
+      ackReservationStatus(booking.reservationId, booking.reservationStatus);
+    }
+  }, [booking.reservationId, booking.reservationStatus]);
 
   useEffect(() => {
     if (booking.status !== "past") return;
@@ -61,36 +69,42 @@ export function BookingDetailScreen() {
       return;
     }
 
-    Alert.alert(
-      "예약 취소",
-      "정말 이 예약을 취소하시겠습니까?",
-      [
-        { text: "아니오", style: "cancel" },
-        {
-          text: "예, 취소합니다",
-          style: "destructive",
-          onPress: async () => {
-            console.log("🔴 [예약 취소] 확인 버튼 클릭 - API 호출 시작", booking.reservationId);
-            setIsCancelling(true);
-            try {
-              const result = await cancelReservation(booking.reservationId!, "사용자 요청으로 취소");
-              console.log("✅ [예약 취소] API 성공:", result);
-              Alert.alert("취소 완료", "예약이 취소되었습니다.", [
-                {
-                  text: "확인",
-                  onPress: () => navigation.navigate("MainTabs", { screen: "Bookings" }),
-                },
-              ]);
-            } catch (error) {
-              console.error("❌ [예약 취소] API 실패:", error);
-              Alert.alert("취소 실패", error instanceof Error ? error.message : "예약 취소에 실패했습니다.");
-            } finally {
-              setIsCancelling(false);
-            }
-          },
-        },
-      ]
-    );
+    const runCancel = async () => {
+      console.log("🔴 [예약 취소] 확인 - API 호출 시작", booking.reservationId);
+      setIsCancelling(true);
+      try {
+        const result = await cancelReservation(booking.reservationId!, "사용자 요청으로 취소");
+        console.log("✅ [예약 취소] API 성공:", result);
+        if (Platform.OS === "web") {
+          window.alert("예약이 취소되었습니다.");
+          navigation.navigate("MainTabs", { screen: "Bookings" });
+        } else {
+          Alert.alert("취소 완료", "예약이 취소되었습니다.", [
+            { text: "확인", onPress: () => navigation.navigate("MainTabs", { screen: "Bookings" }) },
+          ]);
+        }
+      } catch (error) {
+        console.error("❌ [예약 취소] API 실패:", error);
+        const msg = error instanceof Error ? error.message : "예약 취소에 실패했습니다.";
+        if (Platform.OS === "web") window.alert(`취소 실패: ${msg}`);
+        else Alert.alert("취소 실패", msg);
+      } finally {
+        setIsCancelling(false);
+      }
+    };
+
+    // React Native Web에서는 Alert.alert의 확인/취소 버튼이 동작하지 않으므로 window.confirm 사용.
+    if (Platform.OS === "web") {
+      if (window.confirm("정말 이 예약을 취소하시겠습니까?")) {
+        await runCancel();
+      }
+      return;
+    }
+
+    Alert.alert("예약 취소", "정말 이 예약을 취소하시겠습니까?", [
+      { text: "아니오", style: "cancel" },
+      { text: "예, 취소합니다", style: "destructive", onPress: runCancel },
+    ]);
   };
 
   const getStatusLabel = (status: string) => {

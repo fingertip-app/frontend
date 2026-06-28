@@ -11,13 +11,36 @@ import * as Location from "expo-location";
 import { RootStackParamList } from "@/navigation/RootNavigator";
 import { CardNewsCarousel } from "../cardnews/CardNewsCarousel";
 import { MainLayout } from "./MainLayout";
-import { apiGet } from "@/services/api";
 import { getMyReservations } from "@/features/reservations/api/reservationsApi";
-import { enrichExperiencesReviewStats, getExperience } from "@/features/experiences/api/experiencesApi";
+import { enrichExperiencesReviewStats, getExperience, getActiveExperiences } from "@/features/experiences/api/experiencesApi";
 import { getExperienceReviews } from "@/features/reviews/api/reviewsApi";
 import { getMyWishlists, addToWishlist, removeFromWishlist, checkWishlist } from "@/features/wishlists/api/wishlistsApi";
-import { getHeroBanners, getRecommendedArtisan, getNearbyArtisans } from "./api/homeApi";
+import { getRecommendedArtisan, getNearbyArtisans } from "./api/homeApi";
 import type { Reservation, Wishlist, Banner, Artisan } from "@/types/api";
+
+// 충북 버전: 기존 동적 히어로 배너 대신 전통시장/관광명소 진입점을 고정 배너로 노출
+const CHUNGBUK_BANNERS: Banner[] = [
+  {
+    id: -1,
+    title: "충북 전통시장",
+    subtitle: "충북 곳곳의 전통시장 이야기를 만나보세요",
+    tag: "전통시장",
+    imageUrl: "https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&q=80",
+    bannerType: "전통시장",
+    displayOrder: 0,
+    createdAt: "",
+  },
+  {
+    id: -2,
+    title: "충북 관광명소",
+    subtitle: "충북의 대표 관광명소를 카드뉴스로 둘러보세요",
+    tag: "관광명소",
+    imageUrl: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80",
+    bannerType: "관광명소",
+    displayOrder: 1,
+    createdAt: "",
+  },
+];
 import { supabase } from "@/lib/supabase";
 import { useTheme } from "@/theme/ThemeContext";
 
@@ -123,7 +146,7 @@ function BannerCard({ item, onPress }: { item: Banner; onPress: () => void }) {
           <Text style={styles.bannerTitle}>{item.title}</Text>
           <Text style={styles.bannerSubtitle}>{item.subtitle}</Text>
           <TouchableOpacity style={styles.bannerButton} activeOpacity={0.85} onPress={onPress}>
-            <Text style={styles.bannerButtonText}>체험 둘러보기</Text>
+            <Text style={styles.bannerButtonText}>카드뉴스 보기</Text>
           </TouchableOpacity>
         </View>
       </ImageBackground>
@@ -267,7 +290,6 @@ export function HomeScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { colors } = useTheme();
   const [popularExperiences, setPopularExperiences] = useState<any[]>([]);
-  const [newExperiences, setNewExperiences] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeBanner, setActiveBanner] = useState(0);
@@ -315,14 +337,8 @@ export function HomeScreen() {
   };
 
   useEffect(() => {
-    const fetchBanners = async () => {
-      try {
-        const bannersData = await getHeroBanners();
-        setBanners(bannersData);
-      } catch (e) {
-        console.error("[Home] 배너 로드 실패:", e);
-      }
-    };
+    // 충북 버전: 동적 배너 API 대신 전통시장/관광명소 고정 배너 사용
+    setBanners(CHUNGBUK_BANNERS);
     const fetchRecommendedArtisan = async () => {
       try {
         const artisanData = await getRecommendedArtisan();
@@ -331,7 +347,6 @@ export function HomeScreen() {
         console.error("[Home] 오늘의 장인 로드 실패:", e);
       }
     };
-    fetchBanners();
     fetchRecommendedArtisan();
   }, []);
 
@@ -407,16 +422,12 @@ export function HomeScreen() {
       try {
         setIsLoading(true);
         setError(null);
-        // 백엔드의 활성 체험 목록 API 호출
-        const response = await apiGet<any[]>("/experiences/active");
+        // 충북 활성 체험 목록 (chungbuk FastAPI, experiencesApi.ts 내부에서 어댑터 처리)
+        const response = await getActiveExperiences();
         const experiences = await enrichExperiencesReviewStats(response || []);
         setPopularExperiences(experiences);
-        const sortedByNewest = [...experiences].sort(
-          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        );
-        setNewExperiences(sortedByNewest.slice(0, 5));
       } catch (e: any) {
-        console.error("체험 목록을 불러오는데 실패했습니다:", e);
+        console.error("충북 체험 목록을 불러오는데 실패했습니다:", e);
         setError("체험 목록을 불러오는데 실패했습니다.");
       } finally {
         setIsLoading(false);
@@ -528,7 +539,11 @@ export function HomeScreen() {
               <BannerCard
                 key={banner.id}
                 item={banner}
-                onPress={() => navigation.navigate("MainTabs", { screen: "Explore" })}
+                onPress={() =>
+                  navigation.navigate("CardNewsList", {
+                    initialFilter: banner.bannerType === "관광명소" ? "관광명소" : "전통시장",
+                  })
+                }
               />
             ))}
           </ScrollView>
@@ -616,7 +631,7 @@ export function HomeScreen() {
         {/* 인기 체험 */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>인기 체험 Top 10</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>충북 체험</Text>
             <TouchableOpacity
               activeOpacity={0.7}
               onPress={() => navigation.navigate("MainTabs", { screen: "Explore", params: { filter: "popular" } })}
@@ -671,33 +686,6 @@ export function HomeScreen() {
                 item={item}
                 distanceLabel={getDistanceLabel(item)}
                 onPress={() => navigation.navigate("ArtisanDetail", { artisanId: item.id })}
-              />
-            ))}
-          </ScrollView>
-        </View>
-
-        {/* 신규 체험 */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>새로운 체험</Text>
-            <TouchableOpacity
-              activeOpacity={0.7}
-              onPress={() => navigation.navigate("MainTabs", { screen: "Explore", params: { filter: "new" } })}
-            >
-              <Text style={[styles.viewAllText, { color: colors.textSecondary }]}>더보기 &gt;</Text>
-            </TouchableOpacity>
-          </View>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.popularScroll}
-          >
-            {newExperiences.map((item) => (
-              <PopularExperienceCard
-                key={item.id}
-                item={mapExperienceToCard(item)}
-                onPress={() => openExperienceDetail(item)}
-                refreshTrigger={refreshTrigger}
               />
             ))}
           </ScrollView>

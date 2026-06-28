@@ -1,12 +1,11 @@
 import { getMyArtisan } from '@/features/artisans/api/artisanApi'
-import { getArtisanExperiences, getExperience } from '@/features/experiences/api/experiencesApi'
+import { getArtisanExperiences } from '@/features/experiences/api/experiencesApi'
 import {
   approveReservation,
-  getExperienceReservations,
-  getReservation,
+  getArtisanReservations,
   rejectReservation,
 } from '@/features/reservations/api/reservationsApi'
-import { getUser } from '@/features/users/api/usersApi'
+import { adaptReservation } from '@/features/chungbuk/adapters'
 import type { Reservation, ReservationStatus } from '@/types/api'
 import type {
   MasterBookingDetail,
@@ -93,23 +92,15 @@ export async function getMasterBookings(): Promise<MasterBookingsData> {
   const artisan = await getMyArtisan()
   const experiences = await getArtisanExperiences(artisan.id)
   const experienceById = new Map(experiences.map((experience) => [experience.id, experience]))
-  const reservationLists = await Promise.all(
-    experiences.map((experience) => getExperienceReservations(experience.id).catch(() => [])),
-  )
-  const reservations = reservationLists.flat()
-  const userIds = [...new Set(reservations.map((reservation) => reservation.userId))]
-  const users = await Promise.all(
-    userIds.map(async (userId) => [userId, await getUser(userId).catch(() => null)] as const),
-  )
-  const userById = new Map(users)
+  const rawReservations = await getArtisanReservations(artisan.id)
 
   return {
     artisanId: artisan.id,
-    bookings: reservations.map((reservation) =>
+    bookings: rawReservations.map((raw) =>
       mapListItem(
-        reservation,
-        experienceById.get(reservation.experienceId)?.title ?? '체험',
-        userById.get(reservation.userId)?.nickname ?? '알 수 없음',
+        adaptReservation(raw),
+        experienceById.get(raw.experience_id)?.title ?? '체험',
+        raw.user_name,
       ),
     ),
   }
@@ -118,16 +109,22 @@ export async function getMasterBookings(): Promise<MasterBookingsData> {
 export async function getMasterBookingDetail(
   reservationId: number,
 ): Promise<MasterBookingDetail> {
-  const reservation = await getReservation(reservationId)
-  const [experience, user] = await Promise.all([
-    getExperience(reservation.experienceId),
-    getUser(reservation.userId),
+  const artisan = await getMyArtisan()
+  const [experiences, rawReservations] = await Promise.all([
+    getArtisanExperiences(artisan.id),
+    getArtisanReservations(artisan.id),
   ])
+  const raw = rawReservations.find((r) => r.id === reservationId)
+  if (!raw) {
+    throw new Error(`예약 ${reservationId}을 찾을 수 없습니다.`)
+  }
+  const reservation = adaptReservation(raw)
+  const experienceTitle = experiences.find((e) => e.id === raw.experience_id)?.title ?? '체험'
 
   return {
-    ...mapListItem(reservation, experience.title, user.nickname),
-    bookerPhone: user.phone,
-    bookerEmail: user.email,
+    ...mapListItem(reservation, experienceTitle, raw.user_name),
+    bookerPhone: raw.contact,
+    bookerEmail: null,
     requestMessage: reservation.requestMessage,
     rejectionReason: reservation.rejectionReason,
     cancellationReason: reservation.cancellationReason,

@@ -17,6 +17,7 @@ import { getCurrentProfile } from "@/features/auth/api/authApi";
 import { getExperience } from "@/features/experiences/api/experiencesApi";
 import { MainLayout } from "@/features/general/home/MainLayout";
 import { getMyReservations } from "@/features/reservations/api/reservationsApi";
+import { getChangedReservationIds } from "@/features/reservations/reservationStatusTracker";
 import { RootStackParamList } from "@/navigation/RootNavigator";
 import { useTheme } from "@/theme/ThemeContext";
 import type { Experience, Reservation, ReservationStatus } from "@/types/api";
@@ -45,6 +46,7 @@ export interface Booking {
   paymentRequired?: boolean;
   rejectionReason?: string | null;
   cancellationReason?: string | null;
+  hasStatusChanged?: boolean;
 }
 
 const TABS: { id: TabType; label: string }[] = [
@@ -152,7 +154,13 @@ export function BookingsScreen() {
       }
       const reservations = await getMyReservations();
       const mapped = await Promise.all(reservations.map(toBooking));
-      setBookings(mapped);
+      const changedIds = await getChangedReservationIds(mapped);
+      setBookings(
+        mapped.map((booking) => ({
+          ...booking,
+          hasStatusChanged: booking.reservationId !== undefined && changedIds.has(booking.reservationId),
+        })),
+      );
     } catch {
       Alert.alert("알림", "예약 내역을 불러오지 못했습니다.");
     } finally {
@@ -186,9 +194,16 @@ export function BookingsScreen() {
         onPress={() => navigation.navigate("BookingDetail", { booking: item })}
       >
         <View style={styles.cardTopRow}>
-          <View style={[styles.statusBadge, { backgroundColor: colors.bg, borderColor: colors.border }]}>
-            <View style={[styles.statusDot, { backgroundColor: badgeColor }]} />
-            <Text style={[styles.statusBadgeText, { color: badgeColor }]}>{badge.label}</Text>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+            <View style={[styles.statusBadge, { backgroundColor: colors.bg, borderColor: colors.border }]}>
+              <View style={[styles.statusDot, { backgroundColor: badgeColor }]} />
+              <Text style={[styles.statusBadgeText, { color: badgeColor }]}>{badge.label}</Text>
+            </View>
+            {item.hasStatusChanged && (
+              <View style={styles.newBadge}>
+                <Text style={styles.newBadgeText}>NEW</Text>
+              </View>
+            )}
           </View>
           <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
         </View>
@@ -331,6 +346,13 @@ const styles = StyleSheet.create({
   },
   statusDot: { width: 6, height: 6, borderRadius: 3 },
   statusBadgeText: { fontSize: 12, fontWeight: "800" },
+  newBadge: {
+    backgroundColor: "#C24438",
+    borderRadius: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  newBadgeText: { fontSize: 10, fontWeight: "800", color: "#fff" },
   cardTitle: { fontSize: 17, fontWeight: "900", marginBottom: 14 },
   datePanel: {
     flexDirection: "row",
