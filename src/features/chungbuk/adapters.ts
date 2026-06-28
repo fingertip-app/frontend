@@ -1,5 +1,6 @@
 // 충북 FastAPI의 raw(snake_case) 응답을 기존 화면이 기대하는 타입(Experience/Artisan 등)으로 변환한다.
 // 화면 컴포넌트는 그대로 두고, api 함수 내부에서만 이 어댑터를 거쳐 데이터를 맞춰준다.
+import { resolveChungbukImageUrl } from '@/services/chungbukApi'
 import type { Artisan, Experience, ExplainResponse, Reservation } from '@/types/api'
 
 export interface ChungbukExperience {
@@ -44,6 +45,28 @@ export interface ChungbukExplainResponse {
   recommendedCategories: string[]
 }
 
+// 충북 체험에는 일정/슬롯 개념이 없지만, 예약 화면의 캘린더가 동작하려면 schedules가 필요하다.
+// 데모용으로 다음 영업일 기준 4개 일정을 생성해준다 (체험 id로 시드를 고정해 매번 같은 일정이 나오게).
+function buildSyntheticSchedules(experienceId: number, maxParticipants: number): Experience['schedules'] {
+  const schedules: Experience['schedules'] = []
+  const base = new Date()
+  base.setHours(0, 0, 0, 0)
+  for (let i = 0; i < 4; i++) {
+    const date = new Date(base)
+    date.setDate(base.getDate() + (i + 1) * 2) // 이틀 간격
+    date.setHours(14, 0, 0, 0) // 오후 2시
+    schedules.push({
+      id: experienceId * 100 + i,
+      scheduledAt: date.toISOString().slice(0, 19),
+      availableSlots: maxParticipants,
+      bookedSlots: 0,
+      remainingSlots: maxParticipants,
+      isActive: true,
+    })
+  }
+  return schedules
+}
+
 export function adaptExperience(raw: ChungbukExperience): Experience {
   return {
     id: raw.id,
@@ -61,8 +84,10 @@ export function adaptExperience(raw: ChungbukExperience): Experience {
     locationLat: 0,
     locationLng: 0,
     isActive: true,
-    schedules: [],
-    images: raw.image_url ? [{ id: raw.id, imageUrl: raw.image_url, displayOrder: 0 }] : [],
+    schedules: buildSyntheticSchedules(raw.id, raw.max_participants),
+    images: raw.image_url
+      ? [{ id: raw.id, imageUrl: resolveChungbukImageUrl(raw.image_url)!, displayOrder: 0 }]
+      : [],
     tags: ['충북'],
     averageRating: 0,
     reviewCount: 0,
@@ -79,7 +104,7 @@ export function adaptArtisan(raw: ChungbukArtisan): Artisan {
     heritageCategory: raw.heritage_category,
     certificationNumber: raw.certification_number,
     bio: raw.bio,
-    profileImageUrl: raw.profile_image_url,
+    profileImageUrl: resolveChungbukImageUrl(raw.profile_image_url),
     introVideoUrl: null,
     certificationStatus: raw.is_chungbuk_certified ? 'APPROVED' : 'PENDING',
     verifiedAt: null,
@@ -115,6 +140,7 @@ export function adaptReservation(raw: ChungbukReservation): Reservation {
   const statusMap: Record<string, Reservation['status']> = {
     신청: 'PENDING',
     확정: 'CONFIRMED',
+    거절: 'REJECTED',
     취소: 'CANCELLED',
   }
   return {

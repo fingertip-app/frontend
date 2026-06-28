@@ -1,4 +1,8 @@
 import { apiGet, apiPost } from '@/services/api'
+import { chungbukGet, chungbukPatch, chungbukPost } from '@/services/chungbukApi'
+import { adaptReservation } from '@/features/chungbuk/adapters'
+import type { ChungbukReservation } from '@/features/chungbuk/adapters'
+import { supabase } from '@/lib/supabase'
 import type { Reservation, ReservationStatus } from '@/types/api'
 
 /**
@@ -14,31 +18,51 @@ export interface CreateReservationRequest {
 }
 
 /**
- * 예약 생성
- * POST /reservations
- *
- * userId는 JWT 토큰에서 자동 추출
+ * 예약 생성 - 충북 예약 (POST /chungbuk/reservations)
+ * 로그인 필수. 이름/연락처는 Supabase 세션의 user_metadata에서 가져온다.
+ * 충북 예약엔 일정/인원 개념이 없어 scheduleId/numberOfParticipants는 사용하지 않는다.
  */
 export async function createReservation(
   req: CreateReservationRequest
 ): Promise<Reservation> {
-  return apiPost<CreateReservationRequest, Reservation>(
-    `/reservations`,
-    req
-  )
+  const { data } = await supabase.auth.getSession()
+  const meta = data.session?.user?.user_metadata ?? {}
+  const userName = (meta.name as string) || (meta.nickname as string) || '예약자'
+  const contact = (meta.phone as string) || '-'
+
+  const raw = await chungbukPost<
+    { experience_id: number; user_name: string; contact: string },
+    ChungbukReservation
+  >('/reservations', {
+    experience_id: req.experienceId,
+    user_name: userName,
+    contact,
+  })
+  return adaptReservation(raw)
+}
+
+// 충북 예약 상태(한글) <-> 기존 ReservationStatus 매핑. COMPLETED/PAID는 충북 흐름에 없어 매칭 대상 없음.
+const STATUS_TO_CHUNGBUK: Partial<Record<ReservationStatus, string>> = {
+  PENDING: '신청',
+  APPROVED: '확정',
+  CONFIRMED: '확정',
+  REJECTED: '거절',
+  CANCELLED: '취소',
 }
 
 /**
- * 내 예약 목록 조회 (상태 필터)
- * GET /reservations?status={status}
- *
- * userId는 JWT 토큰에서 자동 추출
+ * 내 예약 목록 조회 (상태 필터) - 충북 예약 데이터
+ * 로그인 필수 (Supabase JWT)
  */
 export async function getMyReservations(
   status?: ReservationStatus
 ): Promise<Reservation[]> {
-  const query = status ? `?status=${status}` : ''
-  return apiGet<Reservation[]>(`/reservations${query}`)
+  const reservations = await chungbukGet<ChungbukReservation[]>('/reservations/mine')
+  const mapped = reservations.map(adaptReservation)
+  if (!status) return mapped
+  const chungbukStatus = STATUS_TO_CHUNGBUK[status]
+  if (!chungbukStatus) return [] // COMPLETED/PAID 등 충북 흐름에 없는 상태는 빈 배열
+  return mapped.filter((r) => r.status === status)
 }
 
 /**
@@ -115,17 +139,14 @@ export async function confirmReservation(reservationId: number): Promise<Reserva
 }
 
 /**
- * 예약 취소
- * POST /reservations/{reservationId}/cancel?cancellationReason={reason}
+ * 예약 취소 - 충북 예약 데이터
+ * PATCH /chungbuk/reservations/{reservationId}/cancel (로그인 필수, 본인 예약만)
+ * 취소 사유는 충북 백엔드에 별도 저장하지 않음 (스코프 제외).
  */
 export async function cancelReservation(
   reservationId: number,
-  cancellationReason?: string
+  _cancellationReason?: string
 ): Promise<Reservation> {
-  console.log("🔴 [cancelReservation API] 호출됨", { reservationId, cancellationReason });
-  const query = cancellationReason
-    ? `?cancellationReason=${encodeURIComponent(cancellationReason)}`
-    : ''
-  console.log("🔴 [cancelReservation API] 요청 URL:", `/reservations/${reservationId}/cancel${query}`);
-  return apiPost<void, Reservation>(`/reservations/${reservationId}/cancel${query}`)
+  const raw = await chungbukPatch<ChungbukReservation>(`/reservations/${reservationId}/cancel`)
+  return adaptReservation(raw)
 }
