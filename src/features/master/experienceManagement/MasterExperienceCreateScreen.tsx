@@ -269,9 +269,15 @@ export function MasterExperienceCreateScreen() {
       } else {
         await createExperience(artisan.id, request);
       }
-      Alert.alert(isEditing ? "수정 완료" : "등록 완료", `체험이 성공적으로 ${isEditing ? "수정" : "등록"}되었습니다!`, [
-        { text: "확인", onPress: () => navigation.goBack() },
-      ]);
+      const successMsg = `체험이 성공적으로 ${isEditing ? "수정" : "등록"}되었습니다!`;
+      if (Platform.OS === "web") {
+        window.alert(successMsg);
+        navigation.goBack();
+      } else {
+        Alert.alert(isEditing ? "수정 완료" : "등록 완료", successMsg, [
+          { text: "확인", onPress: () => navigation.goBack() },
+        ]);
+      }
     } catch (e) {
       Alert.alert(
         "오류",

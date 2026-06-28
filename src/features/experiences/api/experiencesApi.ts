@@ -1,6 +1,7 @@
 import { apiDelete, apiPost, apiPut } from '@/services/api'
-import { chungbukGet } from '@/services/chungbukApi'
+import { chungbukGet, chungbukPost } from '@/services/chungbukApi'
 import { adaptExperience } from '@/features/chungbuk/adapters'
+import { DEMO_ARTISAN_ID, DEMO_ARTISAN_TOKEN } from '@/features/chungbuk/demoArtisan'
 import type { ChungbukExperience } from '@/features/chungbuk/adapters'
 import type { Experience } from '@/types/api'
 import { getExperienceReviews } from '@/features/reviews/api/reviewsApi'
@@ -82,18 +83,31 @@ export async function getArtisanExperiences(artisanId: number): Promise<Experien
   return experiences.filter((e) => e.artisan_id === artisanId).map(adaptExperience)
 }
 
-// ---- 아래는 장인용 관리자 화면(master) 전용 - 이번 충북 데모 스코프 밖, 기존 Spring 그대로 둠 ----
-
 /**
- * 체험 등록 (장인용)
- * POST /experiences?artisanId={artisanId}
+ * 체험 등록 (장인용) - 충북 FastAPI에 저장
+ * POST /chungbuk/artisans/{id}/experiences?token=...
+ * 데모 장인 토큰으로 보호. 일정/언어/난이도 등 충북에 없는 필드는 무시한다.
  */
 export async function createExperience(
-  artisanId: number,
+  _artisanId: number,
   request: CreateExperienceRequest,
 ): Promise<Experience> {
-  return apiPost<CreateExperienceRequest, Experience>(`/experiences?artisanId=${artisanId}`, request)
+  const raw = await chungbukPost<Record<string, unknown>, ChungbukExperience>(
+    `/artisans/${DEMO_ARTISAN_ID}/experiences?token=${encodeURIComponent(DEMO_ARTISAN_TOKEN)}`,
+    {
+      title: request.title,
+      description: request.culturalStory || request.description || '',
+      price: request.price,
+      duration_minutes: request.durationMinutes ?? 60,
+      max_participants: request.maxParticipants,
+      image_url: request.imageUrl ?? null,
+      location: request.locationAddress ?? request.location ?? null,
+    },
+  )
+  return adaptExperience(raw)
 }
+
+// ---- 아래는 장인용 관리자 화면(master) 전용 - 수정/이미지/삭제는 데모 스코프 밖, 기존 Spring 그대로 둠 ----
 
 /**
  * 체험 수정 (장인용)
