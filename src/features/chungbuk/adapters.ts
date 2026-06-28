@@ -33,6 +33,8 @@ export interface ChungbukReservation {
   experience_id: number
   user_name: string
   contact: string
+  num_participants?: number
+  total_price?: number
   status: string
   created_at: string
   user_id: string | null
@@ -197,6 +199,7 @@ export function adaptReservation(raw: ChungbukReservation): Reservation {
     신청: 'PENDING',
     확정: 'APPROVED',
     결제완료: 'PAID',
+    완료: 'COMPLETED',
     거절: 'REJECTED',
     취소: 'CANCELLED',
   }
@@ -205,8 +208,8 @@ export function adaptReservation(raw: ChungbukReservation): Reservation {
     userId: 0,
     experienceId: raw.experience_id,
     scheduleId: 0,
-    numberOfParticipants: 1,
-    totalPrice: 0,
+    numberOfParticipants: raw.num_participants ?? 1,
+    totalPrice: raw.total_price ?? 0,
     status: statusMap[raw.status] ?? 'PENDING',
     reservedDateTime: raw.created_at,
     rejectionReason: null,

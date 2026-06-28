@@ -31,12 +31,13 @@ export async function createReservation(
   const contact = (meta.phone as string) || '-'
 
   const raw = await chungbukPost<
-    { experience_id: number; user_name: string; contact: string },
+    { experience_id: number; user_name: string; contact: string; num_participants: number },
     ChungbukReservation
   >('/reservations', {
     experience_id: req.experienceId,
     user_name: userName,
     contact,
+    num_participants: req.numberOfParticipants ?? 1,
   })
   return adaptReservation(raw)
 }
