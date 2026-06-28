@@ -72,6 +72,10 @@ export async function deleteReview(reviewId: number): Promise<void> {
 /**
  * 리뷰 AI 요약
  * POST /reviews/summarize
+ *
+ * ⚠️ FastAPI에도 /api/v1/ai/review-summary가 있지만, 그 라우터 전체가
+ * verify_internal_api_key로 보호된 서버 간(Spring→FastAPI) 내부 호출용이라
+ * 프론트에서 직접 쓸 수 없다 (내부 키를 클라이언트에 노출하면 안 됨). 그대로 Spring 유지.
  */
 export interface ReviewSummaryRequest {
   content: string
