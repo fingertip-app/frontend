@@ -4,8 +4,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "@/navigation/RootNavigator";
-import { getActiveCardNews } from "@/features/cardnews/api/cardNewsApi";
-import type { CardNews } from "@/types/api";
+import { getChungbukCardNews } from "@/features/chungbuk/contentApi";
+import type { ChungbukCardNews } from "@/features/chungbuk/contentApi";
 
 const { width } = Dimensions.get("window");
 // 화면 너비에서 홈 화면의 양옆 여백(24 * 2)을 고려하여 카드 너비 계산
@@ -21,19 +21,14 @@ interface CardNewsUI {
   relatedExperienceIds: number[];
 }
 
-function mapCardNewsToUI(cardNews: CardNews): CardNewsUI {
-  // 첫 번째 카테고리 태그 사용, 없으면 contentType 사용
-  const tag = cardNews.categoryTags && cardNews.categoryTags.length > 0
-    ? cardNews.categoryTags[0]
-    : cardNews.contentType || "전통문화";
-
+function mapCardNewsToUI(cardNews: ChungbukCardNews): CardNewsUI {
   return {
     id: String(cardNews.id),
     title: cardNews.title,
-    desc: cardNews.aiExplanation || "AI가 설명하는 전통문화 이야기",
-    tag: tag,
-    imageUri: cardNews.imageUrl || "https://images.unsplash.com/photo-1605369680336-6468700a9437?w=400&q=80",
-    relatedExperienceIds: cardNews.relatedExperienceIds ?? [],
+    desc: cardNews.ai_explanation || "AI가 설명하는 충북 무형유산 이야기",
+    tag: "충북문화",
+    imageUri: cardNews.image_url || "https://images.unsplash.com/photo-1605369680336-6468700a9437?w=400&q=80",
+    relatedExperienceIds: [],
   };
 }
 
@@ -46,7 +41,7 @@ export function CardNewsCarousel() {
     const fetchCardNews = async () => {
       try {
         setIsLoading(true);
-        const activeNews = await getActiveCardNews();
+        const activeNews = await getChungbukCardNews();
         const uiNews = activeNews.slice(0, 5).map(mapCardNewsToUI);
         setCardNews(uiNews);
       } catch (e) {

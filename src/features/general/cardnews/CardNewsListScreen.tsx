@@ -4,9 +4,7 @@ import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "@/navigation/RootNavigator";
 import { Ionicons } from "@expo/vector-icons";
-import { getActiveCardNews } from "@/features/cardnews/api/cardNewsApi";
 import { getChungbukCardNews, getChungbukTouristSpots } from "@/features/chungbuk/contentApi";
-import type { CardNews } from "@/types/api";
 
 type FilterOption = "전체" | "전통시장" | "관광명소" | "충북문화";
 const FILTERS: FilterOption[] = ["전체", "전통시장", "관광명소", "충북문화"];
@@ -30,24 +28,10 @@ export function CardNewsListScreen() {
 
   useEffect(() => {
     const fetchAll = async () => {
-      const [springResult, chungbukResult, spotsResult] = await Promise.allSettled([
-        getActiveCardNews(),
+      const [chungbukResult, spotsResult] = await Promise.allSettled([
         getChungbukCardNews(),
         getChungbukTouristSpots(),
       ]);
-
-      const springItems: DisplayItem[] =
-        springResult.status === "fulfilled"
-          ? springResult.value.map((item: CardNews) => ({
-              id: `spring-${item.id}`,
-              title: item.title || "제목 없음",
-              tag: item.categoryTags?.[0] || item.contentType || "기타",
-              imageUrl: item.imageUrl || "",
-              desc: item.aiExplanation || "",
-              relatedExperienceIds: item.relatedExperienceIds ?? [],
-              category: "충북문화" as FilterOption,
-            }))
-          : [];
 
       const chungbukItems: DisplayItem[] =
         chungbukResult.status === "fulfilled"
@@ -77,9 +61,6 @@ export function CardNewsListScreen() {
               }))
           : [];
 
-      if (springResult.status === "rejected") {
-        console.error("카드뉴스를 불러오는데 실패했습니다:", springResult.reason);
-      }
       if (chungbukResult.status === "rejected") {
         console.error("충북 카드뉴스를 불러오는데 실패했습니다:", chungbukResult.reason);
       }
@@ -87,7 +68,7 @@ export function CardNewsListScreen() {
         console.error("충북 전통시장/관광명소를 불러오는데 실패했습니다:", spotsResult.reason);
       }
 
-      setItems([...spotItems, ...chungbukItems, ...springItems]);
+      setItems([...spotItems, ...chungbukItems]);
       setIsLoading(false);
     };
 
