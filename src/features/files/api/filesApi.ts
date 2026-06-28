@@ -45,12 +45,15 @@ export async function uploadImage(
 
   const { data } = await supabase.auth.getSession()
   const token = data.session?.access_token
+  console.log('🟡 File Upload POST:', `${API_BASE_URL}/files/upload`, 'fileName:', fileName, 'type:', type)
   const response = await fetch(`${API_BASE_URL}/files/upload`, {
     method: 'POST',
     headers: token ? { Authorization: `Bearer ${token}` } : {},
     body: formData,
   })
   const payload = (await response.json().catch(() => ({}))) as UploadResponse
+  console.log('🟡 File Upload Response status:', response.status)
+  console.log('🟡 File Upload Response payload:', payload)
 
   if (!response.ok || !payload.success) {
     throw new ApiError(

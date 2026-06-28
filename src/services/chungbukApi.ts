@@ -31,16 +31,21 @@ async function getAuthHeader(): Promise<Record<string, string>> {
 
 // 충북 FastAPI는 { success, data } 래핑이 없고 응답을 그대로 반환한다 (Spring과 다름).
 async function parseResponse<T>(response: Response): Promise<T> {
+  console.log('🟢 Chungbuk API Response status:', response.status)
   if (!response.ok) {
     const payload = await response.json().catch(() => ({})) as { detail?: string }
+    console.log('🔴 Chungbuk API Error payload:', payload)
     throw new ChungbukApiError(response.status, payload.detail ?? `Chungbuk API request failed: ${response.status}`)
   }
-  return (await response.json()) as T
+  const data = (await response.json()) as T
+  console.log('🟢 Chungbuk API Response payload:', data)
+  return data
 }
 
 export async function chungbukGet<T>(path: string): Promise<T> {
   const authHeader = await getAuthHeader()
   const url = `${CHUNGBUK_BASE_URL}${CHUNGBUK_API_PREFIX}${path}`
+  console.log('🟢 Chungbuk API GET:', url)
   const response = await fetch(url, { headers: { ...authHeader } })
   return parseResponse<T>(response)
 }
@@ -48,6 +53,8 @@ export async function chungbukGet<T>(path: string): Promise<T> {
 export async function chungbukPost<TRequest, TResponse>(path: string, body?: TRequest): Promise<TResponse> {
   const authHeader = await getAuthHeader()
   const url = `${CHUNGBUK_BASE_URL}${CHUNGBUK_API_PREFIX}${path}`
+  console.log('🟢 Chungbuk API POST:', url)
+  console.log('🟢 Chungbuk API POST body:', JSON.stringify(body, null, 2))
   const response = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...authHeader },
@@ -59,6 +66,8 @@ export async function chungbukPost<TRequest, TResponse>(path: string, body?: TRe
 export async function chungbukPatch<TResponse, TRequest = void>(path: string, body?: TRequest): Promise<TResponse> {
   const authHeader = await getAuthHeader()
   const url = `${CHUNGBUK_BASE_URL}${CHUNGBUK_API_PREFIX}${path}`
+  console.log('🟢 Chungbuk API PATCH:', url)
+  console.log('🟢 Chungbuk API PATCH body:', JSON.stringify(body, null, 2))
   const response = await fetch(url, {
     method: 'PATCH',
     headers: body !== undefined ? { 'Content-Type': 'application/json', ...authHeader } : { ...authHeader },
@@ -70,12 +79,15 @@ export async function chungbukPatch<TResponse, TRequest = void>(path: string, bo
 export async function chungbukDelete<TResponse = void>(path: string): Promise<TResponse> {
   const authHeader = await getAuthHeader()
   const url = `${CHUNGBUK_BASE_URL}${CHUNGBUK_API_PREFIX}${path}`
+  console.log('🟢 Chungbuk API DELETE:', url)
   const response = await fetch(url, {
     method: 'DELETE',
     headers: { ...authHeader },
   })
+  console.log('🟢 Chungbuk API Response status:', response.status)
   if (!response.ok) {
     const payload = (await response.json().catch(() => ({}))) as { detail?: string }
+    console.log('🔴 Chungbuk API Error payload:', payload)
     throw new ChungbukApiError(response.status, payload.detail ?? `Chungbuk API request failed: ${response.status}`)
   }
   if (response.status === 204) {

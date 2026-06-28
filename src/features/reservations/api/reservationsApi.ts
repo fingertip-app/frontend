@@ -1,7 +1,7 @@
-import { apiGet, apiPost } from '@/services/api'
 import { chungbukGet, chungbukPatch, chungbukPost } from '@/services/chungbukApi'
 import { adaptReservation } from '@/features/chungbuk/adapters'
 import type { ChungbukReservation } from '@/features/chungbuk/adapters'
+import { getMyArtisan, getMyArtisanToken } from '@/features/artisans/api/artisanApi'
 import { supabase } from '@/lib/supabase'
 import type { Reservation, ReservationStatus } from '@/types/api'
 
@@ -66,55 +66,66 @@ export async function getMyReservations(
 }
 
 /**
- * 내 예약 목록 조회 (path variable 방식)
- * GET /reservations/user/{userId}
+ * 장인 본인 체험에 들어온 예약 전체 조회 - 충북 예약 (GET /chungbuk/artisans/{artisanId}/reservations)
+ * 장인별 access_token으로 보호된다. raw 응답을 그대로 반환해 user_name/contact(예약자
+ * 이름/연락처)를 그대로 쓸 수 있게 한다 - 충북엔 Supabase user_id <-> Spring 회원 매핑이 없어
+ * adaptReservation을 거치면 예약자 이름 정보가 사라진다.
  */
-export async function getUserReservations(userId: number): Promise<Reservation[]> {
-  return apiGet<Reservation[]>(`/reservations/user/${userId}`)
+export async function getArtisanReservations(artisanId: number): Promise<ChungbukReservation[]> {
+  return chungbukGet<ChungbukReservation[]>(
+    `/artisans/${artisanId}/reservations?token=${encodeURIComponent(getMyArtisanToken())}`,
+  )
 }
 
 /**
- * 예약 상세 조회
- * GET /reservations/{reservationId}
+ * 단일 예약 조회 (장인용) - 충북엔 단건 조회 엔드포인트가 없어 본인 예약 목록에서 찾는다.
+ * 데모 스코프상 장인이 1명(임인호) 고정이라 artisanId 없이도 본인 예약만 조회된다.
  */
 export async function getReservation(reservationId: number): Promise<Reservation> {
-  return apiGet<Reservation>(`/reservations/${reservationId}`)
+  const artisan = await getMyArtisan()
+  const reservations = await getArtisanReservations(artisan.id)
+  const found = reservations.find((r) => r.id === reservationId)
+  if (!found) {
+    throw new Error(`Chungbuk reservation ${reservationId} not found`)
+  }
+  return adaptReservation(found)
 }
 
 /**
- * 체험의 예약 목록 조회 (장인용)
- * GET /reservations/experience/{experienceId}
+ * 체험의 예약 목록 조회 (장인용) - 충북엔 체험별 조회가 없어 본인 예약 전체에서 필터링한다.
  */
 export async function getExperienceReservations(experienceId: number): Promise<Reservation[]> {
-  return apiGet<Reservation[]>(`/reservations/experience/${experienceId}`)
+  const artisan = await getMyArtisan()
+  const reservations = await getArtisanReservations(artisan.id)
+  return reservations.filter((r) => r.experience_id === experienceId).map(adaptReservation)
 }
 
 /**
- * 예약 승인 (장인)
- * POST /reservations/{reservationId}/approve
+ * 예약 승인 (장인) - 충북 예약 (PATCH /chungbuk/artisans/{artisanId}/reservations/{id}/approve)
  */
 export async function approveReservation(
   reservationId: number,
-  artisanId?: number
+  artisanId: number
 ): Promise<Reservation> {
-  const query = artisanId !== undefined ? `?artisanId=${encodeURIComponent(artisanId)}` : ''
-  return apiPost<void, Reservation>(`/reservations/${reservationId}/approve${query}`)
+  const raw = await chungbukPatch<ChungbukReservation>(
+    `/artisans/${artisanId}/reservations/${reservationId}/approve?token=${encodeURIComponent(getMyArtisanToken())}`,
+  )
+  return adaptReservation(raw)
 }
 
 /**
- * 예약 거절 (장인)
- * POST /reservations/{reservationId}/reject?rejectionReason={reason}
+ * 예약 거절 (장인) - 충북 예약 (PATCH /chungbuk/artisans/{artisanId}/reservations/{id}/reject)
+ * 충북 백엔드는 거절 사유를 별도로 저장하지 않는다(스코프 제외).
  */
 export async function rejectReservation(
   reservationId: number,
-  rejectionReason: string,
-  artisanId?: number
+  _rejectionReason: string,
+  artisanId: number
 ): Promise<Reservation> {
-  const params = new URLSearchParams({ rejectionReason })
-  if (artisanId !== undefined) {
-    params.set('artisanId', String(artisanId))
-  }
-  return apiPost<void, Reservation>(`/reservations/${reservationId}/reject?${params.toString()}`)
+  const raw = await chungbukPatch<ChungbukReservation>(
+    `/artisans/${artisanId}/reservations/${reservationId}/reject?token=${encodeURIComponent(getMyArtisanToken())}`,
+  )
+  return adaptReservation(raw)
 }
 
 /**
@@ -129,14 +140,6 @@ export async function payReservation(
 ): Promise<Reservation> {
   const raw = await chungbukPatch<ChungbukReservation>(`/reservations/${reservationId}/pay`)
   return adaptReservation(raw)
-}
-
-/**
- * 예약 확정
- * POST /reservations/{reservationId}/confirm
- */
-export async function confirmReservation(reservationId: number): Promise<Reservation> {
-  return apiPost<void, Reservation>(`/reservations/${reservationId}/confirm`)
 }
 
 /**
