@@ -383,15 +383,16 @@ export function HomeScreen() {
 
         const reservations = await getMyReservations();
 
-        // APPROVED, PAID, CONFIRMED 상태 중 가장 가까운 미래 일정 찾기
+        // APPROVED, PAID, CONFIRMED 상태 중 가장 최근 예약 찾기
+        // 충북 체험은 실제 방문 일정 개념이 없어 reservedDateTime이 예약 신청 시각으로 채워진다
+        // (항상 과거 시각) - "미래 일정"으로 거르면 승인돼도 절대 안 뜨므로 미래 여부는 체크하지 않는다.
         const upcomingReservations = reservations
           .filter(r =>
             (r.status === "APPROVED" || r.status === "PAID" || r.status === "CONFIRMED") &&
-            r.reservedDateTime &&
-            new Date(r.reservedDateTime) > new Date()
+            r.reservedDateTime
           )
           .sort((a, b) =>
-            new Date(a.reservedDateTime!).getTime() - new Date(b.reservedDateTime!).getTime()
+            new Date(b.reservedDateTime!).getTime() - new Date(a.reservedDateTime!).getTime()
           );
 
         if (upcomingReservations.length > 0) {
@@ -647,7 +648,7 @@ export function HomeScreen() {
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>오늘의 장인</Text>
             <TouchableOpacity style={[styles.artisanCard, { backgroundColor: colors.card, borderColor: colors.border }]} activeOpacity={0.9}>
-              <Image source={{ uri: recommendedArtisan.profileImageUrl || undefined }} style={styles.artisanImage} />
+              <Image source={{ uri: recommendedArtisan.profileImageUrl || undefined }} style={styles.artisanImage} resizeMode="cover" />
               <View style={styles.artisanInfo}>
                 {recommendedArtisan.heritageCategory && (
                   <View style={styles.artisanBadgeWrap}>
@@ -836,7 +837,7 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     borderWidth: 1,
   },
-  artisanImage: { width: "100%", height: 200 },
+  artisanImage: { width: "100%", aspectRatio: 1 },
   artisanInfo: { padding: 20, alignItems: "center" },
   artisanBadgeWrap: { marginBottom: 10 },
   artisanBadge: {

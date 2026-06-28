@@ -20,7 +20,7 @@ export interface CreateReservationRequest {
 /**
  * 예약 생성 - 충북 예약 (POST /chungbuk/reservations)
  * 로그인 필수. 이름/연락처는 Supabase 세션의 user_metadata에서 가져온다.
- * 충북 예약엔 일정/인원 개념이 없어 scheduleId/numberOfParticipants는 사용하지 않는다.
+ * 충북 예약엔 일정 개념이 없어 scheduleId는 사용하지 않지만, 인원수(numberOfParticipants)는 그대로 전달한다.
  */
 export async function createReservation(
   req: CreateReservationRequest
@@ -31,12 +31,13 @@ export async function createReservation(
   const contact = (meta.phone as string) || '-'
 
   const raw = await chungbukPost<
-    { experience_id: number; user_name: string; contact: string },
+    { experience_id: number; user_name: string; contact: string; num_participants: number },
     ChungbukReservation
   >('/reservations', {
     experience_id: req.experienceId,
     user_name: userName,
     contact,
+    num_participants: req.numberOfParticipants,
   })
   return adaptReservation(raw)
 }
