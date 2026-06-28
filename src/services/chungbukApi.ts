@@ -10,7 +10,12 @@ const CHUNGBUK_API_PREFIX = '/api/v1/chungbuk'
 export function resolveChungbukImageUrl(url: string | null | undefined): string | null {
   if (!url) return null
   if (url.startsWith('http://') || url.startsWith('https://')) return url
-  return `${CHUNGBUK_BASE_URL}${url.startsWith('/') ? '' : '/'}${url}`
+  // 경로에 공백 등 URL에 쓸 수 없는 문자가 들어있을 수 있어 세그먼트별로 인코딩한다.
+  const encodedPath = url
+    .split('/')
+    .map((segment) => encodeURIComponent(segment))
+    .join('/')
+  return `${CHUNGBUK_BASE_URL}${encodedPath.startsWith('/') ? '' : '/'}${encodedPath}`
 }
 
 export class ChungbukApiError extends Error {
