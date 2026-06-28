@@ -2,8 +2,16 @@ import { supabase } from '@/lib/supabase'
 
 // 충북 FastAPI는 기존 Spring과 별개의 서버라 base URL을 따로 둔다.
 const rawChungbukBaseUrl = process.env.EXPO_PUBLIC_CHUNGBUK_API_BASE_URL?.trim() || 'http://localhost:8000'
-const CHUNGBUK_BASE_URL = rawChungbukBaseUrl.replace(/\/$/, '')
+export const CHUNGBUK_BASE_URL = rawChungbukBaseUrl.replace(/\/$/, '')
 const CHUNGBUK_API_PREFIX = '/api/v1/chungbuk'
+
+// 이미지 경로가 '/static/...' 상대경로면 충북 서버 절대 URL로 변환한다.
+// (로컬/EC2 base가 달라도 같은 JSON으로 동작하게)
+export function resolveChungbukImageUrl(url: string | null | undefined): string | null {
+  if (!url) return null
+  if (url.startsWith('http://') || url.startsWith('https://')) return url
+  return `${CHUNGBUK_BASE_URL}${url.startsWith('/') ? '' : '/'}${url}`
+}
 
 export class ChungbukApiError extends Error {
   constructor(

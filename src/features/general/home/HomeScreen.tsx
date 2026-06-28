@@ -13,7 +13,7 @@ import { CardNewsCarousel } from "../cardnews/CardNewsCarousel";
 import { MainLayout } from "./MainLayout";
 import { apiGet } from "@/services/api";
 import { getMyReservations } from "@/features/reservations/api/reservationsApi";
-import { enrichExperiencesReviewStats, getExperience } from "@/features/experiences/api/experiencesApi";
+import { enrichExperiencesReviewStats, getExperience, getActiveExperiences } from "@/features/experiences/api/experiencesApi";
 import { getExperienceReviews } from "@/features/reviews/api/reviewsApi";
 import { getMyWishlists, addToWishlist, removeFromWishlist, checkWishlist } from "@/features/wishlists/api/wishlistsApi";
 import { getHeroBanners, getRecommendedArtisan, getNearbyArtisans } from "./api/homeApi";
@@ -407,8 +407,8 @@ export function HomeScreen() {
       try {
         setIsLoading(true);
         setError(null);
-        // 백엔드의 활성 체험 목록 API 호출
-        const response = await apiGet<any[]>("/experiences/active");
+        // 충북 활성 체험 목록 (chungbuk FastAPI)
+        const response = await getActiveExperiences();
         const experiences = await enrichExperiencesReviewStats(response || []);
         setPopularExperiences(experiences);
         const sortedByNewest = [...experiences].sort(

@@ -2,6 +2,7 @@ import { apiGet, apiPost } from '@/services/api'
 import { chungbukGet, chungbukPatch, chungbukPost } from '@/services/chungbukApi'
 import { adaptReservation } from '@/features/chungbuk/adapters'
 import type { ChungbukReservation } from '@/features/chungbuk/adapters'
+import { supabase } from '@/lib/supabase'
 import type { Reservation, ReservationStatus } from '@/types/api'
 
 /**
@@ -17,18 +18,27 @@ export interface CreateReservationRequest {
 }
 
 /**
- * 예약 생성
- * POST /reservations
- *
- * userId는 JWT 토큰에서 자동 추출
+ * 예약 생성 - 충북 예약 (POST /chungbuk/reservations)
+ * 로그인 필수. 이름/연락처는 Supabase 세션의 user_metadata에서 가져온다.
+ * 충북 예약엔 일정/인원 개념이 없어 scheduleId/numberOfParticipants는 사용하지 않는다.
  */
 export async function createReservation(
   req: CreateReservationRequest
 ): Promise<Reservation> {
-  return apiPost<CreateReservationRequest, Reservation>(
-    `/reservations`,
-    req
-  )
+  const { data } = await supabase.auth.getSession()
+  const meta = data.session?.user?.user_metadata ?? {}
+  const userName = (meta.name as string) || (meta.nickname as string) || '예약자'
+  const contact = (meta.phone as string) || '-'
+
+  const raw = await chungbukPost<
+    { experience_id: number; user_name: string; contact: string },
+    ChungbukReservation
+  >('/reservations', {
+    experience_id: req.experienceId,
+    user_name: userName,
+    contact,
+  })
+  return adaptReservation(raw)
 }
 
 // 충북 예약 상태(한글) <-> 기존 ReservationStatus 매핑. COMPLETED/PAID는 충북 흐름에 없어 매칭 대상 없음.
