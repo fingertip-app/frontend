@@ -1,4 +1,7 @@
-import { apiDelete, apiGet, apiPost, apiPut } from '@/services/api'
+import { apiDelete, apiPost, apiPut } from '@/services/api'
+import { chungbukGet } from '@/services/chungbukApi'
+import { adaptExperience } from '@/features/chungbuk/adapters'
+import type { ChungbukExperience } from '@/features/chungbuk/adapters'
 import type { Experience } from '@/types/api'
 import { getExperienceReviews } from '@/features/reviews/api/reviewsApi'
 
@@ -24,11 +27,11 @@ export interface CreateExperienceRequest {
 }
 
 /**
- * 활성 체험 목록 조회
- * GET /experiences/active
+ * 활성 체험 목록 조회 - 충북 체험 데이터
  */
 export async function getActiveExperiences(): Promise<Experience[]> {
-  return apiGet<Experience[]>('/experiences/active')
+  const experiences = await chungbukGet<ChungbukExperience[]>('/experiences')
+  return experiences.map(adaptExperience)
 }
 
 export async function enrichExperienceReviewStats<T extends Experience>(experience: T): Promise<T> {
@@ -59,28 +62,27 @@ export async function getActiveExperiencesWithReviewStats(): Promise<Experience[
 }
 
 /**
- * 체험 상세 조회 (schedules 포함)
- * GET /experiences/{experienceId}
+ * 체험 상세 조회
+ * 충북 백엔드에는 단건 조회 엔드포인트가 없어 목록에서 찾는다.
  */
 export async function getExperience(experienceId: number): Promise<Experience> {
-  return apiGet<Experience>(`/experiences/${experienceId}`)
+  const experiences = await chungbukGet<ChungbukExperience[]>('/experiences')
+  const found = experiences.find((e) => e.id === experienceId)
+  if (!found) {
+    throw new Error(`Chungbuk experience ${experienceId} not found`)
+  }
+  return adaptExperience(found)
 }
 
 /**
  * 장인의 체험 목록 조회
- * GET /experiences/artisan/{artisanId}
  */
 export async function getArtisanExperiences(artisanId: number): Promise<Experience[]> {
-  return apiGet<Experience[]>(`/experiences/artisan/${artisanId}`)
+  const experiences = await chungbukGet<ChungbukExperience[]>('/experiences')
+  return experiences.filter((e) => e.artisan_id === artisanId).map(adaptExperience)
 }
 
-/**
- * 예정된 체험 목록 조회
- * GET /experiences/upcoming
- */
-export async function getUpcomingExperiences(): Promise<Experience[]> {
-  return apiGet<Experience[]>('/experiences/upcoming')
-}
+// ---- 아래는 장인용 관리자 화면(master) 전용 - 이번 충북 데모 스코프 밖, 기존 Spring 그대로 둠 ----
 
 /**
  * 체험 등록 (장인용)
