@@ -34,6 +34,7 @@ export interface ChungbukReservation {
   user_name: string
   contact: string
   num_participants?: number
+  total_price?: number
   status: string
   created_at: string
   user_id: string | null
@@ -208,7 +209,7 @@ export function adaptReservation(raw: ChungbukReservation): Reservation {
     experienceId: raw.experience_id,
     scheduleId: 0,
     numberOfParticipants: raw.num_participants ?? 1,
-    totalPrice: 0,
+    totalPrice: raw.total_price ?? 0,
     status: statusMap[raw.status] ?? 'PENDING',
     reservedDateTime: raw.created_at,
     rejectionReason: null,
