@@ -47,3 +47,13 @@ export async function chungbukPost<TRequest, TResponse>(path: string, body?: TRe
   })
   return parseResponse<TResponse>(response)
 }
+
+export async function chungbukPatch<TResponse>(path: string): Promise<TResponse> {
+  const authHeader = await getAuthHeader()
+  const url = `${CHUNGBUK_BASE_URL}${CHUNGBUK_API_PREFIX}${path}`
+  const response = await fetch(url, {
+    method: 'PATCH',
+    headers: { ...authHeader },
+  })
+  return parseResponse<TResponse>(response)
+}

@@ -115,6 +115,7 @@ export function adaptReservation(raw: ChungbukReservation): Reservation {
   const statusMap: Record<string, Reservation['status']> = {
     신청: 'PENDING',
     확정: 'CONFIRMED',
+    거절: 'REJECTED',
     취소: 'CANCELLED',
   }
   return {
