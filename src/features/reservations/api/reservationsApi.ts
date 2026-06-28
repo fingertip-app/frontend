@@ -37,7 +37,7 @@ export async function createReservation(
     experience_id: req.experienceId,
     user_name: userName,
     contact,
-    num_participants: req.numberOfParticipants,
+    num_participants: req.numberOfParticipants ?? 1,
   })
   return adaptReservation(raw)
 }

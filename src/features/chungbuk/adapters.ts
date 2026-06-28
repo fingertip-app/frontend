@@ -35,12 +35,12 @@ export interface ChungbukReservation {
   experience_id: number
   user_name: string
   contact: string
+  num_participants?: number
+  total_price?: number
   status: string
   created_at: string
   user_id: string | null
   payment_key?: string | null
-  num_participants?: number
-  total_price?: number
 }
 
 export interface ChungbukReview {
