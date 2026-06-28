@@ -95,6 +95,8 @@ function toChungbukExperiencePayload(request: CreateExperienceRequest) {
     max_participants: request.maxParticipants,
     image_url: request.imageUrl ?? null,
     location: request.locationAddress ?? request.location ?? null,
+    supported_languages: request.supportedLanguages ?? [],
+    category: request.category ?? null,
   }
 }
 

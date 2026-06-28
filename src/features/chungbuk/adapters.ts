@@ -14,6 +14,8 @@ export interface ChungbukExperience {
   max_participants: number
   image_url: string | null
   location: string | null
+  supported_languages?: string[]
+  category?: string | null
   similarity?: number
 }
 
@@ -33,6 +35,8 @@ export interface ChungbukReservation {
   experience_id: number
   user_name: string
   contact: string
+  num_participants?: number
+  total_price?: number
   status: string
   created_at: string
   user_id: string | null
@@ -91,12 +95,12 @@ export function adaptExperience(raw: ChungbukExperience): Experience {
     title: raw.title,
     description: raw.description,
     culturalStory: raw.description,
-    category: '무형유산 체험',
+    category: raw.category || '무형유산 체험',
     price: raw.price,
     durationMinutes: raw.duration_minutes,
     maxParticipants: raw.max_participants,
     difficulty: '초급',
-    supportedLanguages: ['ko'],
+    supportedLanguages: raw.supported_languages ?? [],
     locationAddress: raw.location ?? '충청북도',
     locationLat: 0,
     locationLng: 0,
@@ -197,6 +201,7 @@ export function adaptReservation(raw: ChungbukReservation): Reservation {
     신청: 'PENDING',
     확정: 'APPROVED',
     결제완료: 'PAID',
+    완료: 'COMPLETED',
     거절: 'REJECTED',
     취소: 'CANCELLED',
   }
@@ -205,8 +210,8 @@ export function adaptReservation(raw: ChungbukReservation): Reservation {
     userId: 0,
     experienceId: raw.experience_id,
     scheduleId: 0,
-    numberOfParticipants: 1,
-    totalPrice: 0,
+    numberOfParticipants: raw.num_participants ?? 1,
+    totalPrice: raw.total_price ?? 0,
     status: statusMap[raw.status] ?? 'PENDING',
     reservedDateTime: raw.created_at,
     rejectionReason: null,

@@ -68,7 +68,9 @@ export type Experience = {
 // 알려진 분야는 선형 아이콘으로 표시하고, 모르는 분야는 기본 아이콘으로 처리한다.
 const CATEGORY_ICONS: Record<string, React.ComponentProps<typeof Ionicons>["name"]> = {
   도자기: "ellipse-outline",
+  도예: "ellipse-outline",
   한지공예: "document-text-outline",
+  한지: "document-text-outline",
   목공: "hammer-outline",
   염색: "color-palette-outline",
   전통음식: "restaurant-outline",
@@ -138,7 +140,10 @@ function mapApiExperienceToUI(exp: ApiExperience): Experience {
   });
 
   const isFamilyFriendly = exp.maxParticipants >= 4;
-  const isForeignOk = exp.supportedLanguages?.includes('en') || exp.supportedLanguages?.includes('영어');
+  // supportedLanguages가 비어있으면(아직 데이터 미입력) 외국인 추천에서도 노출되도록 기본값 true 처리
+  const isForeignOk = !exp.supportedLanguages?.length
+    || exp.supportedLanguages.includes('en')
+    || exp.supportedLanguages.includes('영어');
 
   // images 배열에서 첫 번째 이미지 URL 추출
   const imageUrl = exp.images && exp.images.length > 0
