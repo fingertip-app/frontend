@@ -12,14 +12,15 @@ export async function getHeroBanners(): Promise<Banner[]> {
 }
 
 /**
- * 추천 장인 조회 - 충북 인증 장인 중 첫 번째를 보여준다 (전용 추천 로직 없음).
+ * 추천 장인 조회 - 전용 추천 로직이 없어 충북 인증 장인 중 매번 무작위로 한 명을 보여준다.
  */
 export async function getRecommendedArtisan(): Promise<Artisan> {
   const artisans = await chungbukGet<ChungbukArtisan[]>('/artisans')
   if (artisans.length === 0) {
     throw new Error('No chungbuk artisans available')
   }
-  return adaptArtisan(artisans[0])
+  const randomIndex = Math.floor(Math.random() * artisans.length)
+  return adaptArtisan(artisans[randomIndex])
 }
 
 /**

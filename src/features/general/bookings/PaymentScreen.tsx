@@ -14,7 +14,7 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { RootStackParamList } from "@/navigation/RootNavigator";
 import { Ionicons } from "@expo/vector-icons";
 import { payReservation } from "@/features/reservations/api/reservationsApi";
-import { ApiError } from "@/services/api";
+import { ChungbukApiError } from "@/services/chungbukApi";
 import { useTheme } from "@/theme/ThemeContext";
 
 type PayMethod = { id: string; label: string; icon: keyof typeof Ionicons.glyphMap };
@@ -64,9 +64,9 @@ export function PaymentScreen() {
       ]);
     } catch (error) {
       let errorMsg = "결제에 실패했습니다.";
-      if (error instanceof ApiError) {
+      if (error instanceof ChungbukApiError) {
         errorMsg =
-          error.status === 400
+          error.status === 409
             ? "장인의 승인이 완료된 예약만 결제할 수 있습니다."
             : error.message || errorMsg;
       } else if (error instanceof Error) {

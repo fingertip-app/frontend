@@ -41,11 +41,11 @@ export async function createReservation(
   return adaptReservation(raw)
 }
 
-// 충북 예약 상태(한글) <-> 기존 ReservationStatus 매핑. COMPLETED/PAID는 충북 흐름에 없어 매칭 대상 없음.
+// 충북 예약 상태(한글) <-> 기존 ReservationStatus 매핑. COMPLETED는 충북 흐름에 없어 매칭 대상 없음.
 const STATUS_TO_CHUNGBUK: Partial<Record<ReservationStatus, string>> = {
   PENDING: '신청',
   APPROVED: '확정',
-  CONFIRMED: '확정',
+  PAID: '결제완료',
   REJECTED: '거절',
   CANCELLED: '취소',
 }
@@ -118,16 +118,17 @@ export async function rejectReservation(
 }
 
 /**
- * 예약 결제
- * POST /reservations/{reservationId}/payment?paymentKey={paymentKey}
+ * 예약 결제 - 충북 예약 (PATCH /chungbuk/reservations/{reservationId}/pay)
+ * 데모용 - 실제 PG 연동 없이 결제 완료 상태만 기록한다. payment_key는 백엔드가 발급하므로
+ * 프론트에서 만든 mock paymentKey 인자는 사용하지 않는다(시그니처 호환용으로만 유지).
+ * 로그인 필수, 본인 예약만 결제 가능.
  */
 export async function payReservation(
   reservationId: number,
-  paymentKey: string
+  _paymentKey: string
 ): Promise<Reservation> {
-  return apiPost<void, Reservation>(
-    `/reservations/${reservationId}/payment?paymentKey=${encodeURIComponent(paymentKey)}`
-  )
+  const raw = await chungbukPatch<ChungbukReservation>(`/reservations/${reservationId}/pay`)
+  return adaptReservation(raw)
 }
 
 /**

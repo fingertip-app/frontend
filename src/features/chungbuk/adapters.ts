@@ -36,6 +36,7 @@ export interface ChungbukReservation {
   status: string
   created_at: string
   user_id: string | null
+  payment_key?: string | null
 }
 
 export interface ChungbukReview {
@@ -190,9 +191,12 @@ export function adaptWishlist(raw: ChungbukWishlist, experience: ChungbukExperie
 }
 
 export function adaptReservation(raw: ChungbukReservation): Reservation {
+  // '확정'은 장인 승인만 된 상태(결제 전)라 APPROVED로 매핑한다 - CONFIRMED로 매핑하면
+  // 화면에서 결제 완료로 취급해 결제 버튼 대신 QR 확인서가 보여버린다.
   const statusMap: Record<string, Reservation['status']> = {
     신청: 'PENDING',
-    확정: 'CONFIRMED',
+    확정: 'APPROVED',
+    결제완료: 'PAID',
     거절: 'REJECTED',
     취소: 'CANCELLED',
   }
@@ -208,7 +212,7 @@ export function adaptReservation(raw: ChungbukReservation): Reservation {
     rejectionReason: null,
     cancellationReason: null,
     requestMessage: null,
-    paymentKey: null,
+    paymentKey: raw.payment_key ?? null,
     paymentOrderId: null,
     isNotificationSent: false,
     createdAt: raw.created_at,
