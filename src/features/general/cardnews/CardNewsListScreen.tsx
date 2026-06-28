@@ -64,15 +64,17 @@ export function CardNewsListScreen() {
 
       const spotItems: DisplayItem[] =
         spotsResult.status === "fulfilled"
-          ? spotsResult.value.map((spot) => ({
-              id: `spot-${spot.id}`,
-              title: spot.name,
-              tag: spot.category,
-              imageUrl: spot.image_url || "",
-              desc: spot.intro || spot.address || "",
-              relatedExperienceIds: [],
-              category: spot.category as FilterOption,
-            }))
+          ? spotsResult.value
+              .filter((spot) => !!spot.image_url) // 사진이 매칭된 항목만 노출
+              .map((spot) => ({
+                id: `spot-${spot.id}`,
+                title: spot.name,
+                tag: spot.category,
+                imageUrl: spot.image_url || "",
+                desc: spot.intro || spot.address || "",
+                relatedExperienceIds: [],
+                category: spot.category as FilterOption,
+              }))
           : [];
 
       if (springResult.status === "rejected") {
